@@ -2,28 +2,269 @@
 import { getCollection, render } from "astro:content";
 import type { InferGetStaticPropsType } from "astro";
 import BaseLayout from "../../layouts/BaseLayout.astro";
+import TOCSidebar from "../../components/TOCSidebar.astro";
+import PostCard from "../../components/PostCard.astro";
+import TagPill from "../../components/TagPill.astro";
+import Figure from "../../components/Figure.astro";
+import Callout from "../../components/Callout.astro";
+import CodeTabs from "../../components/CodeTabs.astro";
+import Benchmark from "../../components/Benchmark.astro";
 import { getCategoryName } from "../../config";
+import { validateCoverImage } from "../../lib/validate-cover-image";
+import { calculateReadingTime } from "../../lib/reading-time";
+import { getRelatedPosts } from "../../lib/related-posts";
 
 export async function getStaticPaths() {
   const posts = await getCollection("blog");
+  for (const post of posts) {
+    validateCoverImage(post);
+  }
   return posts.map((post) => ({
     params: { category: post.data.category, slug: post.id },
-    props: { post },
+    props: { post, allPosts: posts },
   }));
 }
 
 type Props = InferGetStaticPropsType<typeof getStaticPaths>;
 
-const { post } = Astro.props as Props;
-const { Content } = await render(post);
+const { post, allPosts } = Astro.props as Props;
+const { Content, headings } = await render(post);
 const categoryName = getCategoryName(post.data.category);
+const readingTime = calculateReadingTime(post.body ?? "");
+const relatedPosts = getRelatedPosts(post, allPosts);
+
+const seriesPosts = post.data.series
+  ? allPosts
+      .filter((p) => p.data.series === post.data.series)
+      .sort((a, b) => (a.data.seriesOrder ?? 0) - (b.data.seriesOrder ?? 0))
+  : [];
+const seriesIndex = seriesPosts.findIndex((p) => p.id === post.id);
+const prevInSeries = seriesIndex > 0 ? seriesPosts[seriesIndex - 1] : undefined;
+const nextInSeries =
+  seriesIndex >= 0 && seriesIndex < seriesPosts.length - 1
+    ? seriesPosts[seriesIndex + 1]
+    : undefined;
 ---
 
 <BaseLayout
   title={`${post.data.title} — ${categoryName}`}
   description={post.data.description}
 >
-  <p><a href={`/${post.data.category}/`}>← {categoryName}</a></p>
-  <h1>{post.data.title}</h1>
-  <Content />
+  <div class="post-layout">
+    <article class="post-article">
+      <p><a href={`/${post.data.category}/`}>← {categoryName}</a></p>
+
+      <h1>{post.data.title}</h1>
+      <p class="post-meta">
+        <time datetime={post.data.date.toISOString()}>
+          {
+            post.data.date.toLocaleDateString("en-US", {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+              timeZone: "UTC",
+            })
+          }
+        </time>
+        · {readingTime} min read
+      </p>
+
+      {
+        seriesPosts.length > 1 && (
+          <nav aria-label="Series progress" class="series-nav">
+            <p class="series-nav__title">
+              {post.data.series} ({seriesIndex + 1} of {seriesPosts.length})
+            </p>
+            <ol class="series-nav__list">
+              {seriesPosts.map((seriesPost, i) => (
+                <li class:list={{ "is-current": seriesPost.id === post.id }}>
+                  {seriesPost.id === post.id ? (
+                    <span>
+                      {i + 1}. {seriesPost.data.title}
+                    </span>
+                  ) : (
+                    <a href={`/${seriesPost.data.category}/${seriesPost.id}/`}>
+                      {i + 1}. {seriesPost.data.title}
+                    </a>
+                  )}
+                </li>
+              ))}
+            </ol>
+          </nav>
+        )
+      }
+
+      <div class="article-content">
+        <Content components={{ Figure, Callout, CodeTabs, Benchmark }} />
+      </div>
+
+      {
+        post.data.tags.length > 0 && (
+          <ul class="post-tags">
+            {post.data.tags.map((tag) => (
+              <li>
+                <TagPill>{tag}</TagPill>
+              </li>
+            ))}
+          </ul>
+        )
+      }
+
+      {
+        (prevInSeries || nextInSeries) && (
+          <nav aria-label="Series prev/next" class="series-prev-next">
+            {prevInSeries ? (
+              <a href={`/${prevInSeries.data.category}/${prevInSeries.id}/`}>
+                ← {prevInSeries.data.title}
+              </a>
+            ) : (
+              <span />
+            )}
+            {nextInSeries && (
+              <a href={`/${nextInSeries.data.category}/${nextInSeries.id}/`}>
+                {nextInSeries.data.title} →
+              </a>
+            )}
+          </nav>
+        )
+      }
+
+      {
+        relatedPosts.length > 0 && (
+          <section aria-label="Related posts" class="related-posts">
+            <h2>Related posts</h2>
+            <div class="related-posts__grid">
+              {relatedPosts.map((related) => (
+                <PostCard post={related} />
+              ))}
+            </div>
+          </section>
+        )
+      }
+    </article>
+
+    <aside class="post-sidebar">
+      <TOCSidebar headings={headings} />
+    </aside>
+  </div>
 </BaseLayout>
+
+<style>
+  .post-layout {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: calc(var(--spacing) * 6);
+    max-width: 72rem;
+    margin-inline: auto;
+    padding: calc(var(--spacing) * 6) calc(var(--spacing) * 4);
+  }
+
+  @media (min-width: 64rem) {
+    .post-layout {
+      grid-template-columns: minmax(0, 1fr) 16rem;
+      align-items: start;
+    }
+  }
+
+  .post-meta {
+    font-size: var(--text-sm);
+    color: var(--color-fg-muted);
+  }
+
+  .series-nav {
+    border: 1px solid var(--color-border);
+    border-radius: 0.5rem;
+    padding: calc(var(--spacing) * 3);
+    margin: calc(var(--spacing) * 4) 0;
+  }
+
+  .series-nav__title {
+    font-weight: 600;
+    font-size: var(--text-sm);
+    margin: 0 0 var(--spacing);
+    color: var(--color-fg);
+  }
+
+  .series-nav__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--spacing) * 0.5);
+    font-size: var(--text-sm);
+  }
+
+  .series-nav__list a {
+    color: var(--color-fg-muted);
+    text-decoration: none;
+  }
+
+  .series-nav__list .is-current span {
+    color: var(--color-fg);
+    font-weight: 600;
+  }
+
+  .post-tags {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing);
+    margin: calc(var(--spacing) * 6) 0 0;
+    padding: 0;
+  }
+
+  .series-prev-next {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--spacing);
+    margin-top: calc(var(--spacing) * 4);
+    padding-top: calc(var(--spacing) * 4);
+    border-top: 1px solid var(--color-border);
+    font-size: var(--text-sm);
+  }
+
+  .series-prev-next a {
+    color: var(--color-accent);
+    text-decoration: none;
+  }
+
+  .related-posts {
+    margin-top: calc(var(--spacing) * 8);
+  }
+
+  .related-posts__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+    gap: calc(var(--spacing) * 4);
+    margin-top: calc(var(--spacing) * 4);
+  }
+
+  /* GFM table styling, scoped to rendered MDX content — mobile scroll
+     wrapper contained to the table itself, not the whole page. */
+  .article-content :global(table) {
+    display: block;
+    overflow-x: auto;
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--text-sm);
+    margin: calc(var(--spacing) * 4) 0;
+  }
+
+  .article-content :global(thead) {
+    position: sticky;
+    top: 0;
+    background-color: var(--color-bg);
+  }
+
+  .article-content :global(th),
+  .article-content :global(td) {
+    border: 1px solid var(--color-border);
+    padding: var(--spacing) calc(var(--spacing) * 2);
+    text-align: left;
+  }
+
+  .article-content :global(tbody tr:nth-child(even)) {
+    background-color: var(--color-bg-subtle);
+  }
+</style>

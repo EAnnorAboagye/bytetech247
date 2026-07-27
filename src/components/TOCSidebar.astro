@@ -1,10 +1,9 @@
 ---
-// Structural sidebar container (Phase 2). Astro's render() already returns
-// a `headings` array extracted from the MDX content, so Phase 3 can wire
-// this in directly on the post page without any custom parsing. Scroll-spy
-// active-item highlighting is a Phase 5 (Interaction Layer) enhancement on
-// top of this — this component is fully usable with zero JS as-is (real
-// #anchor links).
+// Structural sidebar container (Phase 2), enhanced in Phase 3 with a
+// scroll-spy active-item highlight ("<TableOfContents> (scroll-spy)" per
+// build-spec.md Phase 3). The script below is a pure progressive
+// enhancement — every link is a real #anchor and the TOC is fully usable
+// with zero JS; the script only adds the "currently reading" highlight.
 interface Heading {
   depth: number;
   slug: string;
@@ -77,4 +76,42 @@ const { headings = [] } = Astro.props;
   .toc-sidebar__item a:hover {
     color: var(--color-accent);
   }
+
+  .toc-sidebar__item a.is-active {
+    color: var(--color-accent);
+    font-weight: 600;
+  }
 </style>
+
+<script>
+  const links = document.querySelectorAll<HTMLAnchorElement>(
+    ".toc-sidebar__list a",
+  );
+
+  if (links.length > 0) {
+    const headingByLink = new Map<HTMLAnchorElement, HTMLElement>();
+    for (const link of links) {
+      const heading = document.getElementById(link.hash.slice(1));
+      if (heading) headingByLink.set(link, heading);
+    }
+
+    const linkByHeadingId = new Map(
+      [...headingByLink.entries()].map(([link, heading]) => [heading.id, link]),
+    );
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
+          const activeLink = linkByHeadingId.get(entry.target.id);
+          if (!activeLink) continue;
+          for (const link of links) link.classList.remove("is-active");
+          activeLink.classList.add("is-active");
+        }
+      },
+      { rootMargin: "0px 0px -70% 0px" },
+    );
+
+    for (const heading of headingByLink.values()) observer.observe(heading);
+  }
+</script>

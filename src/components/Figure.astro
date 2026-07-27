@@ -1,0 +1,40 @@
+---
+// alt is deliberately required (no `?`) — build/type error if omitted.
+// The HTML `title` attribute is deliberately not used anywhere here; it
+// carries no meaningful SEO weight, unlike `alt` (build-spec.md Phase 3).
+import { Image } from "astro:assets";
+import type { ImageMetadata } from "astro";
+
+interface Props {
+  src: ImageMetadata;
+  alt: string;
+  caption?: string;
+}
+
+const { src, alt, caption } = Astro.props;
+---
+
+<figure class="figure">
+  <Image src={src} alt={alt} loading="lazy" class="figure__image" />
+  {caption && <figcaption class="figure__caption">{caption}</figcaption>}
+</figure>
+
+<style>
+  .figure {
+    margin: calc(var(--spacing) * 4) 0;
+  }
+
+  .figure__image {
+    width: 100%;
+    height: auto;
+    border-radius: 0.5rem;
+    border: 1px solid var(--color-border);
+  }
+
+  .figure__caption {
+    margin-top: var(--spacing);
+    font-size: var(--text-sm);
+    color: var(--color-fg-muted);
+    text-align: center;
+  }
+</style>
