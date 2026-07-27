@@ -341,7 +341,8 @@ Run unit + edge-function + accessibility + type checks on every PR; run Playwrig
 - Table of contents sidebar (Phase 2/3) — sits alongside the article body, not inside the header itself.
 
 ### Global footer — identical on every page
-- **Site column:** site name + one-line description (from `src/config.ts`), social links.
+- **Site column:** site name + one-line description (from `src/config.ts`). Social links render as their own labeled block (see "Social handles," below), not folded into this column as plain text links.
+- **Social handles (locked layout, v3.2):** a distinct heading "Social handles" within the Site column, followed by a list of all four accounts from `siteConfig.social` (Facebook, X, Instagram, TikTok). Each list item pairs the platform's real brand icon (not a generic link/external-link icon) with its name as a label — e.g. Facebook's "f" mark + "Facebook", X's mark + "X", Instagram's camera mark + "Instagram", TikTok's note mark + "TikTok" — not bare "@bytetech247" text repeated four times with no visual distinction between platforms. Source the four brand marks as small inline SVGs (self-hosted per Phase 1's asset philosophy, e.g. via the `simple-icons` package's path data or hand-authored equivalents) — not raster logo images, and not a generic icon font standing in for a specific brand mark.
 - **Categories column:** same list as header nav — redundant internal linking is deliberate, it reinforces topical clustering for SEO/AEO.
 - **Company column:** About, Contact.
 - **Legal column:** Privacy, Terms & Conditions, Affiliate/Advertising Disclosure, Editorial Policy — grouped separately from Company so trust/compliance pages read as their own scannable cluster, not buried in a generic list.
@@ -391,6 +392,7 @@ These extend the locked title/description into every surface Phase 9 already spe
   - TikTok: `https://www.tiktok.com/@bytetech247` (note: TikTok profile URLs require the `@` inside the path — don't drop it)
   - Applied to `Organization.sameAs` (Phase 9) — correct primary placement, these are the brand's official accounts. Also applied to `Person.sameAs` (the author) since this is a solo blog where the author and the brand are effectively the same public identity — reconsider only if a second author is ever added.
 - **Author identity** — real name confirmed: `Aboagye Annor`. `siteConfig.author.name` in Phase 0's config, `Person.name` in Phase 9's JSON-LD, and `AuthorBio` (Phase 2) on `/about` and per-post all use this — no more placeholder. `author.bio` (a short credentials line) is still not supplied; leave it empty/omitted rather than inventing one.
+- **Author photo** — real photo supplied, at `src/assets/author-aboagye-annor.jpg`. `AuthorBio.astro`'s current `.author-bio__avatar` is an empty placeholder div (`background-color: var(--color-border)`, no `<img>`) — replace it with the real photo via `astro:assets` (`<Image>`, so it gets the same AVIF/WebP treatment as other images per Phase 10), circular crop, required `alt="Aboagye Annor"`. Also use it as `Person.image` in the Phase 9 JSON-LD.
 - **Article byline placement (locked UI rule):** on the article page, render `By Aboagye Annor` immediately before the date in the post-meta line — same `<time>`/date formatting already in place (`toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })`), just with the byline prepended. Applies to the article template only (not the homepage/archive `PostCard`, which stays as-is unless explicitly extended later).
 
 ### Still open (not blocking Phase 0–8)
