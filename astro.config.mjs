@@ -3,6 +3,14 @@ import { defineConfig } from "astro/config";
 import mdx from "@astrojs/mdx";
 import tailwindcss from "@tailwindcss/vite";
 import { visit } from "unist-util-visit";
+import {
+  transformerMetaHighlight,
+  transformerNotationDiff,
+} from "@shikijs/transformers";
+import {
+  transformerFilename,
+  rehypeCodeBlockChrome,
+} from "./src/build/shiki-plugins.mjs";
 
 // GFM tables don't emit scope="col" on <th> by default — Phase 3 requires
 // it for accessibility/AI-GEO parsing of tabular content. GFM only ever
@@ -27,7 +35,22 @@ export default defineConfig({
   // rendered output; astro logs a deprecation warning pointing at a
   // unified()-based replacement, but the current API is still functional.
   markdown: {
-    rehypePlugins: [rehypeTableHeaderScope],
+    shikiConfig: {
+      // Phase 4: code blocks always render in this one fixed dark theme,
+      // regardless of the site's light/dark toggle (Phase 1/5) — a
+      // deliberate, documented exception to the token-only color rule
+      // (see Part III of build-spec.md). Explicit rather than relying on
+      // Astro's own github-dark default, so it can't drift silently.
+      theme: "github-dark",
+      // No wrap: true — code keeps its exact formatting/indentation and
+      // scrolls horizontally instead (same approach as GFM tables).
+      transformers: [
+        transformerMetaHighlight(),
+        transformerNotationDiff(),
+        transformerFilename(),
+      ],
+    },
+    rehypePlugins: [rehypeTableHeaderScope, rehypeCodeBlockChrome],
   },
   vite: {
     plugins: [tailwindcss()],
