@@ -9,6 +9,7 @@ import {
 } from "@shikijs/transformers";
 import {
   transformerFilename,
+  transformerFixCommentContrast,
   rehypeCodeBlockChrome,
 } from "./src/build/shiki-plugins.mjs";
 
@@ -48,6 +49,7 @@ export default defineConfig({
         transformerMetaHighlight(),
         transformerNotationDiff(),
         transformerFilename(),
+        transformerFixCommentContrast(),
       ],
     },
     rehypePlugins: [rehypeTableHeaderScope, rehypeCodeBlockChrome],

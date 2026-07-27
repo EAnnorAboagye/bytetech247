@@ -46,21 +46,55 @@ const {
     <ClientRouter />
   </head>
   <body>
+    <a href="#main-content" class="skip-link">Skip to content</a>
+
     <Header />
 
     {showReadingProgress && <div class="reading-progress" aria-hidden="true" />}
 
-    <main>
+    <main id="main-content" tabindex="-1">
       <slot />
     </main>
 
     <Footer />
 
     <CommandPalette />
+
+    <script>
+      // Astro's View Transitions swap content client-side, and can leave
+      // focus stranded on a now-detached element (or reset to <body> with
+      // no context) — it doesn't manage this correctly by default
+      // (build-spec.md Phase 6). Move focus to the new page's heading so
+      // screen reader users get proper context after every navigation.
+      document.addEventListener("astro:page-load", () => {
+        const heading = document.querySelector<HTMLElement>("main h1");
+        if (!heading) return;
+        if (!heading.hasAttribute("tabindex")) {
+          heading.setAttribute("tabindex", "-1");
+        }
+        heading.focus();
+      });
+    </script>
   </body>
 </html>
 
 <style>
+  .skip-link {
+    position: absolute;
+    top: -100%;
+    left: var(--spacing);
+    z-index: 100;
+    padding: calc(var(--spacing) * 2) calc(var(--spacing) * 3);
+    background-color: var(--color-accent);
+    color: var(--color-accent-fg);
+    border-radius: 0.375rem;
+    text-decoration: none;
+  }
+
+  .skip-link:focus {
+    top: var(--spacing);
+  }
+
   .reading-progress {
     position: sticky;
     top: 0;

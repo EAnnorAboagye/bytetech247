@@ -8,7 +8,7 @@ import Grid from "../components/layout/Grid.astro";
 import Stack from "../components/layout/Stack.astro";
 import HeroTile from "../components/HeroTile.astro";
 import PostCard from "../components/PostCard.astro";
-import { CATEGORIES } from "../config";
+import { CATEGORIES, siteConfig } from "../config";
 
 const allPosts = (await getCollection("blog")).sort(
   (a, b) => b.data.date.valueOf() - a.data.date.valueOf(),
@@ -21,6 +21,8 @@ const recentPosts = allPosts.slice(0, 6);
 <BaseLayout>
   <Center>
     <Stack space="12">
+      <h1 class="sr-only">{siteConfig.title}</h1>
+
       {
         heroPost && (
           <section aria-label="Featured post">

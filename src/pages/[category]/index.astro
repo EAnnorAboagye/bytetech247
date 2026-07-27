@@ -21,14 +21,14 @@ const posts = (
   title={`${categoryName} — Archive`}
   description={`All ${categoryName} posts.`}
 >
-  <p><a href="/">Home</a></p>
+  <p><a href="/" class="home-link">Home</a></p>
   <h1>{categoryName}</h1>
 
   {
     posts.length === 0 ? (
       <p>No posts yet in this category.</p>
     ) : (
-      <ul>
+      <ul class="post-list">
         {posts.map((post) => (
           <li>
             <a href={`/${post.data.category}/${post.id}/`}>{post.data.title}</a>
@@ -38,3 +38,12 @@ const posts = (
     )
   }
 </BaseLayout>
+
+<style>
+  .home-link,
+  .post-list a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+  }
+</style>

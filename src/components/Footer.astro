@@ -121,6 +121,10 @@ const socialLinks = Object.entries(siteConfig.social);
   }
 
   .site-footer__list a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+    padding-block: calc(var(--spacing) * 0.25);
     color: var(--color-fg-muted);
     text-decoration: none;
     font-size: var(--text-sm);

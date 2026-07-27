@@ -17,7 +17,7 @@ const posts = (await getCollection("blog")).sort(
     posts.length === 0 ? (
       <p>No posts yet.</p>
     ) : (
-      <ul>
+      <ul class="archive-list">
         {posts.map((post) => (
           <li>
             <a href={`/${post.data.category}/${post.id}/`}>{post.data.title}</a>
@@ -29,3 +29,11 @@ const posts = (await getCollection("blog")).sort(
     )
   }
 </BaseLayout>
+
+<style>
+  .archive-list a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+  }
+</style>

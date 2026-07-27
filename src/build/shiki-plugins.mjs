@@ -19,6 +19,33 @@ export function transformerFilename() {
   };
 }
 
+// github-dark's comment token color (#6A737D) fails WCAG AA contrast
+// (2.57:1 and 3.04:1, need 4.5:1) against this project's code-block
+// backgrounds. Same hue/chroma, lightness raised until both ratios clear
+// 4.5:1 (verified via culori): #9ca6b0 gives 5.02:1 and 5.93:1.
+const COMMENT_COLOR_FIX = { from: "#6A737D", to: "#9ca6b0" };
+
+/**
+ * Shiki bakes each token's color as an inline `style="color:#..."` on its
+ * span, so overriding via CSS would need a fragile attribute-value
+ * selector. Patching the span's inline style at transform time is more
+ * direct and only touches tokens that actually use the failing color.
+ */
+export function transformerFixCommentContrast() {
+  return {
+    name: "fix-comment-contrast",
+    span(node) {
+      const style = node.properties?.style;
+      if (typeof style === "string" && style.includes(COMMENT_COLOR_FIX.from)) {
+        node.properties.style = style.replaceAll(
+          COMMENT_COLOR_FIX.from,
+          COMMENT_COLOR_FIX.to,
+        );
+      }
+    },
+  };
+}
+
 /**
  * Wraps every Shiki-generated <pre> in chrome (filename tab + copy
  * button). Reading/selecting the code needs no JS; only the copy button's

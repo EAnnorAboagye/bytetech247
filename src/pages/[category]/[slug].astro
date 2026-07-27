@@ -53,7 +53,11 @@ const nextInSeries =
 >
   <div class="post-layout">
     <article class="post-article">
-      <p><a href={`/${post.data.category}/`}>← {categoryName}</a></p>
+      <p>
+        <a href={`/${post.data.category}/`} class="back-link">
+          ← {categoryName}
+        </a>
+      </p>
 
       <h1>{post.data.title}</h1>
       <p class="post-meta">
@@ -167,6 +171,12 @@ const nextInSeries =
     }
   }
 
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+  }
+
   .post-meta {
     font-size: var(--text-sm);
     color: var(--color-fg-muted);
@@ -197,6 +207,9 @@ const nextInSeries =
   }
 
   .series-nav__list a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
     color: var(--color-fg-muted);
     text-decoration: none;
   }
@@ -226,6 +239,9 @@ const nextInSeries =
   }
 
   .series-prev-next a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
     color: var(--color-accent);
     text-decoration: none;
   }
@@ -299,6 +315,9 @@ const nextInSeries =
   }
 
   .article-content :global(.code-block__copy) {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
     font-size: var(--text-xs);
     color: #8b949e;
     background: none;

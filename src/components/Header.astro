@@ -72,6 +72,9 @@ const topTagsByCategory = getTopTagsByCategory(posts);
   }
 
   .site-header__logo {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
     font-weight: 700;
     font-size: var(--text-lg);
     color: var(--color-fg);
@@ -101,6 +104,11 @@ const topTagsByCategory = getTopTagsByCategory(posts);
   }
 
   .site-header__mobile-toggle > summary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: calc(var(--spacing) * 5);
+    height: calc(var(--spacing) * 5);
     cursor: pointer;
     list-style: none;
   }

@@ -10,23 +10,20 @@ import { siteConfig, CATEGORIES } from "../config";
   <h1>404 — Page Not Found</h1>
   <p>That page doesn't exist. Try one of these instead:</p>
 
-  <form role="search" aria-label="Site search">
-    <label for="search-input">Search</label>
-    <input
-      id="search-input"
-      type="search"
-      name="q"
-      placeholder="Search (coming soon)"
-      disabled
-    />
-    <button type="submit" disabled>Search</button>
-  </form>
   <p>
-    <small>Full search ships in Phase 8 (Pagefind + command palette).</small>
+    <button type="button" class="palette-trigger" data-command-palette-trigger>
+      Search for a page (Ctrl+K)
+    </button>
+  </p>
+  <p>
+    <small
+      >Full content search ships in Phase 8 (Pagefind) — this jumps to pages by
+      name.</small
+    >
   </p>
 
-  <nav aria-label="Categories">
-    <ul>
+  <nav aria-label="Browse categories">
+    <ul class="category-list">
       {
         CATEGORIES.map((category) => (
           <li>
@@ -37,5 +34,22 @@ import { siteConfig, CATEGORIES } from "../config";
     </ul>
   </nav>
 
-  <p><a href="/">Back to homepage</a></p>
+  <p><a href="/" class="home-link">Back to homepage</a></p>
 </BaseLayout>
+
+<style>
+  .palette-trigger {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+    padding: calc(var(--spacing) * 0.5) var(--spacing);
+    cursor: pointer;
+  }
+
+  .category-list a,
+  .home-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+  }
+</style>
