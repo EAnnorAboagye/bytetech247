@@ -1,0 +1,140 @@
+---
+// build-spec.md §10 — five columns on desktop, collapses to a stacked list
+// on mobile (handled here by the Grid primitive's auto-fit reflow, no extra
+// breakpoint logic needed). Identical on every route.
+import { siteConfig, CATEGORIES } from "../config";
+import Grid from "./layout/Grid.astro";
+import Stack from "./layout/Stack.astro";
+
+const year = new Date().getFullYear();
+const socialLinks = Object.entries(siteConfig.social);
+---
+
+<footer class="site-footer">
+  <div class="site-footer__inner">
+    <Grid minItemWidth="10rem" space="6">
+      <Stack space="2">
+        <p class="site-footer__site-name">{siteConfig.name}</p>
+        <p class="site-footer__description">{siteConfig.description}</p>
+        {
+          socialLinks.length > 0 && (
+            <ul class="site-footer__list">
+              {socialLinks.map(([label, href]) => (
+                <li>
+                  <a href={href}>{label}</a>
+                </li>
+              ))}
+            </ul>
+          )
+        }
+      </Stack>
+
+      <Stack space="2" as="nav" aria-label="Categories">
+        <p class="site-footer__heading">Categories</p>
+        <ul class="site-footer__list">
+          {
+            CATEGORIES.map((category) => (
+              <li>
+                <a href={`/${category.slug}/`}>{category.name}</a>
+              </li>
+            ))
+          }
+        </ul>
+      </Stack>
+
+      <Stack space="2" as="nav" aria-label="Company">
+        <p class="site-footer__heading">Company</p>
+        <ul class="site-footer__list">
+          <li><a href="/about/">About</a></li>
+          <li><a href="/contact/">Contact</a></li>
+        </ul>
+      </Stack>
+
+      <Stack space="2" as="nav" aria-label="Legal">
+        <p class="site-footer__heading">Legal</p>
+        <ul class="site-footer__list">
+          <li><a href="/privacy/">Privacy</a></li>
+          <li><a href="/terms/">Terms &amp; Conditions</a></li>
+          <li>
+            <a href="/affiliate-disclosure/">Affiliate/Advertising Disclosure</a
+            >
+          </li>
+          <li><a href="/editorial-policy/">Editorial Policy</a></li>
+        </ul>
+      </Stack>
+
+      <!--
+        RSS feed and sitemap links intentionally omitted until Phase 9/11
+        ship those routes — adding them now would 404 (build-spec.md
+        Phase 0 Verify rule extends to every phase, not just Phase 0).
+      -->
+      <Stack space="2" as="nav" aria-label="Resources">
+        <p class="site-footer__heading">Resources</p>
+        <ul class="site-footer__list">
+          <li><a href="/archive/">All posts</a></li>
+        </ul>
+      </Stack>
+    </Grid>
+
+    <p class="site-footer__copyright">&copy; {year} {siteConfig.name}</p>
+  </div>
+</footer>
+
+<style>
+  .site-footer {
+    border-top: 1px solid var(--color-border);
+    background-color: var(--color-bg-subtle);
+  }
+
+  .site-footer__inner {
+    max-width: 72rem;
+    margin-inline: auto;
+    padding: calc(var(--spacing) * 6) calc(var(--spacing) * 4);
+  }
+
+  .site-footer__site-name {
+    font-weight: 700;
+    color: var(--color-fg);
+  }
+
+  .site-footer__description,
+  .site-footer__heading {
+    font-size: var(--text-sm);
+  }
+
+  .site-footer__heading {
+    font-weight: 600;
+    color: var(--color-fg);
+  }
+
+  .site-footer__description {
+    color: var(--color-fg-muted);
+  }
+
+  .site-footer__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--spacing) * 0.5);
+  }
+
+  .site-footer__list a {
+    color: var(--color-fg-muted);
+    text-decoration: none;
+    font-size: var(--text-sm);
+  }
+
+  .site-footer__list a:hover {
+    color: var(--color-accent);
+  }
+
+  .site-footer__copyright {
+    margin-top: calc(var(--spacing) * 6);
+    padding-top: calc(var(--spacing) * 4);
+    border-top: 1px solid var(--color-border);
+    font-size: var(--text-sm);
+    color: var(--color-fg-muted);
+  }
+</style>

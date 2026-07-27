@@ -1,0 +1,132 @@
+---
+// build-spec.md §10 — identical on every route. Static (not sticky) by
+// default, per the guardrail: sticky-on-scroll is an explicit Phase 13
+// upgrade, not something to default into.
+import { getCollection } from "astro:content";
+import { siteConfig } from "../config";
+import { getTopTagsByCategory } from "../lib/taxonomy";
+import CategoryNavList from "./CategoryNavList.astro";
+
+const posts = await getCollection("blog");
+const topTagsByCategory = getTopTagsByCategory(posts);
+---
+
+<header class="site-header">
+  <div class="site-header__bar">
+    <details class="site-header__mobile-toggle">
+      <summary aria-label="Open menu">
+        <span aria-hidden="true">&#9776;</span>
+      </summary>
+      <nav aria-label="Primary" class="site-header__mobile-nav">
+        <CategoryNavList
+          topTagsByCategory={topTagsByCategory}
+          variant="vertical"
+        />
+      </nav>
+    </details>
+
+    <a href="/" class="site-header__logo">{siteConfig.name}</a>
+
+    <nav aria-label="Primary" class="site-header__desktop-nav">
+      <CategoryNavList
+        topTagsByCategory={topTagsByCategory}
+        variant="horizontal"
+      />
+    </nav>
+
+    <div class="site-header__actions">
+      <button
+        type="button"
+        class="site-header__action"
+        disabled
+        aria-label="Search (coming soon)"
+      >
+        <span aria-hidden="true">&#8981;</span>
+      </button>
+      <button
+        type="button"
+        class="site-header__action"
+        disabled
+        aria-label="Toggle dark mode (coming soon)"
+      >
+        <span aria-hidden="true">&#9680;</span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<style>
+  .site-header {
+    position: relative;
+    border-bottom: 1px solid var(--color-border);
+    background-color: var(--color-bg);
+  }
+
+  .site-header__bar {
+    display: flex;
+    align-items: center;
+    gap: calc(var(--spacing) * 2);
+    max-width: 72rem;
+    margin-inline: auto;
+    padding: var(--spacing) calc(var(--spacing) * 4);
+  }
+
+  .site-header__logo {
+    font-weight: 700;
+    font-size: var(--text-lg);
+    color: var(--color-fg);
+    text-decoration: none;
+    margin-right: auto;
+  }
+
+  .site-header__actions {
+    display: flex;
+    gap: calc(var(--spacing) * 2);
+  }
+
+  .site-header__action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: calc(var(--spacing) * 5);
+    height: calc(var(--spacing) * 5);
+    border-radius: 9999px;
+    border: 1px solid var(--color-border);
+    background: none;
+    color: var(--color-fg-muted);
+  }
+
+  .site-header__mobile-toggle {
+    display: none;
+  }
+
+  .site-header__mobile-toggle > summary {
+    cursor: pointer;
+    list-style: none;
+  }
+
+  .site-header__mobile-toggle > summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .site-header__mobile-nav {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 100%;
+    background-color: var(--color-bg);
+    border-bottom: 1px solid var(--color-border);
+    padding: calc(var(--spacing) * 4);
+  }
+
+  @media (max-width: 48rem) {
+    .site-header__mobile-toggle {
+      display: block;
+      order: -1;
+    }
+
+    .site-header__desktop-nav {
+      display: none;
+    }
+  }
+</style>

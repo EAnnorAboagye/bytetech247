@@ -1,0 +1,81 @@
+---
+// Single component reused at the bottom of every post (Phase 9) and on
+// /about (wired below). siteConfig.author.name is an open item (§11) —
+// not yet supplied — so this renders a plain placeholder instead of a
+// fabricated identity until real details land.
+import { siteConfig } from "../config";
+
+const hasAuthor = siteConfig.author.name.length > 0;
+const socialLinks = Object.entries(siteConfig.social);
+---
+
+{
+  hasAuthor ? (
+    <div class="author-bio">
+      <div class="author-bio__avatar" aria-hidden="true" />
+      <div>
+        <p class="author-bio__name">{siteConfig.author.name}</p>
+        {siteConfig.author.bio && (
+          <p class="author-bio__credentials">{siteConfig.author.bio}</p>
+        )}
+        {socialLinks.length > 0 && (
+          <ul class="author-bio__links">
+            {socialLinks.map(([label, href]) => (
+              <li>
+                <a href={href}>{label}</a>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
+  ) : (
+    <p class="author-bio__placeholder">Author details coming soon.</p>
+  )
+}
+
+<style>
+  .author-bio {
+    display: flex;
+    align-items: center;
+    gap: calc(var(--spacing) * 3);
+  }
+
+  .author-bio__avatar {
+    width: calc(var(--spacing) * 8);
+    height: calc(var(--spacing) * 8);
+    border-radius: 9999px;
+    background-color: var(--color-border);
+    flex-shrink: 0;
+  }
+
+  .author-bio__name {
+    font-weight: 600;
+    color: var(--color-fg);
+  }
+
+  .author-bio__credentials {
+    font-size: var(--text-sm);
+    color: var(--color-fg-muted);
+  }
+
+  .author-bio__links {
+    list-style: none;
+    display: flex;
+    gap: calc(var(--spacing) * 2);
+    margin: calc(var(--spacing) * 1) 0 0;
+    padding: 0;
+    font-size: var(--text-sm);
+  }
+
+  .author-bio__links a {
+    color: var(--color-accent);
+    text-decoration: none;
+  }
+
+  .author-bio__placeholder {
+    font-size: var(--text-sm);
+    color: var(--color-fg-muted);
+    font-style: italic;
+  }
+</style>

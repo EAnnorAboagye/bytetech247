@@ -1,0 +1,24 @@
+---
+import { cva, type VariantProps } from "class-variance-authority";
+
+const badge = cva("inline-flex items-center rounded-full font-medium", {
+  variants: {
+    intent: {
+      neutral: "bg-bg-subtle text-fg-muted",
+      accent: "bg-accent text-accent-fg",
+    },
+    size: {
+      sm: "text-xs px-2 py-0.5",
+      md: "text-sm px-2.5 py-1",
+    },
+  },
+  defaultVariants: { intent: "neutral", size: "sm" },
+});
+
+type Props = VariantProps<typeof badge> & { class?: string };
+const { intent, size, class: className } = Astro.props;
+---
+
+<span class:list={[badge({ intent, size }), className]}>
+  <slot />
+</span>

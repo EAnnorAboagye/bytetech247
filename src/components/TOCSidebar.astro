@@ -1,0 +1,80 @@
+---
+// Structural sidebar container (Phase 2). Astro's render() already returns
+// a `headings` array extracted from the MDX content, so Phase 3 can wire
+// this in directly on the post page without any custom parsing. Scroll-spy
+// active-item highlighting is a Phase 5 (Interaction Layer) enhancement on
+// top of this — this component is fully usable with zero JS as-is (real
+// #anchor links).
+interface Heading {
+  depth: number;
+  slug: string;
+  text: string;
+}
+
+interface Props {
+  headings?: Heading[];
+}
+
+const { headings = [] } = Astro.props;
+---
+
+{
+  headings.length > 0 && (
+    <nav aria-label="Table of contents" class="toc-sidebar">
+      <p class="toc-sidebar__heading">On this page</p>
+      <ul class="toc-sidebar__list">
+        {headings.map((heading) => (
+          <li
+            class:list={[
+              "toc-sidebar__item",
+              `toc-sidebar__item--depth-${heading.depth}`,
+            ]}
+          >
+            <a href={`#${heading.slug}`}>{heading.text}</a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  )
+}
+
+<style>
+  .toc-sidebar {
+    position: sticky;
+    top: calc(var(--spacing) * 4);
+    font-size: var(--text-sm);
+  }
+
+  .toc-sidebar__heading {
+    font-weight: 600;
+    color: var(--color-fg);
+    margin-bottom: calc(var(--spacing) * 2);
+  }
+
+  .toc-sidebar__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing);
+    border-left: 1px solid var(--color-border);
+  }
+
+  .toc-sidebar__item {
+    padding-left: calc(var(--spacing) * 2);
+  }
+
+  .toc-sidebar__item--depth-3 {
+    padding-left: calc(var(--spacing) * 4);
+  }
+
+  .toc-sidebar__item a {
+    color: var(--color-fg-muted);
+    text-decoration: none;
+  }
+
+  .toc-sidebar__item a:hover {
+    color: var(--color-accent);
+  }
+</style>

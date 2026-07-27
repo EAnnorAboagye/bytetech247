@@ -16,4 +16,15 @@ export default tseslint.config(
       globals: { ...globals.node },
     },
   },
+  {
+    // typescript-eslint's own guidance: base ESLint's no-undef doesn't
+    // understand TS-only global types (HTMLElementTagNameMap, etc.) used
+    // in type positions and produces false positives here — the
+    // TypeScript compiler (astro check) already catches real undefined
+    // references more accurately.
+    files: ["**/*.ts", "**/*.astro"],
+    rules: {
+      "no-undef": "off",
+    },
+  },
 );
