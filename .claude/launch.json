@@ -4,7 +4,12 @@
     {
       "name": "bytetech247-preview",
       "runtimeExecutable": "C:\\Users\\0245\\AppData\\Local\\Microsoft\\WinGet\\Packages\\OpenJS.NodeJS.LTS_Microsoft.Winget.Source_8wekyb3d8bbwe\\node-v24.18.0-win-x64\\node.exe",
-      "runtimeArgs": ["node_modules/astro/bin/astro.mjs", "preview", "--port", "4321"],
+      "runtimeArgs": [
+        "node_modules/astro/bin/astro.mjs",
+        "preview",
+        "--port",
+        "4321"
+      ],
       "port": 4321
     }
   ]
