@@ -1,36 +1,91 @@
 ---
+import { ClientRouter } from "astro:transitions";
 import "../styles/global.css";
 import { siteConfig } from "../config";
 import Header from "../components/Header.astro";
 import Footer from "../components/Footer.astro";
+import CommandPalette from "../components/CommandPalette.astro";
 
 interface Props {
   title?: string;
   description?: string;
+  showReadingProgress?: boolean;
 }
 
-const { title = siteConfig.title, description = siteConfig.description } =
-  Astro.props;
+const {
+  title = siteConfig.title,
+  description = siteConfig.description,
+  showReadingProgress = false,
+} = Astro.props;
 ---
 
 <!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
+    <script is:inline>
+      // Dark mode, applied before first paint to avoid a flash of the
+      // wrong theme (build-spec.md Phase 5) — a manually-saved preference
+      // wins, otherwise this follows the system preference.
+      (function () {
+        const stored = localStorage.getItem("theme");
+        const theme =
+          stored ??
+          (window.matchMedia("(prefers-color-scheme: dark)").matches
+            ? "dark"
+            : "light");
+        document.documentElement.setAttribute("data-theme", theme);
+      })();
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={siteConfig.url} />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="generator" content={Astro.generator} />
+    <ClientRouter />
   </head>
   <body>
     <Header />
+
+    {showReadingProgress && <div class="reading-progress" aria-hidden="true" />}
 
     <main>
       <slot />
     </main>
 
     <Footer />
+
+    <CommandPalette />
   </body>
 </html>
+
+<style>
+  .reading-progress {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    height: 3px;
+    background-color: var(--color-accent);
+    transform-origin: left;
+    transform: scaleX(0);
+    animation: reading-progress-fill linear;
+    animation-timeline: scroll(root);
+  }
+
+  @keyframes reading-progress-fill {
+    from {
+      transform: scaleX(0);
+    }
+    to {
+      transform: scaleX(1);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .reading-progress {
+      animation: none;
+      transform: scaleX(0);
+    }
+  }
+</style>

@@ -38,16 +38,16 @@ const topTagsByCategory = getTopTagsByCategory(posts);
       <button
         type="button"
         class="site-header__action"
-        disabled
-        aria-label="Search (coming soon)"
+        data-command-palette-trigger
+        aria-label="Search (Ctrl+K)"
       >
         <span aria-hidden="true">&#8981;</span>
       </button>
       <button
         type="button"
         class="site-header__action"
-        disabled
-        aria-label="Toggle dark mode (coming soon)"
+        data-theme-toggle
+        aria-label="Toggle dark mode"
       >
         <span aria-hidden="true">&#9680;</span>
       </button>
@@ -130,3 +130,19 @@ const topTagsByCategory = getTopTagsByCategory(posts);
     }
   }
 </style>
+
+<script>
+  // Document-delegated (not attached to a specific button element) so it
+  // keeps working after Astro view-transition navigations re-render the
+  // header — and since this script module is shared across every page,
+  // it only ever registers the listener once, not once per navigation.
+  document.addEventListener("click", (event) => {
+    const toggle = (event.target as HTMLElement).closest("[data-theme-toggle]");
+    if (!toggle) return;
+
+    const current = document.documentElement.getAttribute("data-theme");
+    const next = current === "dark" ? "light" : "dark";
+    document.documentElement.setAttribute("data-theme", next);
+    localStorage.setItem("theme", next);
+  });
+</script>

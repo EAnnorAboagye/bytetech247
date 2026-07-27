@@ -84,11 +84,22 @@ const { headings = [] } = Astro.props;
 </style>
 
 <script>
-  const links = document.querySelectorAll<HTMLAnchorElement>(
-    ".toc-sidebar__list a",
-  );
+  // Astro's View Transitions swap page content client-side without a full
+  // reload, so a plain top-level scan (as opposed to one keyed off
+  // astro:page-load) would only ever see the *first* page's headings —
+  // scroll-spy would silently stop updating after the first navigation.
+  // astro:page-load fires on the initial load too, so this doesn't also
+  // need a direct call.
+  let observer: IntersectionObserver | null = null;
 
-  if (links.length > 0) {
+  function setupScrollSpy() {
+    observer?.disconnect();
+
+    const links = document.querySelectorAll<HTMLAnchorElement>(
+      ".toc-sidebar__list a",
+    );
+    if (links.length === 0) return;
+
     const headingByLink = new Map<HTMLAnchorElement, HTMLElement>();
     for (const link of links) {
       const heading = document.getElementById(link.hash.slice(1));
@@ -99,7 +110,7 @@ const { headings = [] } = Astro.props;
       [...headingByLink.entries()].map(([link, heading]) => [heading.id, link]),
     );
 
-    const observer = new IntersectionObserver(
+    observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
           if (!entry.isIntersecting) continue;
@@ -114,4 +125,6 @@ const { headings = [] } = Astro.props;
 
     for (const heading of headingByLink.values()) observer.observe(heading);
   }
+
+  document.addEventListener("astro:page-load", setupScrollSpy);
 </script>
