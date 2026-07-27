@@ -1,0 +1,21 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { siteConfig } from "../config";
+---
+
+<BaseLayout
+  title={`About — ${siteConfig.name}`}
+  description={`About ${siteConfig.name} and its author.`}
+>
+  <h1>About</h1>
+  <p>
+    {siteConfig.name} is a single-author technical blog covering Dev Tools, Data &amp;
+    Automation, AI Productivity, and Guides &amp; Fixes.
+  </p>
+  <p>
+    This page doubles as the author bio page (build-spec.md Phase 9) — this is a
+    single-author blog, so there is no separate <code>/about/[author]</code> route.
+    The full author bio component (avatar, credentials, links) lands in Phase 2/9
+    once real author details are supplied.
+  </p>
+</BaseLayout>

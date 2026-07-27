@@ -1,0 +1,7 @@
+@import "tailwindcss";
+
+/*
+ * Phase 1 (Design Token System) owns the actual token values and the
+ * `@layer reset, tokens, base, components, utilities, overrides` structure.
+ * This file only wires Tailwind into the build for now.
+ */

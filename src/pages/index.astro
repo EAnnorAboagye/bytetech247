@@ -1,0 +1,24 @@
+---
+// Phase 2 replaces this with the full bento hero -> Recent -> per-category
+// grid composition (build-spec.md Phase 2). This is scaffold-only, enough
+// to prove the layout and category links resolve.
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { siteConfig, CATEGORIES } from "../config";
+---
+
+<BaseLayout>
+  <h1>{siteConfig.name}</h1>
+  <p>{siteConfig.description}</p>
+
+  <p><a href="/archive/">Browse all posts</a></p>
+
+  <ul>
+    {
+      CATEGORIES.map((category) => (
+        <li>
+          <a href={`/${category.slug}/`}>{category.name}</a>
+        </li>
+      ))
+    }
+  </ul>
+</BaseLayout>

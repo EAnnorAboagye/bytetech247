@@ -1,0 +1,41 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { siteConfig, CATEGORIES } from "../config";
+---
+
+<BaseLayout
+  title={`Page Not Found — ${siteConfig.name}`}
+  description="The page you're looking for doesn't exist."
+>
+  <h1>404 — Page Not Found</h1>
+  <p>That page doesn't exist. Try one of these instead:</p>
+
+  <form role="search" aria-label="Site search">
+    <label for="search-input">Search</label>
+    <input
+      id="search-input"
+      type="search"
+      name="q"
+      placeholder="Search (coming soon)"
+      disabled
+    />
+    <button type="submit" disabled>Search</button>
+  </form>
+  <p>
+    <small>Full search ships in Phase 8 (Pagefind + command palette).</small>
+  </p>
+
+  <nav aria-label="Categories">
+    <ul>
+      {
+        CATEGORIES.map((category) => (
+          <li>
+            <a href={`/${category.slug}/`}>{category.name}</a>
+          </li>
+        ))
+      }
+    </ul>
+  </nav>
+
+  <p><a href="/">Back to homepage</a></p>
+</BaseLayout>

@@ -1,0 +1,40 @@
+---
+import { getCollection } from "astro:content";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { CATEGORIES, getCategoryName } from "../../config";
+
+export function getStaticPaths() {
+  return CATEGORIES.map((category) => ({
+    params: { category: category.slug },
+  }));
+}
+
+const { category } = Astro.params;
+const categoryName = getCategoryName(category);
+
+const posts = (
+  await getCollection("blog", (post) => post.data.category === category)
+).sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+---
+
+<BaseLayout
+  title={`${categoryName} — Archive`}
+  description={`All ${categoryName} posts.`}
+>
+  <p><a href="/">Home</a></p>
+  <h1>{categoryName}</h1>
+
+  {
+    posts.length === 0 ? (
+      <p>No posts yet in this category.</p>
+    ) : (
+      <ul>
+        {posts.map((post) => (
+          <li>
+            <a href={`/${post.data.category}/${post.id}/`}>{post.data.title}</a>
+          </li>
+        ))}
+      </ul>
+    )
+  }
+</BaseLayout>

@@ -1,0 +1,29 @@
+---
+import { getCollection, render } from "astro:content";
+import type { InferGetStaticPropsType } from "astro";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { getCategoryName } from "../../config";
+
+export async function getStaticPaths() {
+  const posts = await getCollection("blog");
+  return posts.map((post) => ({
+    params: { category: post.data.category, slug: post.id },
+    props: { post },
+  }));
+}
+
+type Props = InferGetStaticPropsType<typeof getStaticPaths>;
+
+const { post } = Astro.props as Props;
+const { Content } = await render(post);
+const categoryName = getCategoryName(post.data.category);
+---
+
+<BaseLayout
+  title={`${post.data.title} — ${categoryName}`}
+  description={post.data.description}
+>
+  <p><a href={`/${post.data.category}/`}>← {categoryName}</a></p>
+  <h1>{post.data.title}</h1>
+  <Content />
+</BaseLayout>

@@ -1,0 +1,16 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { siteConfig } from "../config";
+---
+
+<BaseLayout
+  title={`Editorial Policy — ${siteConfig.name}`}
+  description={`${siteConfig.name}'s sourcing, fact-checking, and correction practices.`}
+>
+  <h1>Editorial Policy</h1>
+  <p>
+    This is a placeholder. Replace this page with {siteConfig.name}'s actual
+    sourcing, fact-checking, and correction practices before launch (referenced
+    from <a href="/about/">/about</a>, per build-spec.md Phase 9).
+  </p>
+</BaseLayout>

@@ -1,0 +1,8 @@
+dist/
+.astro/
+node_modules/
+package-lock.json
+
+# Pre-existing spec docs — not part of the generated project, don't reformat.
+BUILD-GUARDRAILS.md
+build-spec.md

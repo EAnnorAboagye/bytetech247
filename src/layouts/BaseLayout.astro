@@ -1,0 +1,101 @@
+---
+import "../styles/global.css";
+import { siteConfig, CATEGORIES } from "../config";
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const { title = siteConfig.title, description = siteConfig.description } =
+  Astro.props;
+const year = new Date().getFullYear();
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={siteConfig.url} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="generator" content={Astro.generator} />
+  </head>
+  <body>
+    <header>
+      <nav aria-label="Primary">
+        <a href="/">{siteConfig.name}</a>
+        <ul>
+          {
+            CATEGORIES.map((category) => (
+              <li>
+                <a href={`/${category.slug}/`}>{category.name}</a>
+              </li>
+            ))
+          }
+        </ul>
+      </nav>
+    </header>
+
+    <main>
+      <slot />
+    </main>
+
+    <footer>
+      <div>
+        <p>{siteConfig.name}</p>
+        <p>{siteConfig.description}</p>
+      </div>
+
+      <nav aria-label="Categories">
+        <p>Categories</p>
+        <ul>
+          {
+            CATEGORIES.map((category) => (
+              <li>
+                <a href={`/${category.slug}/`}>{category.name}</a>
+              </li>
+            ))
+          }
+        </ul>
+      </nav>
+
+      <nav aria-label="Company">
+        <p>Company</p>
+        <ul>
+          <li><a href="/about/">About</a></li>
+          <li><a href="/contact/">Contact</a></li>
+        </ul>
+      </nav>
+
+      <nav aria-label="Legal">
+        <p>Legal</p>
+        <ul>
+          <li><a href="/privacy/">Privacy</a></li>
+          <li><a href="/terms/">Terms &amp; Conditions</a></li>
+          <li>
+            <a href="/affiliate-disclosure/">Affiliate/Advertising Disclosure</a
+            >
+          </li>
+          <li><a href="/editorial-policy/">Editorial Policy</a></li>
+        </ul>
+      </nav>
+
+      <!--
+        RSS feed and sitemap links intentionally omitted from Resources for
+        now — those routes don't exist until Phase 9/11. Adding them here
+        would 404 and fail this phase's Verify step.
+      -->
+      <nav aria-label="Resources">
+        <p>Resources</p>
+        <ul>
+          <li><a href="/archive/">All posts</a></li>
+        </ul>
+      </nav>
+
+      <p>&copy; {year} {siteConfig.name}</p>
+    </footer>
+  </body>
+</html>
