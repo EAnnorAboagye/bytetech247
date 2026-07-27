@@ -390,6 +390,8 @@ These extend the locked title/description into every surface Phase 9 already spe
   - Instagram: `https://www.instagram.com/bytetech247`
   - TikTok: `https://www.tiktok.com/@bytetech247` (note: TikTok profile URLs require the `@` inside the path — don't drop it)
   - Applied to `Organization.sameAs` (Phase 9) — correct primary placement, these are the brand's official accounts. Also applied to `Person.sameAs` (the author) since this is a solo blog where the author and the brand are effectively the same public identity — reconsider only if a second author is ever added.
+- **Author identity** — real name confirmed: `Aboagye Annor`. `siteConfig.author.name` in Phase 0's config, `Person.name` in Phase 9's JSON-LD, and `AuthorBio` (Phase 2) on `/about` and per-post all use this — no more placeholder. `author.bio` (a short credentials line) is still not supplied; leave it empty/omitted rather than inventing one.
+- **Article byline placement (locked UI rule):** on the article page, render `By Aboagye Annor` immediately before the date in the post-meta line — same `<time>`/date formatting already in place (`toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })`), just with the byline prepended. Applies to the article template only (not the homepage/archive `PostCard`, which stays as-is unless explicitly extended later).
 
 ### Still open (not blocking Phase 0–8)
 - Whether `bytetech247.workers.dev` is the permanent public URL or an eventual custom domain (e.g. `bytetech247.com`) gets attached later — this is a deliberate business decision, not an architecture default; the spec as written treats the `workers.dev` subdomain as the real, permanent live URL unless told otherwise.
