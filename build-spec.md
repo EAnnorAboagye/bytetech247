@@ -1,6 +1,6 @@
 # ByteTech247 — Build Spec
 
-**Version:** 3.1 · **Status:** Audited and hardened, ready for build · **Stack:** Astro + MDX + Tailwind + Pagefind, hosted on Cloudflare Workers (Static Assets) with Worker routes / KV
+**Version:** 3.2 · **Status:** Audited and hardened, ready for build · **Stack:** Astro + MDX + Tailwind + Pagefind, hosted on Cloudflare Workers (Static Assets) with Worker routes / KV
 **Live URL (locked):** `https://bytetech247.workers.dev` — deployed as a single native Cloudflare Worker named `bytetech247`, not a Cloudflare Pages project (Pages projects cannot use a `*.workers.dev` domain — only standalone Workers get one). See §11 for the full brand/SEO identity lock, and Phase 11 for the deploy mechanics this implies.
 
 **Definition of Done (applies to every phase below):** a phase is complete only when `npm run build` succeeds, Lighthouse CI passes with no regression, the phase's own **Verify** step passes, and every listed item is actually implemented — not scaffolded and left half-done. Work one phase at a time in this order; do not skip ahead.
@@ -382,9 +382,16 @@ These extend the locked title/description into every surface Phase 9 already spe
 - **RSS feed titles** (Phase 9): sitewide feed titled "ByteTech247"; per-category feeds titled "ByteTech247 — [Category Name]".
 - **Footer copyright line** (§10): "© [current year] ByteTech247".
 
-### Open items to resolve before Phase 9/11 (not blocking Phase 0–8)
-- Real logo asset (square, for `Organization.logo` and favicon/OG branding) — not yet supplied.
-- Real social/handle links (for `sameAs` and the footer social row) — not yet supplied. Don't invent a `@bytetech247` handle on any platform until it's actually registered.
+### Resolved (v3.2): logo + social identity
+- **Logo/favicon assets** — designed and committed at repo root under `brand-assets/`: `favicon.svg` (32×32, simplified mark, no status dot — kept ultra-legible at 16–32px), `logo-mark.svg` (128×128, full mark with amber status dot, for app icons/social avatars/`Organization.logo`), `logo-full.svg` (horizontal lockup, mark + "ByteTech247" wordmark, for the site header). Brand teal `#0D9488`, accent amber `#F59E0B`. Google accepts SVG directly for `Organization.logo` (min. 112×112 — `logo-mark.svg` at 128×128 clears this), but also export a PNG fallback (e.g. 512×512) during Phase 0/10 asset setup for universal compatibility with tools that don't parse SVG.
+- **Social/`sameAs` links** — real accounts, all `@bytetech247`:
+  - Facebook: `https://www.facebook.com/bytetech247`
+  - X: `https://x.com/bytetech247`
+  - Instagram: `https://www.instagram.com/bytetech247`
+  - TikTok: `https://www.tiktok.com/@bytetech247` (note: TikTok profile URLs require the `@` inside the path — don't drop it)
+  - Applied to `Organization.sameAs` (Phase 9) — correct primary placement, these are the brand's official accounts. Also applied to `Person.sameAs` (the author) since this is a solo blog where the author and the brand are effectively the same public identity — reconsider only if a second author is ever added.
+
+### Still open (not blocking Phase 0–8)
 - Whether `bytetech247.workers.dev` is the permanent public URL or an eventual custom domain (e.g. `bytetech247.com`) gets attached later — this is a deliberate business decision, not an architecture default; the spec as written treats the `workers.dev` subdomain as the real, permanent live URL unless told otherwise.
 
 ---
