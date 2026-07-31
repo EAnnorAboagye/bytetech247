@@ -11,18 +11,20 @@
 @theme {
   /*
    * Colors — OKLCH, one neutral hue+chroma source (250, 0.012) and one
-   * accent hue (264). These are the light-mode values; dark-mode
-   * overrides live in the `tokens` layer below, which sits above this
-   * `theme` layer so it always wins when applicable. Every pairing here
-   * is validated against WCAG AA by scripts/check-contrast.mjs — re-run
-   * it before changing any of these values.
+   * accent hue (177 — deep teal, matching public/logo-mark.svg's "lit
+   * bit" fill rather than an arbitrary hue). These are the light-mode
+   * values; dark-mode overrides live in the `tokens` layer below, which
+   * sits above this `theme` layer so it always wins when applicable.
+   * Every pairing here is validated against WCAG AA by
+   * scripts/check-contrast.mjs — re-run it before changing any of these
+   * values.
    */
   --color-bg: oklch(0.985 0.012 250);
   --color-bg-subtle: oklch(0.955 0.012 250);
   --color-border: oklch(0.64 0.012 250);
   --color-fg: oklch(0.19 0.012 250);
   --color-fg-muted: oklch(0.46 0.012 250);
-  --color-accent: oklch(0.48 0.19 264);
+  --color-accent: oklch(0.46 0.11 177);
   --color-accent-fg: oklch(0.98 0.012 250);
 
   /*
@@ -40,6 +42,18 @@
   --text-3xl: clamp(2.1362rem, 2.0345rem + 0.5087vw, 2.4414rem);
   --text-4xl: clamp(2.6703rem, 2.5431rem + 0.6358vw, 3.0518rem);
   --text-5xl: clamp(3.3379rem, 3.179rem + 0.7947vw, 3.8147rem);
+
+  /*
+   * Type families — self-hosted IBM Plex (@font-face rules below this
+   * block). Plex Sans carries body copy; Plex Mono is the display face
+   * (logotype, headings) — a deliberate choice, not the usual
+   * code-only role, matching the brand mark's "byte" identity.
+   */
+  --font-body:
+    "Plex Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    Helvetica, Arial, sans-serif;
+  --font-display:
+    "Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
 
   /*
    * Spacing — 8px grid. Tailwind v4's `--spacing` is the multiplier for
@@ -76,7 +90,7 @@
       --color-border: oklch(0.5 0.012 250);
       --color-fg: oklch(0.96 0.012 250);
       --color-fg-muted: oklch(0.68 0.012 250);
-      --color-accent: oklch(0.75 0.14 264);
+      --color-accent: oklch(0.78 0.12 177);
       --color-accent-fg: oklch(0.15 0.012 250);
     }
   }
@@ -87,7 +101,7 @@
     --color-border: oklch(0.5 0.012 250);
     --color-fg: oklch(0.96 0.012 250);
     --color-fg-muted: oklch(0.68 0.012 250);
-    --color-accent: oklch(0.75 0.14 264);
+    --color-accent: oklch(0.78 0.12 177);
     --color-accent-fg: oklch(0.15 0.012 250);
   }
 
@@ -97,7 +111,7 @@
     --color-border: oklch(0.64 0.012 250);
     --color-fg: oklch(0.19 0.012 250);
     --color-fg-muted: oklch(0.46 0.012 250);
-    --color-accent: oklch(0.48 0.19 264);
+    --color-accent: oklch(0.46 0.11 177);
     --color-accent-fg: oklch(0.98 0.012 250);
   }
 }
@@ -119,29 +133,50 @@
   }
 }
 
+/*
+ * Self-hosted, subsetted (Latin-only) IBM Plex — build-spec.md Phase 1/10's
+ * font-self-hosting requirement. `font-display: optional` per spec: on a
+ * slow connection the fallback stack is used permanently for that page
+ * view rather than reflowing text after a late font swap.
+ */
+@font-face {
+  font-family: "Plex Sans";
+  font-style: normal;
+  font-weight: 400;
+  font-display: optional;
+  src: url("/fonts/plex-sans-400.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Plex Sans";
+  font-style: normal;
+  font-weight: 600;
+  font-display: optional;
+  src: url("/fonts/plex-sans-600.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Plex Mono";
+  font-style: normal;
+  font-weight: 500;
+  font-display: optional;
+  src: url("/fonts/plex-mono-500.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Plex Mono";
+  font-style: normal;
+  font-weight: 700;
+  font-display: optional;
+  src: url("/fonts/plex-mono-700.woff2") format("woff2");
+}
+
 @layer base {
-  /*
-   * Deliberate: no self-hosted webfont is wired in. build-spec.md Phase 1/10
-   * calls for a self-hosted, subsetted font, but that requires a real font
-   * asset choice (design decision) and a subsetting step this pass doesn't
-   * have inputs for. The system font stack (below) is a legitimate,
-   * zero-request-cost baseline in the meantime — swap in a `@font-face`
-   * block here (with `font-display: optional` per spec) once a typeface is
-   * chosen, rather than treating this as an oversight.
-   */
   body {
     background-color: var(--color-bg);
     color: var(--color-fg);
     font-size: var(--text-base);
-    font-family:
-      ui-sans-serif,
-      system-ui,
-      -apple-system,
-      "Segoe UI",
-      Roboto,
-      Helvetica,
-      Arial,
-      sans-serif;
+    font-family: var(--font-body);
   }
 
   /*
@@ -166,6 +201,9 @@
   h4,
   h5,
   h6 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    letter-spacing: -0.02em;
     text-wrap: balance;
   }
 

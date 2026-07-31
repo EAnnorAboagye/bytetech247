@@ -1,6 +1,14 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 72">
-  <rect x="4" y="4" width="64" height="64" rx="14" fill="#0D9488"/>
-  <text x="36" y="47" text-anchor="middle" font-family="-apple-system, Segoe UI, Roboto, sans-serif" font-weight="700" font-size="26" fill="#FFFFFF">&lt;/&gt;</text>
-  <circle cx="58" cy="58" r="7" fill="#F59E0B" stroke="#0D9488" stroke-width="2.5"/>
-  <text x="84" y="46" font-family="-apple-system, Segoe UI, Roboto, sans-serif" font-weight="700" font-size="30" fill="#0F172A">ByteTech247</text>
+  <g transform="translate(4,4) scale(0.5)">
+    <rect width="128" height="128" rx="24" fill="#0B120F"/>
+    <rect x="15" y="41" width="20" height="20" rx="4" fill="none" stroke="#6B7D77" stroke-opacity="0.55" stroke-width="4"/>
+    <rect x="41" y="41" width="20" height="20" rx="4" fill="none" stroke="#6B7D77" stroke-opacity="0.55" stroke-width="4"/>
+    <rect x="67" y="41" width="20" height="20" rx="4" fill="#14957F"/>
+    <rect x="93" y="41" width="20" height="20" rx="4" fill="none" stroke="#6B7D77" stroke-opacity="0.55" stroke-width="4"/>
+    <rect x="15" y="67" width="20" height="20" rx="4" fill="none" stroke="#6B7D77" stroke-opacity="0.55" stroke-width="4"/>
+    <rect x="41" y="67" width="20" height="20" rx="4" fill="none" stroke="#6B7D77" stroke-opacity="0.55" stroke-width="4"/>
+    <rect x="67" y="67" width="20" height="20" rx="4" fill="none" stroke="#6B7D77" stroke-opacity="0.55" stroke-width="4"/>
+    <rect x="93" y="67" width="20" height="20" rx="4" fill="none" stroke="#6B7D77" stroke-opacity="0.55" stroke-width="4"/>
+  </g>
+  <text x="84" y="46" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-weight="700" font-size="28" letter-spacing="-1" fill="#0B120F">ByteTech<tspan fill="#B8874A">247</tspan></text>
 </svg>

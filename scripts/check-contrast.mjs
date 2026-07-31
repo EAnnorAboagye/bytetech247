@@ -5,7 +5,7 @@ import { wcagContrast, formatHex } from "culori";
 // from that same source, per Phase 1's "one source, not two palettes" rule.
 const NEUTRAL_H = 250;
 const NEUTRAL_C = 0.012;
-const ACCENT_H = 264;
+const ACCENT_H = 177;
 
 const tokens = {
   light: {
@@ -14,7 +14,7 @@ const tokens = {
     border: { l: 0.64, c: NEUTRAL_C, h: NEUTRAL_H },
     fgMuted: { l: 0.46, c: NEUTRAL_C, h: NEUTRAL_H },
     fg: { l: 0.19, c: NEUTRAL_C, h: NEUTRAL_H },
-    accent: { l: 0.48, c: 0.19, h: ACCENT_H },
+    accent: { l: 0.46, c: 0.11, h: ACCENT_H },
     accentFg: { l: 0.98, c: NEUTRAL_C, h: NEUTRAL_H },
   },
   dark: {
@@ -23,7 +23,7 @@ const tokens = {
     border: { l: 0.5, c: NEUTRAL_C, h: NEUTRAL_H },
     fgMuted: { l: 0.68, c: NEUTRAL_C, h: NEUTRAL_H },
     fg: { l: 0.96, c: NEUTRAL_C, h: NEUTRAL_H },
-    accent: { l: 0.75, c: 0.14, h: ACCENT_H },
+    accent: { l: 0.78, c: 0.12, h: ACCENT_H },
     accentFg: { l: 0.15, c: NEUTRAL_C, h: NEUTRAL_H },
   },
 };
