@@ -17,10 +17,10 @@ function organization(): JsonLdObject {
     name: siteConfig.name,
     url: siteConfig.url,
   };
-  if (siteConfig.defaultOgImage) {
+  if (siteConfig.logoImage) {
     org.logo = {
       "@type": "ImageObject",
-      url: absoluteUrl(siteConfig.defaultOgImage),
+      url: absoluteUrl(siteConfig.logoImage),
     };
   }
   const sameAs = Object.values(siteConfig.social);

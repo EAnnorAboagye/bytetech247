@@ -51,9 +51,16 @@ export const siteConfig = {
     tiktok: "https://www.tiktok.com/@bytetech247",
   } as Record<string, string>,
 
-  // Falls back to the full mark (128x128, clears Google's 112x112 minimum
-  // for Organization.logo) per build-spec.md §11. Swap for a dedicated
-  // 1200x630 OG asset if/when one is designed — this is a safe default,
-  // not a placeholder.
-  defaultOgImage: "/logo-mark.svg" as string | null,
+  // Dedicated 1200x630 raster OG/Twitter fallback for pages without their
+  // own cover (home, about, category/tag pages) — see
+  // scripts/make-default-og-image.mjs. SVG isn't reliably rendered as a
+  // link-preview image by Facebook, LinkedIn, iMessage, etc., so this must
+  // stay a raster format, unlike logoImage below.
+  defaultOgImage: "/og-default.png" as string | null,
+
+  // Organization.logo in JSON-LD is a separate concern from the OG/Twitter
+  // preview image above: it's deliberately the square 128x128 mark, which
+  // clears Google's 112x112 minimum for Organization.logo (build-spec.md
+  // §11) — a wide banner image with tagline text isn't a "logo."
+  logoImage: "/logo-mark.svg" as string | null,
 } as const;
