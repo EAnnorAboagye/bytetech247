@@ -7,9 +7,6 @@
         "http://localhost/dev-tools/index.html",
         "http://localhost/dev-tools/hello-bytetech247/index.html"
       ],
-      "settings": {
-        "preset": "mobile"
-      },
       "numberOfRuns": 1
     },
     "assert": {
