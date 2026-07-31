@@ -43,7 +43,15 @@ const { display, posts } = Astro.props as Props;
   title={`#${display} — ${siteConfig.name}`}
   description={`Posts tagged "${display}" on ${siteConfig.name}.`}
 >
-  <Center>
+  {
+    /* gutter="0" — <main> (BaseLayout) already applies its own
+       padding-inline as a safety net for pages that don't wrap in
+       <Center>. Center's default gutter would stack on top of that
+       rather than replace it, quietly eating ~128px of a 375px phone
+       screen (32px main + 32px Center, both sides) for zero visual
+       reason. Center's max-width is still worth keeping here. */
+  }
+  <Center gutter="0">
     <p><a href="/" class="home-link">Home</a></p>
     <h1>#{display}</h1>
 

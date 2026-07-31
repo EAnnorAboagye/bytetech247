@@ -1,9 +1,20 @@
 ---
-// Structural sidebar container (Phase 2), enhanced in Phase 3 with a
+// Structural TOC container (Phase 2), enhanced in Phase 3 with a
 // scroll-spy active-item highlight ("<TableOfContents> (scroll-spy)" per
 // build-spec.md Phase 3). The script below is a pure progressive
 // enhancement — every link is a real #anchor and the TOC is fully usable
 // with zero JS; the script only adds the "currently reading" highlight.
+//
+// Two variants, rendered as separate copies in [slug].astro (same pattern
+// as Header.astro's PrimaryNav) so CSS alone decides which one shows —
+// no JS reparenting, no device detection:
+//   - "sidebar": sticky column, >=1024px, next to the article.
+//   - "inline": collapsible <details> in the content flow, <1024px. Below
+//     that width the sidebar column collapses to a single stack, which
+//     used to leave the TOC stranded at the very bottom of the page,
+//     after the related-posts section — useless by the time a reader
+//     scrolls that far. This variant is what tablet/mobile readers
+//     actually get instead.
 interface Heading {
   depth: number;
   slug: string;
@@ -12,16 +23,17 @@ interface Heading {
 
 interface Props {
   headings?: Heading[];
+  variant?: "sidebar" | "inline";
 }
 
-const { headings = [] } = Astro.props;
+const { headings = [], variant = "sidebar" } = Astro.props;
 ---
 
 {
-  headings.length > 0 && (
+  headings.length > 0 && variant === "sidebar" && (
     <nav aria-label="Table of contents" class="toc-sidebar">
       <p class="toc-sidebar__heading">On this page</p>
-      <ul class="toc-sidebar__list">
+      <ul class="toc-list toc-sidebar__list">
         {headings.map((heading) => (
           <li
             class:list={[
@@ -34,6 +46,28 @@ const { headings = [] } = Astro.props;
         ))}
       </ul>
     </nav>
+  )
+}
+
+{
+  headings.length > 0 && variant === "inline" && (
+    <details class="toc-inline">
+      <summary>
+        On this page <span aria-hidden="true">&#9662;</span>
+      </summary>
+      <ul class="toc-list toc-inline__list">
+        {headings.map((heading) => (
+          <li
+            class:list={[
+              "toc-inline__item",
+              `toc-inline__item--depth-${heading.depth}`,
+            ]}
+          >
+            <a href={`#${heading.slug}`}>{heading.text}</a>
+          </li>
+        ))}
+      </ul>
+    </details>
   )
 }
 
@@ -51,12 +85,6 @@ const { headings = [] } = Astro.props;
   }
 
   .toc-sidebar__list {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing);
     border-left: 1px solid var(--color-border);
   }
 
@@ -68,7 +96,16 @@ const { headings = [] } = Astro.props;
     padding-left: calc(var(--spacing) * 4);
   }
 
-  .toc-sidebar__item a {
+  .toc-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing);
+  }
+
+  .toc-list a {
     display: inline-flex;
     align-items: center;
     min-height: 24px;
@@ -76,13 +113,56 @@ const { headings = [] } = Astro.props;
     text-decoration: none;
   }
 
-  .toc-sidebar__item a:hover {
+  .toc-list a:hover {
     color: var(--color-accent);
   }
 
-  .toc-sidebar__item a.is-active {
+  .toc-list a.is-active {
     color: var(--color-accent);
     font-weight: 600;
+  }
+
+  /* Inline (mobile/tablet, <1024px) — a collapsible disclosure sitting in
+     the normal content flow near the top of the article, not a sticky
+     column. Touch target sized (44px) since this is exactly the range
+     that's read on a phone/tablet. */
+  .toc-inline {
+    border: 1px solid var(--color-border);
+    border-radius: 0.5rem;
+    padding: calc(var(--spacing) * 3);
+    margin: calc(var(--spacing) * 4) 0;
+    font-size: var(--text-sm);
+  }
+
+  .toc-inline > summary {
+    display: flex;
+    align-items: center;
+    gap: calc(var(--spacing) * 0.5);
+    min-height: 44px;
+    font-weight: 600;
+    color: var(--color-fg);
+    cursor: pointer;
+    list-style: none;
+  }
+
+  .toc-inline > summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .toc-inline[open] > summary {
+    margin-bottom: var(--spacing);
+  }
+
+  .toc-inline__item {
+    padding-left: calc(var(--spacing) * 2);
+  }
+
+  .toc-inline__item--depth-3 {
+    padding-left: calc(var(--spacing) * 4);
+  }
+
+  .toc-inline .toc-list a {
+    min-height: 44px;
   }
 </style>
 
@@ -92,15 +172,14 @@ const { headings = [] } = Astro.props;
   // astro:page-load) would only ever see the *first* page's headings —
   // scroll-spy would silently stop updating after the first navigation.
   // astro:page-load fires on the initial load too, so this doesn't also
-  // need a direct call.
+  // need a direct call. Both the sidebar and inline variants' links share
+  // the .toc-list class, so one query covers whichever is visible.
   let observer: IntersectionObserver | null = null;
 
   function setupScrollSpy() {
     observer?.disconnect();
 
-    const links = document.querySelectorAll<HTMLAnchorElement>(
-      ".toc-sidebar__list a",
-    );
+    const links = document.querySelectorAll<HTMLAnchorElement>(".toc-list a");
     if (links.length === 0) return;
 
     const headingByLink = new Map<HTMLAnchorElement, HTMLElement>();
@@ -109,18 +188,18 @@ const { headings = [] } = Astro.props;
       if (heading) headingByLink.set(link, heading);
     }
 
-    const linkByHeadingId = new Map(
-      [...headingByLink.entries()].map(([link, heading]) => [heading.id, link]),
-    );
-
     observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
           if (!entry.isIntersecting) continue;
-          const activeLink = linkByHeadingId.get(entry.target.id);
-          if (!activeLink) continue;
+          const activeHeadingLinks =
+            document.querySelectorAll<HTMLAnchorElement>(
+              `.toc-list a[href="#${entry.target.id}"]`,
+            );
+          if (activeHeadingLinks.length === 0) continue;
           for (const link of links) link.classList.remove("is-active");
-          activeLink.classList.add("is-active");
+          for (const link of activeHeadingLinks)
+            link.classList.add("is-active");
         }
       },
       { rootMargin: "0px 0px -70% 0px" },

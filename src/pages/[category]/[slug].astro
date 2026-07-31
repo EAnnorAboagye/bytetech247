@@ -114,6 +114,8 @@ const nextInSeries =
         class="post-cover"
       />
 
+      <TOCSidebar headings={headings} variant="inline" />
+
       {
         seriesPosts.length > 1 && (
           <nav aria-label="Series progress" class="series-nav">
@@ -197,17 +199,50 @@ const nextInSeries =
 <style>
   .post-layout {
     display: grid;
-    grid-template-columns: 1fr;
+    /* minmax(0, 1fr), not plain 1fr — a bare 1fr still lets this grid
+       item refuse to shrink below its content's intrinsic min-width
+       (CSS Grid's default), and this article has unwrapped code blocks
+       that scroll horizontally on their own (.astro-code below) — without
+       the 0 floor here, the whole page was forced wider than the
+       viewport on any narrow screen just to fit those, instead of
+       letting the code block's own overflow-x:auto handle it. */
+    grid-template-columns: minmax(0, 1fr);
     gap: calc(var(--spacing) * 6);
     max-width: 72rem;
     margin-inline: auto;
-    padding: calc(var(--spacing) * 6) calc(var(--spacing) * 4);
+    /* Horizontal padding deliberately 0 here — <main> (BaseLayout)
+       already applies padding-inline as a safety net for pages without
+       their own width-constrained wrapper. Adding it again here would
+       stack on top of main's, quietly eating ~128px of a 375px phone
+       screen (32px main + 32px here, both sides) for zero visual
+       reason. Only the vertical padding is this template's own. */
+    padding: calc(var(--spacing) * 6) 0;
   }
 
   @media (min-width: 64rem) {
     .post-layout {
       grid-template-columns: minmax(0, 1fr) 16rem;
       align-items: start;
+    }
+  }
+
+  /* Below 1024px the grid collapses to one column, which used to leave
+     the sidebar TOC stranded at the bottom of the page (after related
+     posts) — the inline <details> variant above replaces it there
+     instead, so only one of the two is ever visible at a given width. */
+  .post-sidebar {
+    display: none;
+  }
+
+  @media (min-width: 64rem) {
+    .post-sidebar {
+      display: block;
+    }
+  }
+
+  @media (min-width: 64rem) {
+    :global(.toc-inline) {
+      display: none;
     }
   }
 

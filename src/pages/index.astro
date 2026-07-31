@@ -19,8 +19,16 @@ const recentPosts = allPosts.slice(0, 6);
 ---
 
 <BaseLayout>
-  <Center>
-    <Stack space="12">
+  {
+    /* gutter="0" — <main> (BaseLayout) already applies its own
+       padding-inline as a safety net for pages that don't wrap in
+       <Center>. Center's default gutter would stack on top of that
+       rather than replace it, quietly eating ~128px of a 375px phone
+       screen (32px main + 32px Center, both sides) for zero visual
+       reason. Center's max-width is still worth keeping here. */
+  }
+  <Center gutter="0">
+    <Stack space="12" class="homepage-sections">
       <h1 class="sr-only">{siteConfig.title}</h1>
 
       {
@@ -91,5 +99,15 @@ const recentPosts = allPosts.slice(0, 6);
     font-size: var(--text-2xl);
     margin-bottom: calc(var(--spacing) * 4);
     color: var(--color-fg);
+  }
+
+  /* 6rem between major sections (hero / recent / each category) reads
+     fine on desktop but is a lot of empty scrolling on a phone — tighten
+     it below the tablet breakpoint rather than carrying the same value
+     down to every screen size. */
+  @media (max-width: 48rem) {
+    :global(.homepage-sections) {
+      --stack-space: calc(var(--spacing) * 8);
+    }
   }
 </style>

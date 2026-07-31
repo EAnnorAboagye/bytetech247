@@ -187,6 +187,26 @@ const topTagsByCategory = getTopTagsByCategory(posts);
     .site-header__desktop-nav {
       display: none;
     }
+
+    /* Touch targets: Apple/Google both recommend a 44px minimum hit area.
+       Desktop's 40px action buttons stay as-is (mouse pointer, and the
+       user wants that look preserved) — this only widens the tappable
+       area on mobile, via padding rather than changing the visual size. */
+    .site-header__action {
+      width: 44px;
+      height: 44px;
+    }
+
+    .site-header__mobile-toggle > summary {
+      width: 44px;
+      height: 44px;
+    }
+
+    .site-header__mobile-nav :global(.primary-nav__link),
+    .site-header__mobile-nav :global(.primary-nav > li > details > summary),
+    .site-header__mobile-nav :global(.primary-nav__panel a) {
+      min-height: 44px;
+    }
   }
 </style>
 
@@ -205,14 +225,20 @@ const topTagsByCategory = getTopTagsByCategory(posts);
     localStorage.setItem("theme", next);
   });
 
-  // Every <details> dropdown on the page (nav category/privacy panels, the
-  // mobile menu toggle) closes when the visitor clicks anywhere outside it,
-  // or presses Escape — native <details> doesn't do either of these on its
-  // own, which otherwise forces a second click on the trigger just to
-  // dismiss an open panel.
+  // Every <details> dropdown *in the header* (nav category/privacy panels,
+  // the mobile menu toggle) closes when the visitor clicks anywhere
+  // outside it, or presses Escape — native <details> doesn't do either of
+  // these on its own, which otherwise forces a second click on the
+  // trigger just to dismiss an open panel. Scoped to .site-header
+  // specifically — these are transient overlay menus, unlike the
+  // article's inline table-of-contents <details> (TOCSidebar.astro),
+  // which a reader expects to stay open while they keep reading/clicking
+  // around the page.
   document.addEventListener("click", (event) => {
     const target = event.target as Node;
-    for (const details of document.querySelectorAll("details[open]")) {
+    for (const details of document.querySelectorAll(
+      ".site-header details[open]",
+    )) {
       if (!details.contains(target)) {
         details.removeAttribute("open");
       }
@@ -221,7 +247,9 @@ const topTagsByCategory = getTopTagsByCategory(posts);
 
   document.addEventListener("keydown", (event) => {
     if (event.key !== "Escape") return;
-    for (const details of document.querySelectorAll("details[open]")) {
+    for (const details of document.querySelectorAll(
+      ".site-header details[open]",
+    )) {
       details.removeAttribute("open");
     }
   });
