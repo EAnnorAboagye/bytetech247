@@ -51,14 +51,25 @@ git worktree prune
 
 ## What's shared, and what isn't
 
+{/* prettier-ignore */}
 <CodeTabs labels={["Without worktrees", "With worktrees"]}>
   <Fragment slot="tab-0">
-    ```bash git stash git checkout main # fix the bug git checkout
-    feature/new-nav git stash pop # hope nothing conflicted ```
+    ```bash
+    git stash
+    git checkout main
+    # fix the bug
+    git checkout feature/new-nav
+    git stash pop
+    # hope nothing conflicted
+    ```
   </Fragment>
   <Fragment slot="tab-1">
-    ```bash cd ../myproject-hotfix # fix the bug, already on main, feature
-    branch untouched cd ../myproject-nav # still exactly where you left off ```
+    ```bash
+    cd ../myproject-hotfix
+    # fix the bug, already on main, feature branch untouched
+    cd ../myproject-nav
+    # still exactly where you left off
+    ```
   </Fragment>
 </CodeTabs>
 
