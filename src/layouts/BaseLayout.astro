@@ -69,7 +69,15 @@ const jsonLdBlocks = [
     <title>{title}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={canonicalUrl} />
+
+    <!-- Favicon set: SVG for modern browsers, ICO fallback for everything
+         else (older browsers and some crawlers don't render SVG favicons),
+         apple-touch-icon for iOS home-screen bookmarks. -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="theme-color" content="#0D9488" />
+
     <meta name="generator" content={Astro.generator} />
 
     <!-- Open Graph / Twitter — build-spec.md Phase 9 §11: mirrors the

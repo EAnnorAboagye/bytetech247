@@ -1,0 +1,186 @@
+---
+// Rendered twice by Header.astro (mobile disclosure + desktop nav) so both
+// copies stay in the DOM for CSS-only responsive show/hide — every link is
+// a real <a href> in both, so nothing depends on which one is visible.
+//
+// Order (left to right / top to bottom): Home, each category (own
+// tag-dropdown), About, Contact, Privacy (dropdown listing every legal
+// page). The category name and "Privacy" label in <summary> are
+// deliberately plain text, not a nested <a> — nesting an interactive link
+// inside the native disclosure trigger is a real accessibility anti-pattern
+// (ambiguous activation behavior for assistive tech, flagged by axe-core's
+// nested-interactive rule). Each panel's own links are the one real,
+// unambiguous way in — that's why "Privacy Policy" appears inside the
+// Privacy panel rather than the summary itself linking there.
+//
+// Every <details> here closes on outside click / Escape via the shared
+// script in Header.astro, not locally — one listener for every dropdown
+// on the page (including the mobile menu toggle) rather than one per
+// instance.
+import { CATEGORIES, getCategoryName, type CategorySlug } from "../config";
+import { slugifyTag } from "../lib/taxonomy";
+
+interface Props {
+  topTagsByCategory: Record<CategorySlug, string[]>;
+  variant?: "horizontal" | "vertical";
+}
+
+const { topTagsByCategory, variant = "vertical" } = Astro.props;
+
+const legalLinks = [
+  { label: "Privacy Policy", href: "/privacy/" },
+  { label: "Terms & Conditions", href: "/terms/" },
+  {
+    label: "Affiliate/Advertising Disclosure",
+    href: "/affiliate-disclosure/",
+  },
+  { label: "Editorial Policy", href: "/editorial-policy/" },
+];
+---
+
+<ul class:list={["primary-nav", `primary-nav--${variant}`]}>
+  <li>
+    <a href="/" class="primary-nav__link">Home</a>
+  </li>
+
+  {
+    CATEGORIES.map((category) => (
+      <li>
+        <details class="primary-nav__dropdown">
+          <summary>
+            {category.name} <span aria-hidden="true">&#9662;</span>
+          </summary>
+          <ul class="primary-nav__panel">
+            {topTagsByCategory[category.slug].map((tag) => (
+              <li>
+                <a href={`/tag/${slugifyTag(tag)}/`} class="primary-nav__tag">
+                  {tag}
+                </a>
+              </li>
+            ))}
+            <li>
+              <a href={`/${category.slug}/`}>
+                View all in {getCategoryName(category.slug)}
+              </a>
+            </li>
+          </ul>
+        </details>
+      </li>
+    ))
+  }
+
+  <li>
+    <a href="/about/" class="primary-nav__link">About</a>
+  </li>
+  <li>
+    <a href="/contact/" class="primary-nav__link">Contact</a>
+  </li>
+
+  <li>
+    <details class="primary-nav__dropdown">
+      <summary>
+        Privacy <span aria-hidden="true">&#9662;</span>
+      </summary>
+      <ul class="primary-nav__panel">
+        {
+          legalLinks.map((link) => (
+            <li>
+              <a href={link.href}>{link.label}</a>
+            </li>
+          ))
+        }
+      </ul>
+    </details>
+  </li>
+</ul>
+
+<style>
+  .primary-nav {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .primary-nav__link,
+  .primary-nav > li > details > summary {
+    display: flex;
+    align-items: center;
+    gap: calc(var(--spacing) * 0.5);
+    min-height: 24px;
+    padding: calc(var(--spacing) * 0.5) 0;
+    cursor: pointer;
+    list-style: none;
+    color: var(--color-fg);
+  }
+
+  .primary-nav__link {
+    text-decoration: none;
+    cursor: default;
+  }
+
+  .primary-nav > li > details > summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .primary-nav a {
+    color: var(--color-fg);
+    text-decoration: none;
+  }
+
+  .primary-nav__link:hover,
+  .primary-nav a:hover {
+    color: var(--color-accent);
+  }
+
+  .primary-nav details[open] > summary {
+    color: var(--color-accent);
+  }
+
+  .primary-nav__panel {
+    list-style: none;
+    margin: 0;
+    padding: var(--spacing);
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--spacing) * 0.5);
+  }
+
+  .primary-nav__panel a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+    padding: calc(var(--spacing) * 0.5) 0;
+  }
+
+  .primary-nav__tag {
+    color: var(--color-fg-muted);
+    font-size: var(--text-sm);
+  }
+
+  /* Desktop: nav items sit in a horizontal row, each panel drops down
+     below its own trigger instead of pushing content down inline. */
+  .primary-nav--horizontal {
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .primary-nav--horizontal > li {
+    position: relative;
+  }
+
+  .primary-nav--horizontal .primary-nav__panel {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    min-width: 12rem;
+    background-color: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 12px rgb(0 0 0 / 0.08);
+    z-index: 10;
+  }
+</style>
