@@ -12,7 +12,7 @@ import CodeTabs from "../../components/CodeTabs.astro";
 import Benchmark from "../../components/Benchmark.astro";
 import LastVerified from "../../components/LastVerified.astro";
 import FaqSection from "../../components/FaqSection.astro";
-import { Picture } from "astro:assets";
+import { Picture, getImage } from "astro:assets";
 import { siteConfig, getCategoryName } from "../../config";
 import { validateCoverImage } from "../../lib/validate-cover-image";
 import { validateNoH1InBody } from "../../lib/validate-no-h1-in-body";
@@ -51,6 +51,35 @@ const lastVerifiedDate = getLastVerifiedDate(
   `src/content/blog/${post.id}/index.mdx`,
 );
 
+// Google's Article structured data guidelines recommend supplying the
+// same image in 16x9, 4x3, and 1x1 for best rich-result eligibility
+// across its different surfaces (Search, Discover, Images) — these two
+// crops exist only for the JSON-LD image array below, never rendered on
+// the page itself, so a plain, universally-compatible JPG is the right
+// choice here, not the AVIF/WebP used for the actual visible cover.
+//
+// Sizes are bounded by the source's actual height (validateCoverImage
+// only guarantees >=1600x900, i.e. a 16:9 minimum), not an arbitrary
+// round number — Astro/sharp's image service defaults to
+// withoutEnlargement: true, so asking for a 1x1 crop taller than the
+// source's own height (e.g. 1200x1200 against a 1600x900 source)
+// silently gets capped back down to the source height instead of
+// actually cropping square. 900x900 is the largest square this source
+// can provide without upscaling; still far above Google's ~50,000px
+// minimum for this field.
+const cropped4x3 = await getImage({
+  src: post.data.coverImage,
+  width: 1200,
+  height: 900,
+  format: "jpg",
+});
+const cropped1x1 = await getImage({
+  src: post.data.coverImage,
+  width: 900,
+  height: 900,
+  format: "jpg",
+});
+
 // Same hierarchy as the visible breadcrumb below, per build-spec.md §10 —
 // visible and structured data must agree, not drift independently.
 const pageUrl = new URL(Astro.url.pathname, siteConfig.url).href;
@@ -61,7 +90,10 @@ const breadcrumbItems = [
   { name: post.data.title, url: pageUrl },
 ];
 const articleJsonLdBlocks = [
-  articleJsonLd(post, pageUrl, lastVerifiedDate),
+  articleJsonLd(post, pageUrl, lastVerifiedDate, [
+    cropped4x3.src,
+    cropped1x1.src,
+  ]),
   breadcrumbJsonLd(breadcrumbItems),
   ...(post.data.faq.length > 0 ? [faqJsonLd(post.data.faq)] : []),
 ];

@@ -93,11 +93,19 @@ export function articleSchemaType(
  * correct, but silently claiming every post was "modified" on its
  * publish date forever, even after real edits, is the kind of quiet lie
  * that erodes exactly the trust signal this field exists to provide.
+ *
+ * `additionalImageSrcs` are pre-generated 4x3 and 1x1 crops of the same
+ * cover image (built in [category]/[slug].astro via getImage(), not
+ * rendered anywhere on the page) — Google's Article structured data
+ * guidelines recommend supplying 16x9, 4x3, and 1x1 versions of the same
+ * image "for best results" across its different rich-result surfaces
+ * (Search, Discover, Images), not just a single ratio.
  */
 export function articleJsonLd(
   post: CollectionEntry<"blog">,
   pageUrl: string,
   lastVerifiedDate: Date | null,
+  additionalImageSrcs: string[] = [],
 ): JsonLdObject {
   const authorEntry = person();
   const node: JsonLdObject = {
@@ -105,7 +113,10 @@ export function articleJsonLd(
     "@type": articleSchemaType(post.data.category),
     headline: post.data.title,
     description: post.data.description,
-    image: [absoluteUrl(post.data.coverImage.src)],
+    image: [
+      absoluteUrl(post.data.coverImage.src),
+      ...additionalImageSrcs.map(absoluteUrl),
+    ],
     datePublished: post.data.date.toISOString(),
     dateModified: (lastVerifiedDate ?? post.data.date).toISOString(),
     publisher: organization(),
