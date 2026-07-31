@@ -17,7 +17,11 @@ Cloudflare can watch your GitHub repository directly and deploy on every push, w
 From then on, every push to the connected branch triggers a build and deploy automatically, and the dashboard shows build logs and history per deploy — no infrastructure to maintain on your side.
 
 <Callout type="tip" title="Scope the deploy, not the whole account">
-If you later add a GitHub Actions workflow alongside or instead of Workers Builds, generate a Cloudflare API token scoped to exactly `Workers Scripts:Edit` for the account/zone in question — not a broad, all-permissions token. A workflow only needs enough access to deploy the one Worker; if the token ever leaks, narrow scope limits the blast radius.
+  If you later add a GitHub Actions workflow alongside or instead of Workers
+  Builds, generate a Cloudflare API token scoped to exactly `Workers
+  Scripts:Edit` for the account/zone in question — not a broad, all-permissions
+  token. A workflow only needs enough access to deploy the one Worker; if the
+  token ever leaks, narrow scope limits the blast radius.
 </Callout>
 
 ## Option B: GitHub Actions
@@ -56,12 +60,12 @@ The deploy step only runs if every step above it succeeds — a broken build or 
 
 ## Choosing between them
 
-| | Workers Builds | GitHub Actions |
-|---|---|---|
-| Setup effort | Minutes, no files to write | A YAML file to author and maintain |
-| Pre-deploy checks | Build command only | Any number of steps, deploy gated on all passing |
-| Where logs live | Cloudflare dashboard | GitHub Actions tab |
-| Best for | Small projects, fast iteration | Projects with tests/lint you want enforced before deploy |
+|                   | Workers Builds                 | GitHub Actions                                           |
+| ----------------- | ------------------------------ | -------------------------------------------------------- |
+| Setup effort      | Minutes, no files to write     | A YAML file to author and maintain                       |
+| Pre-deploy checks | Build command only             | Any number of steps, deploy gated on all passing         |
+| Where logs live   | Cloudflare dashboard           | GitHub Actions tab                                       |
+| Best for          | Small projects, fast iteration | Projects with tests/lint you want enforced before deploy |
 
 A reasonable default: start with Workers Builds, since it costs nothing to set up and gets you automatic deploys immediately. Move to GitHub Actions once there's a build step you genuinely don't want to skip — tests, an accessibility check, a broken-link scan — and you want a bad result to block the deploy rather than just show up in a log after the fact.
 

@@ -43,36 +43,36 @@ git worktree prune
 ```
 
 <Callout type="tip" title="Skip the manual folder delete">
-Always remove a worktree with `git worktree remove`, not by deleting the folder yourself. If you do delete it manually, Git still thinks it exists until you run `git worktree prune` — and until then, commands like `git branch -d` on that branch will refuse, claiming it's checked out somewhere.
+  Always remove a worktree with `git worktree remove`, not by deleting the
+  folder yourself. If you do delete it manually, Git still thinks it exists
+  until you run `git worktree prune` — and until then, commands like `git branch
+  -d` on that branch will refuse, claiming it's checked out somewhere.
 </Callout>
 
 ## What's shared, and what isn't
 
 <CodeTabs labels={["Without worktrees", "With worktrees"]}>
   <Fragment slot="tab-0">
-    ```bash
-    git stash
-    git checkout main
-    # fix the bug
-    git checkout feature/new-nav
-    git stash pop
-    # hope nothing conflicted
-    ```
+    ```bash git stash git checkout main # fix the bug git checkout
+    feature/new-nav git stash pop # hope nothing conflicted ```
   </Fragment>
   <Fragment slot="tab-1">
-    ```bash
-    cd ../myproject-hotfix
-    # fix the bug, already on main, feature branch untouched
-    cd ../myproject-nav
-    # still exactly where you left off
-    ```
+    ```bash cd ../myproject-hotfix # fix the bug, already on main, feature
+    branch untouched cd ../myproject-nav # still exactly where you left off ```
   </Fragment>
 </CodeTabs>
 
 Commit history, branches, tags, and remotes are shared instantly across every worktree — a commit made in one is visible to `git log` in all the others right away. What's **not** shared is anything outside Git's own tracking: `node_modules`, build output, `.env` files. Each worktree needs its own `npm install` and its own build. That's the most common surprise for people trying worktrees for the first time — the code appears instantly, but the project isn't actually runnable until dependencies are installed in that specific folder.
 
 <Callout type="warning" title="Cloud-synced folders and stale locks">
-If your repository lives inside a cloud-synced folder (OneDrive, Dropbox, iCloud Drive), be aware that every worktree still writes to the one shared `.git` directory. A sync client racing a git command mid-write can leave a stale `index.lock` or `HEAD.lock` file behind. If a worktree command fails with a `File exists` error on a `.lock` file, confirm nothing else is actually mid-operation before removing it by hand — and consider keeping active repos outside the synced folder, or excluding `.git` from sync, if this happens often.
+  If your repository lives inside a cloud-synced folder (OneDrive, Dropbox,
+  iCloud Drive), be aware that every worktree still writes to the one shared
+  `.git` directory. A sync client racing a git command mid-write can leave a
+  stale `index.lock` or `HEAD.lock` file behind. If a worktree command fails
+  with a `File exists` error on a `.lock` file, confirm nothing else is actually
+  mid-operation before removing it by hand — and consider keeping active repos
+  outside the synced folder, or excluding `.git` from sync, if this happens
+  often.
 </Callout>
 
 ## When it's not worth it

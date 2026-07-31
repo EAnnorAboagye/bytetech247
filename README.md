@@ -2,7 +2,7 @@
 
 A technical blog covering Dev Tools, Data & Automation, AI Productivity, and Guides & Fixes — built with Astro, MDX, and Tailwind CSS, deployed as a static site on Cloudflare Workers.
 
-Full architecture, rationale, and phase-by-phase requirements live in [`build-spec.md`](./build-spec.md) — this README is the quick-start; that file is the source of truth for *why* things are built the way they are. [`ARCHITECTURE.md`](./ARCHITECTURE.md) is a short pointer into it. [`BUILD-GUARDRAILS.md`](./BUILD-GUARDRAILS.md) lists specific mistakes to avoid per phase.
+Full architecture, rationale, and phase-by-phase requirements live in [`build-spec.md`](./build-spec.md) — this README is the quick-start; that file is the source of truth for _why_ things are built the way they are. [`ARCHITECTURE.md`](./ARCHITECTURE.md) is a short pointer into it. [`BUILD-GUARDRAILS.md`](./BUILD-GUARDRAILS.md) lists specific mistakes to avoid per phase.
 
 ## Requirements
 
@@ -24,16 +24,16 @@ Posts live in `src/content/blog/<slug>/index.mdx`, each with a co-located `cover
 
 ## Commands
 
-| Command | Action |
-| --- | --- |
-| `npm run dev` | Start the local dev server |
-| `npm run build` | Build the production site to `./dist/` (also runs the Pagefind post-build indexing step) |
-| `npm run preview` | Preview the production build locally |
-| `npm run check` | Astro's type/prop checker (`astro check`) |
-| `npm run lint` / `npm run lint:fix` | ESLint |
-| `npm run format` / `npm run format:check` | Prettier |
-| `npm run test:unit` | Vitest — unit tests for build-time utilities (`src/lib/`) |
-| `npm run test:e2e` | Playwright — builds, serves, and runs interaction/accessibility (axe-core) tests against every page template |
+| Command                                   | Action                                                                                                       |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `npm run dev`                             | Start the local dev server                                                                                   |
+| `npm run build`                           | Build the production site to `./dist/` (also runs the Pagefind post-build indexing step)                     |
+| `npm run preview`                         | Preview the production build locally                                                                         |
+| `npm run check`                           | Astro's type/prop checker (`astro check`)                                                                    |
+| `npm run lint` / `npm run lint:fix`       | ESLint                                                                                                       |
+| `npm run format` / `npm run format:check` | Prettier                                                                                                     |
+| `npm run test:unit`                       | Vitest — unit tests for build-time utilities (`src/lib/`)                                                    |
+| `npm run test:e2e`                        | Playwright — builds, serves, and runs interaction/accessibility (axe-core) tests against every page template |
 
 CI (`.github/workflows/ci.yml`) runs lint, format check, `astro check`, unit tests, build, E2E/accessibility tests, and a mobile-preset Lighthouse CI gate on every PR.
 

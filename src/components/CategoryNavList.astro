@@ -30,7 +30,10 @@ const { topTagsByCategory, variant = "vertical" } = Astro.props;
           <ul class="category-nav-list__panel">
             {topTagsByCategory[category.slug].map((tag) => (
               <li>
-                <a href={`/tag/${slugifyTag(tag)}/`} class="category-nav-list__tag">
+                <a
+                  href={`/tag/${slugifyTag(tag)}/`}
+                  class="category-nav-list__tag"
+                >
                   {tag}
                 </a>
               </li>

@@ -26,7 +26,9 @@ export const GET: APIRoute = async () => {
   lines.push("## Posts");
   lines.push("");
   for (const post of posts.slice(0, 50)) {
-    lines.push(`- [${post.data.title}](${postUrl(post)}): ${post.data.description}`);
+    lines.push(
+      `- [${post.data.title}](${postUrl(post)}): ${post.data.description}`,
+    );
   }
   lines.push("");
   lines.push(`## Feeds`);

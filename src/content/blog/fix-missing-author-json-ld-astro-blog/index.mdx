@@ -48,8 +48,16 @@ const jsonLd = {
 
 Two details matter here. First, `author` links to a real URL — typically an About or author-bio page — because Google treats an author with a resolvable page as a stronger, more trustworthy signal than a bare name string. Second, `publisher.logo` needs a real image URL that actually resolves; a broken or placeholder logo link can cause its own separate validation warning.
 
-<Callout type="warning" title="Use set:html with JSON.stringify, not a template string">
-Don't build the JSON-LD by hand-interpolating values into a string. An apostrophe or unescaped quote in a title will silently break the JSON parse, and the whole block fails without any visible error on the page. `JSON.stringify()` handles escaping correctly; Astro's `set:html` then injects it without HTML-escaping the JSON itself (which would corrupt it just as badly).
+<Callout
+  type="warning"
+  title="Use set:html with JSON.stringify, not a template string"
+>
+  Don't build the JSON-LD by hand-interpolating values into a string. An
+  apostrophe or unescaped quote in a title will silently break the JSON parse,
+  and the whole block fails without any visible error on the page.
+  `JSON.stringify()` handles escaping correctly; Astro's `set:html` then injects
+  it without HTML-escaping the JSON itself (which would corrupt it just as
+  badly).
 </Callout>
 
 ## Verifying the fix
@@ -57,5 +65,8 @@ Don't build the JSON-LD by hand-interpolating values into a string. An apostroph
 After deploying, run the live URL back through the Rich Results Test. The "Missing field 'author'" note should be gone, and Google's own [Structured Data Markup Helper](https://support.google.com/webmasters/answer/9007506) or [Schema Markup Validator](https://validator.schema.org/) will show the `author` and `publisher` objects present with their resolved values. It's worth checking a couple of different posts, not just one — a bug in how the layout pulls frontmatter (a missing `date`, for instance) can make the field present on some pages and absent on others, which is easy to miss if you only ever test the same one URL.
 
 <Callout type="tip" title="One layout, every post">
-Because this lives in the shared layout and reads from `siteConfig` and each post's own frontmatter, every existing and future post gets correct `author` and `publisher` data automatically — there's nothing to remember to add per article.
+  Because this lives in the shared layout and reads from `siteConfig` and each
+  post's own frontmatter, every existing and future post gets correct `author`
+  and `publisher` data automatically — there's nothing to remember to add per
+  article.
 </Callout>

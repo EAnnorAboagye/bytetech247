@@ -65,7 +65,11 @@ describe("getRelatedPosts", () => {
     const b = post("b", []);
     const c = post("c", []);
 
-    const result = getRelatedPosts(current as never, [current, a, b, c] as never, 2);
+    const result = getRelatedPosts(
+      current as never,
+      [current, a, b, c] as never,
+      2,
+    );
 
     expect(result).toHaveLength(2);
     expect(result.map((p) => p.id)).toEqual(["a", "b"]);

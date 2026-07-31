@@ -16,7 +16,10 @@ describe("calculateReadingTime", () => {
   });
 
   it("excludes fenced code blocks from the prose word count", () => {
-    const code = "```js\n" + Array(60).fill("word word word word word").join("\n") + "\n```";
+    const code =
+      "```js\n" +
+      Array(60).fill("word word word word word").join("\n") +
+      "\n```";
     // If code-block content were counted as prose, 300 words alone would
     // push this well past 1 minute (300/200 = 1.5). The code-line weighting
     // (40 lines/min) is slower, so a code-heavy block with zero real prose

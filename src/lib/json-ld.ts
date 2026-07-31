@@ -72,8 +72,12 @@ export function siteWideJsonLd(): JsonLdObject[] {
 // never hardcoded site-wide.
 const TIME_SENSITIVE_CATEGORIES = new Set<CategorySlug>([]);
 
-export function articleSchemaType(category: CategorySlug): "NewsArticle" | "BlogPosting" {
-  return TIME_SENSITIVE_CATEGORIES.has(category) ? "NewsArticle" : "BlogPosting";
+export function articleSchemaType(
+  category: CategorySlug,
+): "NewsArticle" | "BlogPosting" {
+  return TIME_SENSITIVE_CATEGORIES.has(category)
+    ? "NewsArticle"
+    : "BlogPosting";
 }
 
 /**

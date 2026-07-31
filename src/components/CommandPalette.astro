@@ -204,7 +204,8 @@ const destinations = [...staticPages, ...categoryPages];
     for (const item of dialog.querySelectorAll<HTMLElement>(
       "#palette-pages .command-palette__item",
     )) {
-      const matches = q.length > 0 && (item.textContent ?? "").toLowerCase().includes(q);
+      const matches =
+        q.length > 0 && (item.textContent ?? "").toLowerCase().includes(q);
       const li = item.closest("li");
       if (li) li.hidden = q.length === 0 ? false : !matches;
     }
@@ -224,7 +225,8 @@ const destinations = [...staticPages, ...categoryPages];
     }
     const pagefind = await loadPagefind();
     if (!pagefind) {
-      if (hint) hint.textContent = "Content search isn't available on this build.";
+      if (hint)
+        hint.textContent = "Content search isn't available on this build.";
       return;
     }
     const { results } = await pagefind.search(q);
@@ -244,7 +246,10 @@ const destinations = [...staticPages, ...categoryPages];
     // A query that only matches content (not a static page name) should
     // still let Enter work immediately — select the first real result.
     const items_ = visibleItems();
-    if (items_.length > 0 && !items_.some((el) => el.classList.contains("is-active"))) {
+    if (
+      items_.length > 0 &&
+      !items_.some((el) => el.classList.contains("is-active"))
+    ) {
       setActive(items_, 0);
     }
   }
@@ -253,7 +258,9 @@ const destinations = [...staticPages, ...categoryPages];
     if (!dialog) return [];
     return [
       ...dialog.querySelectorAll<HTMLElement>(".command-palette__item"),
-    ].filter((item) => !item.closest("li")?.hidden && !item.closest("ul")?.hidden);
+    ].filter(
+      (item) => !item.closest("li")?.hidden && !item.closest("ul")?.hidden,
+    );
   }
 
   function setActive(items: HTMLElement[], index: number) {

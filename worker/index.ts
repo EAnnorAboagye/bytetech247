@@ -65,7 +65,7 @@ async function handleCounter(request: Request, env: Env): Promise<Response> {
   const { slug, kind } = payload;
   if (!slug || (kind !== "view" && kind !== "reaction")) {
     return new Response(
-      "Expected JSON body: { slug: string, kind: \"view\" | \"reaction\" }",
+      'Expected JSON body: { slug: string, kind: "view" | "reaction" }',
       { status: 400 },
     );
   }
