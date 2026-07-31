@@ -5,7 +5,7 @@
       "url": [
         "http://localhost/index.html",
         "http://localhost/dev-tools/index.html",
-        "http://localhost/dev-tools/hello-bytetech247/index.html"
+        "http://localhost/dev-tools/git-worktrees-parallel-feature-development/index.html"
       ],
       "numberOfRuns": 1
     },

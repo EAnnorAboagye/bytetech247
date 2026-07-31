@@ -19,4 +19,4 @@ Allow: /
 User-agent: *
 Allow: /
 
-Sitemap: https://bytetech247.workers.dev/sitemap.xml
+Sitemap: https://bytetech247.com/sitemap.xml

@@ -30,7 +30,7 @@ export function getCategoryName(slug: string): string {
 
 export const siteConfig = {
   name: "ByteTech247",
-  url: "https://bytetech247.workers.dev",
+  url: "https://bytetech247.com",
   // Locked verbatim in build-spec.md §11 — do not reword.
   title: "ByteTech247 | Dev Tools, Automation & AI Productivity",
   description:

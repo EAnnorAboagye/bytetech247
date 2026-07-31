@@ -29,7 +29,7 @@ function rehypeTableHeaderScope() {
 
 // https://astro.build/config
 export default defineConfig({
-  site: "https://bytetech247.workers.dev",
+  site: "https://bytetech247.com",
   integrations: [mdx()],
   // markdown.rehypePlugins (not mdx({ rehypePlugins })) — MDX tables only
   // actually got scope="col" applied here, confirmed by inspecting the

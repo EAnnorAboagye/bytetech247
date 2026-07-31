@@ -9,7 +9,7 @@ const routes = [
   "/data-automation/",
   "/ai-productivity/",
   "/guides-fixes/",
-  "/dev-tools/hello-bytetech247/",
+  "/dev-tools/git-worktrees-parallel-feature-development/",
   "/about/",
   "/contact/",
   "/privacy/",
