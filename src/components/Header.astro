@@ -1,0 +1,187 @@
+---
+// build-spec.md §10 — identical on every route. Static (not sticky) by
+// default, per the guardrail: sticky-on-scroll is an explicit Phase 13
+// upgrade, not something to default into.
+import { getCollection } from "astro:content";
+import { siteConfig } from "../config";
+import { getTopTagsByCategory } from "../lib/taxonomy";
+import CategoryNavList from "./CategoryNavList.astro";
+
+const posts = await getCollection("blog");
+const topTagsByCategory = getTopTagsByCategory(posts);
+---
+
+<header class="site-header">
+  <div class="site-header__bar">
+    <details class="site-header__mobile-toggle">
+      <summary aria-label="Open menu">
+        <span aria-hidden="true">&#9776;</span>
+      </summary>
+      <nav aria-label="Primary" class="site-header__mobile-nav">
+        <CategoryNavList
+          topTagsByCategory={topTagsByCategory}
+          variant="vertical"
+        />
+      </nav>
+    </details>
+
+    <a href="/" class="site-header__logo">{siteConfig.name}</a>
+
+    <nav aria-label="Primary" class="site-header__desktop-nav">
+      <CategoryNavList
+        topTagsByCategory={topTagsByCategory}
+        variant="horizontal"
+      />
+    </nav>
+
+    <div class="site-header__actions">
+      <button
+        type="button"
+        class="site-header__action"
+        data-command-palette-trigger
+        aria-label="Search (Ctrl+K)"
+      >
+        <svg
+          aria-hidden="true"
+          viewBox="0 0 24 24"
+          width="18"
+          height="18"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+        >
+          <circle cx="11" cy="11" r="7"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+      </button>
+      <button
+        type="button"
+        class="site-header__action"
+        data-theme-toggle
+        aria-label="Toggle dark mode"
+      >
+        <svg
+          aria-hidden="true"
+          viewBox="0 0 24 24"
+          width="18"
+          height="18"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+        >
+          <circle cx="12" cy="12" r="4"></circle>
+          <line x1="12" y1="2" x2="12" y2="4"></line>
+          <line x1="12" y1="20" x2="12" y2="22"></line>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+          <line x1="2" y1="12" x2="4" y2="12"></line>
+          <line x1="20" y1="12" x2="22" y2="12"></line>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+        </svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<style>
+  .site-header {
+    position: relative;
+    border-bottom: 1px solid var(--color-border);
+    background-color: var(--color-bg);
+  }
+
+  .site-header__bar {
+    display: flex;
+    align-items: center;
+    gap: calc(var(--spacing) * 2);
+    max-width: 72rem;
+    margin-inline: auto;
+    padding: var(--spacing) calc(var(--spacing) * 4);
+  }
+
+  .site-header__logo {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+    font-weight: 700;
+    font-size: var(--text-lg);
+    color: var(--color-fg);
+    text-decoration: none;
+    margin-right: auto;
+  }
+
+  .site-header__actions {
+    display: flex;
+    gap: calc(var(--spacing) * 2);
+  }
+
+  .site-header__action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: calc(var(--spacing) * 5);
+    height: calc(var(--spacing) * 5);
+    border-radius: 9999px;
+    border: 1px solid var(--color-border);
+    background: none;
+    color: var(--color-fg-muted);
+  }
+
+  .site-header__mobile-toggle {
+    display: none;
+  }
+
+  .site-header__mobile-toggle > summary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: calc(var(--spacing) * 5);
+    height: calc(var(--spacing) * 5);
+    cursor: pointer;
+    list-style: none;
+  }
+
+  .site-header__mobile-toggle > summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .site-header__mobile-nav {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 100%;
+    background-color: var(--color-bg);
+    border-bottom: 1px solid var(--color-border);
+    padding: calc(var(--spacing) * 4);
+  }
+
+  @media (max-width: 48rem) {
+    .site-header__mobile-toggle {
+      display: block;
+      order: -1;
+    }
+
+    .site-header__desktop-nav {
+      display: none;
+    }
+  }
+</style>
+
+<script>
+  // Document-delegated (not attached to a specific button element) so it
+  // keeps working after Astro view-transition navigations re-render the
+  // header — and since this script module is shared across every page,
+  // it only ever registers the listener once, not once per navigation.
+  document.addEventListener("click", (event) => {
+    const toggle = (event.target as HTMLElement).closest("[data-theme-toggle]");
+    if (!toggle) return;
+
+    const current = document.documentElement.getAttribute("data-theme");
+    const next = current === "dark" ? "light" : "dark";
+    document.documentElement.setAttribute("data-theme", next);
+    localStorage.setItem("theme", next);
+  });
+</script>

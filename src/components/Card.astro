@@ -1,0 +1,24 @@
+---
+import { cva, type VariantProps } from "class-variance-authority";
+
+const card = cva(
+  "rounded-lg border border-border bg-bg-subtle overflow-hidden",
+  {
+    variants: {
+      padding: {
+        none: "",
+        sm: "p-2",
+        md: "p-4",
+      },
+    },
+    defaultVariants: { padding: "md" },
+  },
+);
+
+type Props = VariantProps<typeof card> & { as?: string; class?: string };
+const { padding, as: Tag = "div", class: className } = Astro.props;
+---
+
+<Tag class:list={[card({ padding }), className]}>
+  <slot />
+</Tag>

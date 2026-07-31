@@ -1,0 +1,133 @@
+---
+// Structural sidebar container (Phase 2), enhanced in Phase 3 with a
+// scroll-spy active-item highlight ("<TableOfContents> (scroll-spy)" per
+// build-spec.md Phase 3). The script below is a pure progressive
+// enhancement — every link is a real #anchor and the TOC is fully usable
+// with zero JS; the script only adds the "currently reading" highlight.
+interface Heading {
+  depth: number;
+  slug: string;
+  text: string;
+}
+
+interface Props {
+  headings?: Heading[];
+}
+
+const { headings = [] } = Astro.props;
+---
+
+{
+  headings.length > 0 && (
+    <nav aria-label="Table of contents" class="toc-sidebar">
+      <p class="toc-sidebar__heading">On this page</p>
+      <ul class="toc-sidebar__list">
+        {headings.map((heading) => (
+          <li
+            class:list={[
+              "toc-sidebar__item",
+              `toc-sidebar__item--depth-${heading.depth}`,
+            ]}
+          >
+            <a href={`#${heading.slug}`}>{heading.text}</a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  )
+}
+
+<style>
+  .toc-sidebar {
+    position: sticky;
+    top: calc(var(--spacing) * 4);
+    font-size: var(--text-sm);
+  }
+
+  .toc-sidebar__heading {
+    font-weight: 600;
+    color: var(--color-fg);
+    margin-bottom: calc(var(--spacing) * 2);
+  }
+
+  .toc-sidebar__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing);
+    border-left: 1px solid var(--color-border);
+  }
+
+  .toc-sidebar__item {
+    padding-left: calc(var(--spacing) * 2);
+  }
+
+  .toc-sidebar__item--depth-3 {
+    padding-left: calc(var(--spacing) * 4);
+  }
+
+  .toc-sidebar__item a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+    color: var(--color-fg-muted);
+    text-decoration: none;
+  }
+
+  .toc-sidebar__item a:hover {
+    color: var(--color-accent);
+  }
+
+  .toc-sidebar__item a.is-active {
+    color: var(--color-accent);
+    font-weight: 600;
+  }
+</style>
+
+<script>
+  // Astro's View Transitions swap page content client-side without a full
+  // reload, so a plain top-level scan (as opposed to one keyed off
+  // astro:page-load) would only ever see the *first* page's headings —
+  // scroll-spy would silently stop updating after the first navigation.
+  // astro:page-load fires on the initial load too, so this doesn't also
+  // need a direct call.
+  let observer: IntersectionObserver | null = null;
+
+  function setupScrollSpy() {
+    observer?.disconnect();
+
+    const links = document.querySelectorAll<HTMLAnchorElement>(
+      ".toc-sidebar__list a",
+    );
+    if (links.length === 0) return;
+
+    const headingByLink = new Map<HTMLAnchorElement, HTMLElement>();
+    for (const link of links) {
+      const heading = document.getElementById(link.hash.slice(1));
+      if (heading) headingByLink.set(link, heading);
+    }
+
+    const linkByHeadingId = new Map(
+      [...headingByLink.entries()].map(([link, heading]) => [heading.id, link]),
+    );
+
+    observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
+          const activeLink = linkByHeadingId.get(entry.target.id);
+          if (!activeLink) continue;
+          for (const link of links) link.classList.remove("is-active");
+          activeLink.classList.add("is-active");
+        }
+      },
+      { rootMargin: "0px 0px -70% 0px" },
+    );
+
+    for (const heading of headingByLink.values()) observer.observe(heading);
+  }
+
+  document.addEventListener("astro:page-load", setupScrollSpy);
+</script>

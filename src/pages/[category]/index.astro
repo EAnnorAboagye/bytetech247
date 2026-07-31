@@ -1,0 +1,58 @@
+---
+import { getCollection } from "astro:content";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import Grid from "../../components/layout/Grid.astro";
+import PostCard from "../../components/PostCard.astro";
+import { CATEGORIES, getCategoryName } from "../../config";
+
+export function getStaticPaths() {
+  return CATEGORIES.map((category) => ({
+    params: { category: category.slug },
+  }));
+}
+
+const { category } = Astro.params;
+const categoryName = getCategoryName(category);
+
+const posts = (
+  await getCollection("blog", (post) => post.data.category === category)
+).sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+---
+
+<BaseLayout
+  title={`${categoryName} — Archive`}
+  description={`All ${categoryName} posts.`}
+>
+  <p><a href="/" class="home-link">Home</a></p>
+  <h1>{categoryName}</h1>
+
+  {
+    posts.length === 0 ? (
+      <p>No posts yet in this category.</p>
+    ) : (
+      <>
+        <h2 class="section-heading">All posts</h2>
+        <Grid minItemWidth="18rem" space="4">
+          {posts.map((post) => (
+            <PostCard post={post} />
+          ))}
+        </Grid>
+      </>
+    )
+  }
+</BaseLayout>
+
+<style>
+  .home-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+  }
+
+  .section-heading {
+    font-size: var(--text-2xl);
+    margin-top: calc(var(--spacing) * 6);
+    margin-bottom: calc(var(--spacing) * 4);
+    color: var(--color-fg);
+  }
+</style>

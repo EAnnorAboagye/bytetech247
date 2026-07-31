@@ -1,0 +1,181 @@
+---
+import { ClientRouter } from "astro:transitions";
+import "../styles/global.css";
+import { siteConfig } from "../config";
+import { siteWideJsonLd, absoluteUrl } from "../lib/json-ld";
+import Header from "../components/Header.astro";
+import Footer from "../components/Footer.astro";
+import CommandPalette from "../components/CommandPalette.astro";
+
+interface Props {
+  title?: string;
+  description?: string;
+  showReadingProgress?: boolean;
+  /** Absolute OG/Twitter image URL. Defaults to siteConfig.defaultOgImage. */
+  image?: string;
+  /** og:type — "article" on post pages, "website" everywhere else. */
+  type?: "website" | "article";
+  /**
+   * Page-specific JSON-LD (e.g. Article + BreadcrumbList from the post
+   * template). Site-wide WebSite/Organization blocks are always injected
+   * on top of this, not instead of it.
+   */
+  jsonLd?: Record<string, unknown> | Record<string, unknown>[];
+  /** Root-relative URL of the page's LCP image, preloaded if given. */
+  preloadImage?: string;
+}
+
+const {
+  title = siteConfig.title,
+  description = siteConfig.description,
+  showReadingProgress = false,
+  image = siteConfig.defaultOgImage ?? undefined,
+  type = "website",
+  jsonLd,
+  preloadImage,
+} = Astro.props;
+
+// Computed per-page, not a sitewide constant — every page needs its own
+// canonical URL (build-spec.md Phase 9; this was the site's single
+// highest-impact SEO bug before this fix).
+const canonicalUrl = new URL(Astro.url.pathname, siteConfig.url).href;
+const absoluteImage = image ? absoluteUrl(image) : undefined;
+
+const jsonLdBlocks = [
+  ...siteWideJsonLd(),
+  ...(jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : []),
+];
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <script is:inline>
+      // Dark mode, applied before first paint to avoid a flash of the
+      // wrong theme (build-spec.md Phase 5) — a manually-saved preference
+      // wins, otherwise this follows the system preference.
+      (function () {
+        const stored = localStorage.getItem("theme");
+        const theme =
+          stored ??
+          (window.matchMedia("(prefers-color-scheme: dark)").matches
+            ? "dark"
+            : "light");
+        document.documentElement.setAttribute("data-theme", theme);
+      })();
+    </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonicalUrl} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="generator" content={Astro.generator} />
+
+    <!-- Open Graph / Twitter — build-spec.md Phase 9 §11: mirrors the
+         locked title/description exactly, one source, no per-platform
+         variant copy. -->
+    <meta property="og:site_name" content={siteConfig.name} />
+    <meta property="og:type" content={type} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonicalUrl} />
+    {absoluteImage && <meta property="og:image" content={absoluteImage} />}
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    {absoluteImage && <meta name="twitter:image" content={absoluteImage} />}
+
+    {preloadImage && (
+      <link rel="preload" as="image" href={preloadImage} fetchpriority="high" />
+    )}
+
+    {jsonLdBlocks.map((block) => (
+      // Escaping "<" prevents a "</script>"-containing string anywhere in
+      // the data (e.g. a post title) from breaking out of the script tag.
+      <script
+        type="application/ld+json"
+        set:html={JSON.stringify(block).replace(/</g, "\\u003c")}
+      />
+    ))}
+
+    <ClientRouter />
+  </head>
+  <body>
+    <a href="#main-content" class="skip-link">Skip to content</a>
+
+    <Header />
+
+    {showReadingProgress && <div class="reading-progress" aria-hidden="true" />}
+
+    <main id="main-content" tabindex="-1">
+      <slot />
+    </main>
+
+    <Footer />
+
+    <CommandPalette />
+
+    <script>
+      // Astro's View Transitions swap content client-side, and can leave
+      // focus stranded on a now-detached element (or reset to <body> with
+      // no context) — it doesn't manage this correctly by default
+      // (build-spec.md Phase 6). Move focus to the new page's heading so
+      // screen reader users get proper context after every navigation.
+      document.addEventListener("astro:page-load", () => {
+        const heading = document.querySelector<HTMLElement>("main h1");
+        if (!heading) return;
+        if (!heading.hasAttribute("tabindex")) {
+          heading.setAttribute("tabindex", "-1");
+        }
+        heading.focus();
+      });
+    </script>
+  </body>
+</html>
+
+<style>
+  .skip-link {
+    position: absolute;
+    top: -100%;
+    left: var(--spacing);
+    z-index: 100;
+    padding: calc(var(--spacing) * 2) calc(var(--spacing) * 3);
+    background-color: var(--color-accent);
+    color: var(--color-accent-fg);
+    border-radius: 0.375rem;
+    text-decoration: none;
+  }
+
+  .skip-link:focus {
+    top: var(--spacing);
+  }
+
+  .reading-progress {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    height: 3px;
+    background-color: var(--color-accent);
+    transform-origin: left;
+    transform: scaleX(0);
+    animation: reading-progress-fill linear;
+    animation-timeline: scroll(root);
+  }
+
+  @keyframes reading-progress-fill {
+    from {
+      transform: scaleX(0);
+    }
+    to {
+      transform: scaleX(1);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .reading-progress {
+      animation: none;
+      transform: scaleX(0);
+    }
+  }
+</style>

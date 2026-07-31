@@ -1,0 +1,59 @@
+---
+// Differentiates callout types by label/icon text, not color — the token
+// system only has one accent color (build-spec.md §4), and relying on
+// color alone to convey meaning is an accessibility anti-pattern anyway.
+interface Props {
+  type?: "info" | "tip" | "warning" | "danger";
+  title?: string;
+}
+
+const { type = "info", title } = Astro.props;
+
+const meta = {
+  info: { icon: "ℹ", label: "Note" },
+  tip: { icon: "✓", label: "Tip" },
+  warning: { icon: "⚠", label: "Warning" },
+  danger: { icon: "✕", label: "Important" },
+} as const;
+
+const resolvedTitle = title ?? meta[type].label;
+---
+
+<div class="callout" role="note">
+  <p class="callout__title">
+    <span aria-hidden="true">{meta[type].icon}</span>
+    {resolvedTitle}
+  </p>
+  <div class="callout__body">
+    <slot />
+  </div>
+</div>
+
+<style>
+  .callout {
+    border-left: 4px solid var(--color-accent);
+    background-color: var(--color-bg-subtle);
+    border-radius: 0.375rem;
+    padding: calc(var(--spacing) * 3) calc(var(--spacing) * 4);
+    margin: calc(var(--spacing) * 4) 0;
+  }
+
+  .callout__title {
+    display: flex;
+    align-items: center;
+    gap: calc(var(--spacing) * 1);
+    font-weight: 600;
+    font-size: var(--text-sm);
+    color: var(--color-fg);
+    margin: 0 0 var(--spacing);
+  }
+
+  .callout__body {
+    font-size: var(--text-sm);
+    color: var(--color-fg-muted);
+  }
+
+  .callout__body :global(p:last-child) {
+    margin-bottom: 0;
+  }
+</style>

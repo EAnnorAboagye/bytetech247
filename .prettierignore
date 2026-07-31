@@ -1,0 +1,13 @@
+dist/
+.astro/
+node_modules/
+package-lock.json
+
+# Pre-existing spec docs — not part of the generated project, don't reformat.
+BUILD-GUARDRAILS.md
+build-spec.md
+
+# Symlink to AGENTS.md — on filesystems that materialize it as a plain
+# text file (e.g. Windows with core.symlinks=false), Prettier would
+# rewrite it and corrupt the symlink target string.
+CLAUDE.md

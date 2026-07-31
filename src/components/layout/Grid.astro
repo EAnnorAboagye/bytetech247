@@ -1,0 +1,38 @@
+---
+// Every Layout "Grid" — a responsive auto-fit grid with no media queries
+// and no runtime reflow (pure CSS, computed at build time per build-spec.md
+// §4's bento-grid performance requirement).
+interface Props {
+  space?: string;
+  minItemWidth?: string;
+  as?: keyof HTMLElementTagNameMap;
+  class?: string;
+}
+
+const {
+  space = "4",
+  minItemWidth = "16rem",
+  as: Tag = "div",
+  class: className,
+  ...rest
+} = Astro.props as Props & Record<string, unknown>;
+---
+
+<Tag
+  class:list={["auto-grid", className]}
+  style={`--grid-space: calc(var(--spacing) * ${space}); --grid-min-item-width: ${minItemWidth}`}
+  {...rest}
+>
+  <slot />
+</Tag>
+
+<style>
+  .auto-grid {
+    display: grid;
+    grid-template-columns: repeat(
+      auto-fit,
+      minmax(min(var(--grid-min-item-width, 16rem), 100%), 1fr)
+    );
+    gap: var(--grid-space, var(--spacing));
+  }
+</style>

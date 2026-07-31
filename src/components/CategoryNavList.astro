@@ -1,0 +1,126 @@
+---
+// Rendered twice by Header.astro (mobile disclosure + desktop nav) so both
+// copies stay in the DOM for CSS-only responsive show/hide — every link is
+// a real <a href> in both, so nothing depends on which one is visible.
+//
+// The category name in <summary> is deliberately plain text, not a nested
+// <a> — nesting an interactive link inside the native disclosure trigger
+// is a real accessibility anti-pattern (ambiguous activation behavior for
+// assistive tech, flagged by axe-core's nested-interactive rule). The
+// panel's "View all in X" link is the one real, unambiguous way in.
+import { CATEGORIES, getCategoryName, type CategorySlug } from "../config";
+import { slugifyTag } from "../lib/taxonomy";
+
+interface Props {
+  topTagsByCategory: Record<CategorySlug, string[]>;
+  variant?: "horizontal" | "vertical";
+}
+
+const { topTagsByCategory, variant = "vertical" } = Astro.props;
+---
+
+<ul class:list={["category-nav-list", `category-nav-list--${variant}`]}>
+  {
+    CATEGORIES.map((category) => (
+      <li>
+        <details>
+          <summary>
+            {category.name} <span aria-hidden="true">&#9662;</span>
+          </summary>
+          <ul class="category-nav-list__panel">
+            {topTagsByCategory[category.slug].map((tag) => (
+              <li>
+                <a href={`/tag/${slugifyTag(tag)}/`} class="category-nav-list__tag">
+                  {tag}
+                </a>
+              </li>
+            ))}
+            <li>
+              <a href={`/${category.slug}/`}>
+                View all in {getCategoryName(category.slug)}
+              </a>
+            </li>
+          </ul>
+        </details>
+      </li>
+    ))
+  }
+</ul>
+
+<style>
+  .category-nav-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .category-nav-list > li > details > summary {
+    display: flex;
+    align-items: center;
+    gap: calc(var(--spacing) * 0.5);
+    min-height: 24px;
+    padding: calc(var(--spacing) * 0.5) 0;
+    cursor: pointer;
+    list-style: none;
+    color: var(--color-fg);
+  }
+
+  .category-nav-list > li > details > summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .category-nav-list a {
+    color: var(--color-fg);
+    text-decoration: none;
+  }
+
+  .category-nav-list details[open] > summary {
+    color: var(--color-accent);
+  }
+
+  .category-nav-list__panel {
+    list-style: none;
+    margin: 0;
+    padding: var(--spacing);
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--spacing) * 0.5);
+  }
+
+  .category-nav-list__panel a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+    padding: calc(var(--spacing) * 0.5) 0;
+  }
+
+  .category-nav-list__tag {
+    color: var(--color-fg-muted);
+    font-size: var(--text-sm);
+  }
+
+  /* Desktop: categories sit in a horizontal row, each panel drops down
+     below its own summary instead of pushing content down inline. */
+  .category-nav-list--horizontal {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .category-nav-list--horizontal > li {
+    position: relative;
+  }
+
+  .category-nav-list--horizontal .category-nav-list__panel {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    min-width: 12rem;
+    background-color: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: 0.5rem;
+    z-index: 10;
+  }
+</style>

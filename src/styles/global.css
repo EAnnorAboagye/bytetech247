@@ -1,0 +1,271 @@
+/*
+ * "theme" is prepended so it stays the lowest-priority layer even though
+ * `@import "tailwindcss"` (below) declares its own `@layer theme, base,
+ * components, utilities;` — naming it here first fixes its position
+ * instead of letting it get silently appended after `overrides`.
+ */
+@layer theme, reset, tokens, base, components, utilities, overrides;
+
+@import "tailwindcss";
+
+@theme {
+  /*
+   * Colors — OKLCH, one neutral hue+chroma source (250, 0.012) and one
+   * accent hue (264). These are the light-mode values; dark-mode
+   * overrides live in the `tokens` layer below, which sits above this
+   * `theme` layer so it always wins when applicable. Every pairing here
+   * is validated against WCAG AA by scripts/check-contrast.mjs — re-run
+   * it before changing any of these values.
+   */
+  --color-bg: oklch(0.985 0.012 250);
+  --color-bg-subtle: oklch(0.955 0.012 250);
+  --color-border: oklch(0.64 0.012 250);
+  --color-fg: oklch(0.19 0.012 250);
+  --color-fg-muted: oklch(0.46 0.012 250);
+  --color-accent: oklch(0.48 0.19 264);
+  --color-accent-fg: oklch(0.98 0.012 250);
+
+  /*
+   * Modular type scale, ratio 1.25. `lg` and up are fluid via clamp()
+   * (computed by scripts/print-type-scale.mjs); `xs`/`sm`/`base` stay
+   * static — shrinking body copy below 1rem on narrow viewports is a
+   * legibility regression, not a feature.
+   */
+  --text-xs: 0.64rem;
+  --text-sm: 0.8rem;
+  --text-base: 1rem;
+  --text-lg: clamp(1.0938rem, 1.0417rem + 0.2603vw, 1.25rem);
+  --text-xl: clamp(1.3672rem, 1.3021rem + 0.3255vw, 1.5625rem);
+  --text-2xl: clamp(1.709rem, 1.6276rem + 0.4068vw, 1.9531rem);
+  --text-3xl: clamp(2.1362rem, 2.0345rem + 0.5087vw, 2.4414rem);
+  --text-4xl: clamp(2.6703rem, 2.5431rem + 0.6358vw, 3.0518rem);
+  --text-5xl: clamp(3.3379rem, 3.179rem + 0.7947vw, 3.8147rem);
+
+  /*
+   * Spacing — 8px grid. Tailwind v4's `--spacing` is the multiplier for
+   * its entire numeric spacing scale (p-1, gap-2, m-4, ...); overriding
+   * it from the 0.25rem default to 0.5rem puts every spacing utility on
+   * an 8px grid without any bespoke spacing tokens.
+   */
+  --spacing: 0.5rem;
+
+  /* Motion — mapped into Tailwind's `--ease-*` namespace too, so both
+     `ease-out-expo` utilities and raw `var(--ease-out-expo)` work. */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@layer tokens {
+  :root {
+    /* Motion tokens with no matching Tailwind @theme namespace. */
+    --duration-fast: 120ms;
+    --duration-base: 200ms;
+    --duration-slow: 320ms;
+    --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /*
+   * Dark mode — same neutral/accent hue+chroma source as the @theme
+   * light defaults above; only the lightness picks change. This is the
+   * system-preference default. Phase 5 adds the manual data-theme
+   * toggle on top of the [data-theme] overrides below.
+   */
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --color-bg: oklch(0.15 0.012 250);
+      --color-bg-subtle: oklch(0.2 0.012 250);
+      --color-border: oklch(0.5 0.012 250);
+      --color-fg: oklch(0.96 0.012 250);
+      --color-fg-muted: oklch(0.68 0.012 250);
+      --color-accent: oklch(0.75 0.14 264);
+      --color-accent-fg: oklch(0.15 0.012 250);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --color-bg: oklch(0.15 0.012 250);
+    --color-bg-subtle: oklch(0.2 0.012 250);
+    --color-border: oklch(0.5 0.012 250);
+    --color-fg: oklch(0.96 0.012 250);
+    --color-fg-muted: oklch(0.68 0.012 250);
+    --color-accent: oklch(0.75 0.14 264);
+    --color-accent-fg: oklch(0.15 0.012 250);
+  }
+
+  :root[data-theme="light"] {
+    --color-bg: oklch(0.985 0.012 250);
+    --color-bg-subtle: oklch(0.955 0.012 250);
+    --color-border: oklch(0.64 0.012 250);
+    --color-fg: oklch(0.19 0.012 250);
+    --color-fg-muted: oklch(0.46 0.012 250);
+    --color-accent: oklch(0.48 0.19 264);
+    --color-accent-fg: oklch(0.98 0.012 250);
+  }
+}
+
+@layer reset {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  img,
+  picture,
+  video,
+  canvas,
+  svg {
+    display: block;
+    max-width: 100%;
+  }
+}
+
+@layer base {
+  /*
+   * Deliberate: no self-hosted webfont is wired in. build-spec.md Phase 1/10
+   * calls for a self-hosted, subsetted font, but that requires a real font
+   * asset choice (design decision) and a subsetting step this pass doesn't
+   * have inputs for. The system font stack (below) is a legitimate,
+   * zero-request-cost baseline in the meantime — swap in a `@font-face`
+   * block here (with `font-display: optional` per spec) once a typeface is
+   * chosen, rather than treating this as an oversight.
+   */
+  body {
+    background-color: var(--color-bg);
+    color: var(--color-fg);
+    font-size: var(--text-base);
+    font-family:
+      ui-sans-serif,
+      system-ui,
+      -apple-system,
+      "Segoe UI",
+      Roboto,
+      Helvetica,
+      Arial,
+      sans-serif;
+  }
+
+  /*
+   * Safety-net width constraint for any page that doesn't wrap its own
+   * content in <Center> (About, Contact, Archive, category/tag archives,
+   * 404, Privacy, Terms, Affiliate Disclosure, Editorial Policy) — before
+   * this rule, those nine templates rendered edge-to-edge with zero
+   * gutter on wide viewports. index.astro and the article page already
+   * apply their own width constraint inside <main>; this rule still
+   * applies to <main> itself on those pages too, but since it's wider
+   * than their inner wrapper it stays non-binding there.
+   */
+  main {
+    max-width: 72rem;
+    margin-inline: auto;
+    padding-inline: calc(var(--spacing) * 4);
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    text-wrap: balance;
+  }
+
+  h1 {
+    font-size: var(--text-4xl);
+  }
+
+  h2 {
+    font-size: var(--text-2xl);
+  }
+
+  h3 {
+    font-size: var(--text-xl);
+  }
+
+  h4 {
+    font-size: var(--text-lg);
+  }
+
+  h5,
+  h6 {
+    font-size: var(--text-base);
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  /*
+   * Site-wide visible keyboard focus (build-spec.md Phase 6) — previously
+   * only Button.astro and the code-tab radios had their own :focus-visible
+   * rule, so every other interactive element (header actions, footer
+   * links, tag pills, card links, command-palette items) fell back to
+   * inconsistent browser defaults. One rule here covers all of them;
+   * components can still override locally for a tighter fit (as
+   * CommandPalette's search input does).
+   */
+  a:focus-visible,
+  button:focus-visible,
+  input:focus-visible,
+  summary:focus-visible,
+  [tabindex]:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+
+  /*
+   * Motion tokens (Phase 1) wired into real transitions rather than left
+   * declared-but-unused — hover/focus color changes across the site now
+   * share one duration/easing instead of relying on Tailwind's untokened
+   * default. Respects prefers-reduced-motion below, same as the reading
+   * progress bar.
+   */
+  a,
+  button,
+  summary {
+    transition:
+      color var(--duration-base) var(--ease-out-expo),
+      background-color var(--duration-base) var(--ease-out-expo),
+      border-color var(--duration-base) var(--ease-out-expo);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    a,
+    button,
+    summary {
+      transition: none;
+    }
+  }
+}
+
+@layer overrides {
+  /*
+   * Print stylesheet (build-spec.md Phase 9) — strips nav/sidebar/search
+   * chrome, leaves article content and heading structure intact so a
+   * printed post reads like a document, not a snapshot of the whole site.
+   */
+  @media print {
+    .site-header,
+    .site-footer,
+    .post-sidebar,
+    .command-palette,
+    .skip-link,
+    .reading-progress,
+    .back-link,
+    .breadcrumb,
+    [data-command-palette-trigger],
+    [data-theme-toggle] {
+      display: none !important;
+    }
+
+    .post-layout {
+      display: block;
+      max-width: none;
+      padding: 0;
+    }
+
+    a {
+      color: black;
+      text-decoration: underline;
+    }
+  }
+}

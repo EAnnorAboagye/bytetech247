@@ -1,0 +1,43 @@
+---
+// Every Layout "Center" — intrinsic centering container: caps line length
+// and applies horizontal gutters, optionally centering children themselves.
+interface Props {
+  maxWidth?: string;
+  gutter?: string;
+  intrinsic?: boolean;
+  as?: keyof HTMLElementTagNameMap;
+  class?: string;
+}
+
+const {
+  maxWidth = "72rem",
+  gutter = "4",
+  intrinsic = false,
+  as: Tag = "div",
+  class: className,
+  ...rest
+} = Astro.props as Props & Record<string, unknown>;
+---
+
+<Tag
+  class:list={["center", { "center--intrinsic": intrinsic }, className]}
+  style={`--center-max-width: ${maxWidth}; --center-gutter: calc(var(--spacing) * ${gutter})`}
+  {...rest}
+>
+  <slot />
+</Tag>
+
+<style>
+  .center {
+    box-sizing: content-box;
+    max-width: var(--center-max-width, 72rem);
+    margin-inline: auto;
+    padding-inline: var(--center-gutter, var(--spacing));
+  }
+
+  .center--intrinsic {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+</style>

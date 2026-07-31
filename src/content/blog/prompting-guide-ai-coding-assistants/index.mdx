@@ -1,0 +1,43 @@
+---
+title: "Getting More Out of AI Coding Assistants: A Practical Prompting Guide"
+description: "Concrete techniques for prompting AI coding assistants so you get working code on the first pass more often — specificity, constraints, checkpoints, and reviewing diffs."
+date: 2026-07-27
+category: ai-productivity
+tags: ["ai", "productivity", "prompting"]
+coverImage: "./cover.jpg"
+coverImageAlt: "Abstract visualization of a neural network representing AI-assisted coding"
+---
+
+The gap between a frustrating session with an AI coding assistant and a genuinely productive one is rarely the model — it's almost always the prompt. The same assistant that produces a confused, half-working patch from a vague request can produce a clean, correct one from a well-specified request. The technique matters more than most people expect.
+
+## Be specific about the shape of the change
+
+"Add validation to the signup form" leaves the assistant guessing at which fields, which rules, and which existing pattern to follow. "Add a required check and email-format check to the `email` field in `SignupForm.tsx`, following the same `Error` component the `password` field already uses" leaves nothing to guess.
+
+| Vague prompt | Specific prompt |
+|---|---|
+| "Fix the bug in the login page" | "The login form in `src/pages/login.astro` submits even when the password field is empty — add a client-side check before the fetch call, matching the pattern used in `signup.astro`" |
+| "Make this faster" | "This function re-sorts the array on every render — memoize the sort with `useMemo`, keyed on the array reference" |
+| "Clean up this file" | "Remove the two unused imports at the top of `utils.ts` and the commented-out function on lines 40–55; leave everything else unchanged" |
+
+The specific version on the right isn't longer because it's polite — every extra word is a constraint that removes a wrong turn.
+
+## Give it constraints, not just a goal
+
+A goal alone ("make this component reusable") is compatible with a hundred different implementations, some of which will conflict with decisions already made elsewhere in the codebase. Naming the constraints up front — "no new dependencies," "keep the existing prop names," "match the error-handling style used in the other components in this folder" — narrows the space to the one implementation that actually fits.
+
+## Work in checkpoints on anything non-trivial
+
+For a one-line fix, just ask for the fix. For anything that touches multiple files or has more than one reasonable approach, ask for a plan first: "Before making changes, describe how you'd implement this and which files you'd touch." Reading a three-sentence plan takes ten seconds and catches a wrong assumption before it's baked into fifty lines of code — much cheaper than catching it in review.
+
+<Callout type="tip" title="Go deeper">
+For a full treatment of these techniques — including how to structure longer prompts with XML tags and how to request step-by-step reasoning — Anthropic's own prompt engineering documentation at <a href="https://docs.claude.com/en/docs/build-with-claude/prompt-engineering/overview">docs.claude.com</a> is a solid next step.
+</Callout>
+
+## Always review the diff
+
+None of the above replaces reading the actual change. Treat AI-written code exactly like a pull request from a new teammate: read every line that changed before running it, let alone merging it. The assistant doesn't know your production incident history, your team's unwritten conventions, or which shortcut bit you last quarter — you do. Specific prompts get you a better first draft; review is what makes it safe to ship.
+
+<Callout type="warning" title="Don't skip verification">
+A confident-sounding explanation is not the same as a correct one. Run the tests, check the diff against the actual requirement, and don't take "this should work now" as proof that it does.
+</Callout>

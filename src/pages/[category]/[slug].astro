@@ -1,0 +1,492 @@
+---
+import { getCollection, render } from "astro:content";
+import type { InferGetStaticPropsType } from "astro";
+import { Image } from "astro:assets";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import TOCSidebar from "../../components/TOCSidebar.astro";
+import PostCard from "../../components/PostCard.astro";
+import TagPill from "../../components/TagPill.astro";
+import Figure from "../../components/Figure.astro";
+import Callout from "../../components/Callout.astro";
+import CodeTabs from "../../components/CodeTabs.astro";
+import Benchmark from "../../components/Benchmark.astro";
+import { siteConfig, getCategoryName } from "../../config";
+import { validateCoverImage } from "../../lib/validate-cover-image";
+import { calculateReadingTime } from "../../lib/reading-time";
+import { getRelatedPosts } from "../../lib/related-posts";
+import { articleJsonLd, breadcrumbJsonLd } from "../../lib/json-ld";
+import { slugifyTag } from "../../lib/taxonomy";
+
+export async function getStaticPaths() {
+  const posts = await getCollection("blog");
+  for (const post of posts) {
+    validateCoverImage(post);
+  }
+  return posts.map((post) => ({
+    params: { category: post.data.category, slug: post.id },
+    props: { post, allPosts: posts },
+  }));
+}
+
+type Props = InferGetStaticPropsType<typeof getStaticPaths>;
+
+const { post, allPosts } = Astro.props as Props;
+const { Content, headings } = await render(post);
+const categoryName = getCategoryName(post.data.category);
+const readingTime = calculateReadingTime(post.body ?? "");
+const relatedPosts = getRelatedPosts(post, allPosts);
+
+// Same hierarchy as the visible breadcrumb below, per build-spec.md §10 —
+// visible and structured data must agree, not drift independently.
+const pageUrl = new URL(Astro.url.pathname, siteConfig.url).href;
+const categoryUrl = new URL(`/${post.data.category}/`, siteConfig.url).href;
+const breadcrumbItems = [
+  { name: "Home", url: siteConfig.url },
+  { name: categoryName, url: categoryUrl },
+  { name: post.data.title, url: pageUrl },
+];
+const articleJsonLdBlocks = [
+  articleJsonLd(post, pageUrl),
+  breadcrumbJsonLd(breadcrumbItems),
+];
+
+const seriesPosts = post.data.series
+  ? allPosts
+      .filter((p) => p.data.series === post.data.series)
+      .sort((a, b) => (a.data.seriesOrder ?? 0) - (b.data.seriesOrder ?? 0))
+  : [];
+const seriesIndex = seriesPosts.findIndex((p) => p.id === post.id);
+const prevInSeries = seriesIndex > 0 ? seriesPosts[seriesIndex - 1] : undefined;
+const nextInSeries =
+  seriesIndex >= 0 && seriesIndex < seriesPosts.length - 1
+    ? seriesPosts[seriesIndex + 1]
+    : undefined;
+---
+
+<BaseLayout
+  title={`${post.data.title} — ${categoryName}`}
+  description={post.data.description}
+  type="article"
+  image={post.data.coverImage.src}
+  preloadImage={post.data.coverImage.src}
+  jsonLd={articleJsonLdBlocks}
+  showReadingProgress
+>
+  <div class="post-layout">
+    <article class="post-article">
+      <p>
+        <a href={`/${post.data.category}/`} class="back-link">
+          ← {categoryName}
+        </a>
+      </p>
+
+      <nav aria-label="Breadcrumb" class="breadcrumb">
+        <ol class="breadcrumb__list">
+          <li><a href="/">Home</a></li>
+          <li><a href={`/${post.data.category}/`}>{categoryName}</a></li>
+          <li aria-current="page">{post.data.title}</li>
+        </ol>
+      </nav>
+
+      <h1>{post.data.title}</h1>
+      <p class="post-meta">
+        {siteConfig.author.name && <>By {siteConfig.author.name} · </>}
+        <time datetime={post.data.date.toISOString()}>
+          {
+            post.data.date.toLocaleDateString("en-US", {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+              timeZone: "UTC",
+            })
+          }
+        </time>
+        · {readingTime} min read
+      </p>
+
+      <Image
+        src={post.data.coverImage}
+        alt={post.data.coverImageAlt}
+        widths={[640, 1024, 1600]}
+        sizes="(min-width: 64rem) 48rem, 100vw"
+        loading="eager"
+        fetchpriority="high"
+        class="post-cover"
+      />
+
+      {
+        seriesPosts.length > 1 && (
+          <nav aria-label="Series progress" class="series-nav">
+            <p class="series-nav__title">
+              {post.data.series} ({seriesIndex + 1} of {seriesPosts.length})
+            </p>
+            <ol class="series-nav__list">
+              {seriesPosts.map((seriesPost, i) => (
+                <li class:list={{ "is-current": seriesPost.id === post.id }}>
+                  {seriesPost.id === post.id ? (
+                    <span>
+                      {i + 1}. {seriesPost.data.title}
+                    </span>
+                  ) : (
+                    <a href={`/${seriesPost.data.category}/${seriesPost.id}/`}>
+                      {i + 1}. {seriesPost.data.title}
+                    </a>
+                  )}
+                </li>
+              ))}
+            </ol>
+          </nav>
+        )
+      }
+
+      <div class="article-content">
+        <Content components={{ Figure, Callout, CodeTabs, Benchmark }} />
+      </div>
+
+      {
+        post.data.tags.length > 0 && (
+          <ul class="post-tags">
+            {post.data.tags.map((tag) => (
+              <li>
+                <TagPill href={`/tag/${slugifyTag(tag)}/`}>{tag}</TagPill>
+              </li>
+            ))}
+          </ul>
+        )
+      }
+
+      {
+        (prevInSeries || nextInSeries) && (
+          <nav aria-label="Series prev/next" class="series-prev-next">
+            {prevInSeries ? (
+              <a href={`/${prevInSeries.data.category}/${prevInSeries.id}/`}>
+                ← {prevInSeries.data.title}
+              </a>
+            ) : (
+              <span />
+            )}
+            {nextInSeries && (
+              <a href={`/${nextInSeries.data.category}/${nextInSeries.id}/`}>
+                {nextInSeries.data.title} →
+              </a>
+            )}
+          </nav>
+        )
+      }
+
+      {
+        relatedPosts.length > 0 && (
+          <section aria-label="Related posts" class="related-posts">
+            <h2>Related posts</h2>
+            <div class="related-posts__grid">
+              {relatedPosts.map((related) => (
+                <PostCard post={related} />
+              ))}
+            </div>
+          </section>
+        )
+      }
+    </article>
+
+    <aside class="post-sidebar">
+      <TOCSidebar headings={headings} />
+    </aside>
+  </div>
+</BaseLayout>
+
+<style>
+  .post-layout {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: calc(var(--spacing) * 6);
+    max-width: 72rem;
+    margin-inline: auto;
+    padding: calc(var(--spacing) * 6) calc(var(--spacing) * 4);
+  }
+
+  @media (min-width: 64rem) {
+    .post-layout {
+      grid-template-columns: minmax(0, 1fr) 16rem;
+      align-items: start;
+    }
+  }
+
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+  }
+
+  .breadcrumb {
+    margin: calc(var(--spacing) * 2) 0;
+  }
+
+  .breadcrumb__list {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: calc(var(--spacing) * 0.5);
+    margin: 0;
+    padding: 0;
+    font-size: var(--text-xs);
+    color: var(--color-fg-muted);
+  }
+
+  .breadcrumb__list li:not(:last-child)::after {
+    content: "/";
+    margin-left: calc(var(--spacing) * 0.5);
+    color: var(--color-border);
+  }
+
+  .breadcrumb__list a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+    color: var(--color-fg-muted);
+    text-decoration: none;
+  }
+
+  .breadcrumb__list a:hover {
+    color: var(--color-accent);
+  }
+
+  .breadcrumb__list li[aria-current="page"] {
+    color: var(--color-fg);
+  }
+
+  .post-meta {
+    font-size: var(--text-sm);
+    color: var(--color-fg-muted);
+  }
+
+  .post-cover {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+    border-radius: 0.75rem;
+    margin: calc(var(--spacing) * 4) 0;
+  }
+
+  .series-nav {
+    border: 1px solid var(--color-border);
+    border-radius: 0.5rem;
+    padding: calc(var(--spacing) * 3);
+    margin: calc(var(--spacing) * 4) 0;
+  }
+
+  .series-nav__title {
+    font-weight: 600;
+    font-size: var(--text-sm);
+    margin: 0 0 var(--spacing);
+    color: var(--color-fg);
+  }
+
+  .series-nav__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--spacing) * 0.5);
+    font-size: var(--text-sm);
+  }
+
+  .series-nav__list a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+    color: var(--color-fg-muted);
+    text-decoration: none;
+  }
+
+  .series-nav__list .is-current span {
+    color: var(--color-fg);
+    font-weight: 600;
+  }
+
+  .post-tags {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing);
+    margin: calc(var(--spacing) * 6) 0 0;
+    padding: 0;
+  }
+
+  .series-prev-next {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--spacing);
+    margin-top: calc(var(--spacing) * 4);
+    padding-top: calc(var(--spacing) * 4);
+    border-top: 1px solid var(--color-border);
+    font-size: var(--text-sm);
+  }
+
+  .series-prev-next a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+    color: var(--color-accent);
+    text-decoration: none;
+  }
+
+  .related-posts {
+    margin-top: calc(var(--spacing) * 8);
+  }
+
+  .related-posts__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+    gap: calc(var(--spacing) * 4);
+    margin-top: calc(var(--spacing) * 4);
+  }
+
+  /* GFM table styling, scoped to rendered MDX content — mobile scroll
+     wrapper contained to the table itself, not the whole page. */
+  .article-content :global(table) {
+    display: block;
+    overflow-x: auto;
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--text-sm);
+    margin: calc(var(--spacing) * 4) 0;
+  }
+
+  .article-content :global(thead) {
+    position: sticky;
+    top: 0;
+    background-color: var(--color-bg);
+  }
+
+  .article-content :global(th),
+  .article-content :global(td) {
+    border: 1px solid var(--color-border);
+    padding: var(--spacing) calc(var(--spacing) * 2);
+    text-align: left;
+  }
+
+  .article-content :global(tbody tr:nth-child(even)) {
+    background-color: var(--color-bg-subtle);
+  }
+
+  /*
+   * Code blocks — Phase 4's one documented exception to the token-only
+   * color rule (Part III of build-spec.md): these are GitHub Dark's own
+   * colors, fixed regardless of the site's light/dark toggle, not pulled
+   * from the Phase 1 token layer.
+   */
+  .article-content :global(.code-block) {
+    position: relative;
+    margin: calc(var(--spacing) * 4) 0;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    border: 1px solid #30363d;
+  }
+
+  .article-content :global(.code-block__header) {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: calc(var(--spacing) * 1) calc(var(--spacing) * 2);
+    background-color: #161b22;
+    border-bottom: 1px solid #30363d;
+  }
+
+  .article-content :global(.code-block__filename) {
+    font-size: var(--text-xs);
+    font-family: monospace;
+    color: #8b949e;
+  }
+
+  .article-content :global(.code-block__copy) {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+    font-size: var(--text-xs);
+    color: #8b949e;
+    background: none;
+    border: 1px solid #30363d;
+    border-radius: 0.25rem;
+    padding: calc(var(--spacing) * 0.5) var(--spacing);
+    cursor: pointer;
+  }
+
+  .article-content :global(.code-block__copy:hover) {
+    color: #f0f6fc;
+    border-color: #8b949e;
+  }
+
+  .article-content :global(.astro-code) {
+    margin: 0;
+    padding: calc(var(--spacing) * 3);
+    overflow-x: auto;
+    font-size: var(--text-sm);
+    line-height: 1.6;
+  }
+
+  .article-content :global(.astro-code code) {
+    counter-reset: line;
+  }
+
+  .article-content :global(.astro-code .line) {
+    display: block;
+    position: relative;
+    counter-increment: line;
+    padding-left: calc(var(--spacing) * 4);
+    min-height: 1lh;
+  }
+
+  .article-content :global(.astro-code .line::before) {
+    content: counter(line);
+    position: absolute;
+    left: 0;
+    width: calc(var(--spacing) * 3);
+    text-align: right;
+    color: #6e7681;
+    user-select: none;
+  }
+
+  .article-content :global(.astro-code .line.highlighted) {
+    background-color: rgb(110 118 129 / 0.15);
+  }
+
+  .article-content :global(.astro-code .line.diff.add) {
+    background-color: rgb(46 160 67 / 0.15);
+  }
+
+  .article-content :global(.astro-code .line.diff.remove) {
+    background-color: rgb(248 81 73 / 0.15);
+  }
+</style>
+
+<script>
+  // Copy-to-clipboard button — pure progressive enhancement. Code is
+  // already fully readable/selectable without this; the button just
+  // becomes clickable once JS is available.
+  document.addEventListener("click", async (event) => {
+    const button = (event.target as HTMLElement).closest<HTMLButtonElement>(
+      ".code-block__copy",
+    );
+    if (!button) return;
+
+    const code = button.closest(".code-block")?.querySelector("code");
+    if (!code) return;
+
+    try {
+      await navigator.clipboard.writeText(code.textContent ?? "");
+    } catch {
+      // Clipboard access can fail (permissions, unsupported browser) —
+      // fail quietly rather than leave an unhandled rejection; the code
+      // is still fully selectable/copyable by hand either way.
+      return;
+    }
+
+    const originalLabel = button.textContent;
+    button.textContent = "Copied!";
+    setTimeout(() => {
+      button.textContent = originalLabel;
+    }, 2000);
+  });
+</script>

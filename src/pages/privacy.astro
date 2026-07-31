@@ -1,0 +1,101 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { siteConfig } from "../config";
+const lastUpdated = "July 31, 2026";
+---
+
+<BaseLayout
+  title={`Privacy Policy — ${siteConfig.name}`}
+  description={`${siteConfig.name}'s privacy policy: what data is collected, how it's used, and which third-party services are involved.`}
+>
+  <article class="legal">
+    <h1>Privacy Policy</h1>
+    <p class="legal__updated">Last updated: {lastUpdated}</p>
+
+    <p>
+      {siteConfig.name} is a small, independently-run technical blog. This
+      policy explains what happens when you read it.
+    </p>
+
+    <h2>What this site collects today</h2>
+    <p>
+      As of this writing, {siteConfig.name} does not run any analytics,
+      tracking pixels, or advertising scripts, and does not set cookies for
+      visitors. Reading the site does not create an account, a session, or
+      any stored profile of you. Server logs at the hosting layer
+      (Cloudflare) may record standard technical data — IP address, user
+      agent, requested URL, timestamp — the same way any web server does;
+      {siteConfig.name} does not access or process these logs beyond normal
+      operational troubleshooting.
+    </p>
+
+    <h2>What may be added later, and how it will be handled</h2>
+    <p>
+      If {siteConfig.name} adds Cloudflare Web Analytics, it is a
+      cookieless, IP-anonymizing analytics product — it does not use
+      client-side identifiers or cross-site tracking. If comments are added
+      (via Giscus, which authenticates through your own GitHub account),
+      that exchange happens directly between you and GitHub; {siteConfig.name}
+      does not see or store your GitHub credentials. If advertising,
+      affiliate links, or a newsletter are ever added, this page will be
+      updated first, and any tracking that requires consent (for example
+      Google Analytics) will be gated behind an actual consent prompt, not
+      just a mention on this page. See the{" "}
+      <a href="/affiliate-disclosure/">Affiliate/Advertising Disclosure</a>{" "}
+      page for the current status of monetization on this site.
+    </p>
+
+    <h2>Third-party links</h2>
+    <p>
+      Posts on {siteConfig.name} link out to external tools, documentation,
+      and services. Once you follow an outbound link, that site's own
+      privacy practices apply — this policy only covers {siteConfig.name}{" "}
+      itself.
+    </p>
+
+    <h2>Your rights</h2>
+    <p>
+      Because no personal data is currently collected or stored by this
+      site, there is nothing to request deletion of today. If that changes,
+      this page will describe exactly what's collected and how to request
+      its removal. In the meantime, if you have a privacy question, reach
+      out via the <a href="/contact/">Contact</a> page.
+    </p>
+
+    <h2>Changes to this policy</h2>
+    <p>
+      This page will be updated whenever what {siteConfig.name} collects or
+      how it's handled changes — the "Last updated" date above reflects the
+      most recent revision.
+    </p>
+
+    <p class="legal__disclaimer">
+      This page is provided for transparency and is not a substitute for
+      legal advice.
+    </p>
+  </article>
+</BaseLayout>
+
+<style>
+  .legal {
+    max-width: 42rem;
+  }
+
+  .legal__updated {
+    font-size: var(--text-sm);
+    color: var(--color-fg-muted);
+    margin-top: calc(var(--spacing) * -2);
+  }
+
+  .legal h2 {
+    margin-top: calc(var(--spacing) * 6);
+  }
+
+  .legal__disclaimer {
+    margin-top: calc(var(--spacing) * 8);
+    padding-top: calc(var(--spacing) * 4);
+    border-top: 1px solid var(--color-border);
+    font-size: var(--text-sm);
+    color: var(--color-fg-muted);
+  }
+</style>

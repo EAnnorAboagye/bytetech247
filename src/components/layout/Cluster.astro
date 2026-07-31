@@ -1,0 +1,51 @@
+---
+// Every Layout "Cluster" — a horizontally wrapping group of items with
+// consistent gap and alignment. Used for tag lists, nav items, button rows.
+interface Props {
+  space?: string;
+  justify?: "start" | "center" | "end" | "between";
+  align?: "start" | "center" | "end";
+  as?: keyof HTMLElementTagNameMap;
+  class?: string;
+}
+
+const {
+  space = "2",
+  justify = "start",
+  align = "center",
+  as: Tag = "div",
+  class: className,
+  ...rest
+} = Astro.props as Props & Record<string, unknown>;
+
+const justifyMap = {
+  start: "flex-start",
+  center: "center",
+  end: "flex-end",
+  between: "space-between",
+} as const;
+
+const alignMap = {
+  start: "flex-start",
+  center: "center",
+  end: "flex-end",
+} as const;
+---
+
+<Tag
+  class:list={["cluster", className]}
+  style={`--cluster-space: calc(var(--spacing) * ${space}); --cluster-justify: ${justifyMap[justify]}; --cluster-align: ${alignMap[align]}`}
+  {...rest}
+>
+  <slot />
+</Tag>
+
+<style>
+  .cluster {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--cluster-space, var(--spacing));
+    justify-content: var(--cluster-justify, flex-start);
+    align-items: var(--cluster-align, center);
+  }
+</style>

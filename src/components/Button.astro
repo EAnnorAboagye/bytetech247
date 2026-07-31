@@ -1,0 +1,59 @@
+---
+import { cva, type VariantProps } from "class-variance-authority";
+
+const button = cva(
+  "inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-50 disabled:pointer-events-none",
+  {
+    variants: {
+      intent: {
+        primary: "bg-accent text-accent-fg hover:opacity-90",
+        secondary:
+          "bg-bg-subtle text-fg border border-border hover:border-accent",
+        ghost: "text-fg hover:bg-bg-subtle",
+      },
+      size: {
+        sm: "text-sm px-3 py-1.5 gap-1.5",
+        md: "text-base px-4 py-2 gap-2",
+        lg: "text-lg px-5 py-2.5 gap-2.5",
+      },
+    },
+    defaultVariants: { intent: "primary", size: "md" },
+  },
+);
+
+type Props = VariantProps<typeof button> & {
+  as?: "button" | "a";
+  href?: string;
+  type?: "button" | "submit" | "reset";
+  disabled?: boolean;
+  class?: string;
+};
+
+const {
+  intent,
+  size,
+  as: Tag = "button",
+  href,
+  type = "button",
+  disabled,
+  class: className,
+  ...rest
+} = Astro.props;
+---
+
+{
+  Tag === "a" ? (
+    <a href={href} class:list={[button({ intent, size }), className]} {...rest}>
+      <slot />
+    </a>
+  ) : (
+    <button
+      type={type}
+      disabled={disabled}
+      class:list={[button({ intent, size }), className]}
+      {...rest}
+    >
+      <slot />
+    </button>
+  )
+}

@@ -1,0 +1,92 @@
+---
+// Zero-JS tab switcher using the radio + :has() pattern — no client script
+// needed. Author usage:
+//   <CodeTabs labels={["index.js", "package.json"]}>
+//     <Fragment slot="tab-0">```js ... ```</Fragment>
+//     <Fragment slot="tab-1">```json ... ```</Fragment>
+//   </CodeTabs>
+// Capped at 6 tabs — plenty for a file-comparison snippet.
+interface Props {
+  labels: string[];
+}
+
+const { labels } = Astro.props;
+const groupName = `code-tabs-${crypto.randomUUID()}`;
+---
+
+<div class="code-tabs">
+  <div class="code-tabs__tablist">
+    {
+      labels.map((label, i) => (
+        <label class="code-tabs__label">
+          <input
+            type="radio"
+            name={groupName}
+            checked={i === 0}
+            class="code-tabs__radio"
+          />
+          <span>{label}</span>
+        </label>
+      ))
+    }
+  </div>
+  {
+    labels.map((_, i) => (
+      <div class="code-tabs__panel" data-panel-index={i}>
+        <slot name={`tab-${i}`} />
+      </div>
+    ))
+  }
+</div>
+
+<style>
+  .code-tabs__radio {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .code-tabs__tablist {
+    display: flex;
+    gap: calc(var(--spacing) * 0.5);
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .code-tabs__label {
+    position: relative;
+    cursor: pointer;
+    padding: var(--spacing) calc(var(--spacing) * 2);
+    font-size: var(--text-sm);
+    color: var(--color-fg-muted);
+    border-bottom: 2px solid transparent;
+  }
+
+  .code-tabs__label:has(.code-tabs__radio:checked) {
+    color: var(--color-fg);
+    border-bottom-color: var(--color-accent);
+  }
+
+  .code-tabs__label:has(.code-tabs__radio:focus-visible) {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+
+  .code-tabs__panel {
+    display: none;
+  }
+
+  .code-tabs:has(.code-tabs__label:nth-of-type(1) .code-tabs__radio:checked)
+    .code-tabs__panel[data-panel-index="0"],
+  .code-tabs:has(.code-tabs__label:nth-of-type(2) .code-tabs__radio:checked)
+    .code-tabs__panel[data-panel-index="1"],
+  .code-tabs:has(.code-tabs__label:nth-of-type(3) .code-tabs__radio:checked)
+    .code-tabs__panel[data-panel-index="2"],
+  .code-tabs:has(.code-tabs__label:nth-of-type(4) .code-tabs__radio:checked)
+    .code-tabs__panel[data-panel-index="3"],
+  .code-tabs:has(.code-tabs__label:nth-of-type(5) .code-tabs__radio:checked)
+    .code-tabs__panel[data-panel-index="4"],
+  .code-tabs:has(.code-tabs__label:nth-of-type(6) .code-tabs__radio:checked)
+    .code-tabs__panel[data-panel-index="5"] {
+    display: block;
+  }
+</style>

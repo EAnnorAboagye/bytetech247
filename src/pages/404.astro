@@ -1,0 +1,55 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { siteConfig, CATEGORIES } from "../config";
+---
+
+<BaseLayout
+  title={`Page Not Found — ${siteConfig.name}`}
+  description="The page you're looking for doesn't exist."
+>
+  <h1>404 — Page Not Found</h1>
+  <p>That page doesn't exist. Try one of these instead:</p>
+
+  <p>
+    <button type="button" class="palette-trigger" data-command-palette-trigger>
+      Search for a page (Ctrl+K)
+    </button>
+  </p>
+  <p>
+    <small
+      >Full content search ships in Phase 8 (Pagefind) — this jumps to pages by
+      name.</small
+    >
+  </p>
+
+  <nav aria-label="Browse categories">
+    <ul class="category-list">
+      {
+        CATEGORIES.map((category) => (
+          <li>
+            <a href={`/${category.slug}/`}>{category.name}</a>
+          </li>
+        ))
+      }
+    </ul>
+  </nav>
+
+  <p><a href="/" class="home-link">Back to homepage</a></p>
+</BaseLayout>
+
+<style>
+  .palette-trigger {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+    padding: calc(var(--spacing) * 0.5) var(--spacing);
+    cursor: pointer;
+  }
+
+  .category-list a,
+  .home-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+  }
+</style>
