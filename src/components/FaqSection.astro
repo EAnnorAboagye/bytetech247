@@ -1,0 +1,56 @@
+---
+// Renders post.data.faq (src/content.config.ts) — the same array that
+// src/lib/json-ld.ts turns into FAQPage schema, so the visible section
+// and the structured data can never drift apart from each other. Only
+// rendered when a post's frontmatter actually has entries; the
+// write-article skill only fills faq in when there are genuinely
+// distinct follow-up questions, not to hit a word count.
+interface Props {
+  faq: { question: string; answer: string }[];
+}
+
+const { faq } = Astro.props;
+---
+
+{
+  faq.length > 0 && (
+    <section class="faq-section" aria-labelledby="faq-heading">
+      <h2 id="faq-heading">Frequently asked questions</h2>
+      <dl class="faq-section__list">
+        {faq.map((item) => (
+          <div class="faq-section__item">
+            <dt class="faq-section__question">{item.question}</dt>
+            <dd class="faq-section__answer">{item.answer}</dd>
+          </div>
+        ))}
+      </dl>
+    </section>
+  )
+}
+
+<style>
+  .faq-section {
+    margin-top: calc(var(--spacing) * 8);
+  }
+
+  .faq-section__list {
+    margin: calc(var(--spacing) * 4) 0 0;
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--spacing) * 4);
+  }
+
+  .faq-section__item {
+    margin: 0;
+  }
+
+  .faq-section__question {
+    font-weight: 600;
+    color: var(--color-fg);
+  }
+
+  .faq-section__answer {
+    margin: calc(var(--spacing) * 1) 0 0;
+    color: var(--color-fg-muted);
+  }
+</style>

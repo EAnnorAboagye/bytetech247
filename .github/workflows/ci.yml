@@ -9,7 +9,13 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+      # LastVerified reads each post's last-touching commit date via
+      # `git log`, which silently returns nothing for a shallow clone
+      # once a file's real last-touching commit is older than whatever
+      # depth was fetched — full history, not the default shallow clone.
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
@@ -54,7 +60,13 @@ jobs:
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
+      # LastVerified reads each post's last-touching commit date via
+      # `git log`, which silently returns nothing for a shallow clone
+      # once a file's real last-touching commit is older than whatever
+      # depth was fetched — full history, not the default shallow clone.
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:

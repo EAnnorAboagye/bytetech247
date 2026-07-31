@@ -12,7 +12,7 @@
 // grow with content) so cards in the same row stay level regardless of how
 // long any one post's title/description is — "Read more" is the one
 // consistent way into the full article, not a variable-height blob of text.
-import { Image } from "astro:assets";
+import { Picture } from "astro:assets";
 import type { CollectionEntry } from "astro:content";
 import Card from "./Card.astro";
 import { getCategoryName } from "../config";
@@ -28,11 +28,11 @@ const href = `/${post.data.category}/${post.id}/`;
 
 <Card as="article" padding="none" class="post-card">
   <a href={href} class="post-card__link">
-    <Image
+    <Picture
       src={post.data.coverImage}
       alt={post.data.coverImageAlt}
-      width={640}
-      height={360}
+      widths={[640]}
+      formats={["avif", "webp"]}
       loading="lazy"
       class="post-card__cover"
     />

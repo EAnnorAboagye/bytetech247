@@ -1,0 +1,33 @@
+---
+// build-spec.md Phase 13: freshness signal from git history (see
+// src/lib/last-verified.ts), not a manually-bumped date. Renders
+// nothing if the file has no commit history yet.
+interface Props {
+  date: Date | null;
+}
+
+const { date } = Astro.props;
+---
+
+{
+  date && (
+    <p class="last-verified">
+      Last verified{" "}
+      <time datetime={date.toISOString()}>
+        {date.toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+          timeZone: "UTC",
+        })}
+      </time>
+    </p>
+  )
+}
+
+<style>
+  .last-verified {
+    font-size: var(--text-xs);
+    color: var(--color-fg-muted);
+  }
+</style>

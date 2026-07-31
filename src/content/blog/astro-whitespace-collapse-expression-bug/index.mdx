@@ -1,0 +1,73 @@
+---
+title: "Why Astro Silently Merges Text Like '5posts' Into One Word"
+description: "Astro collapses the whitespace between two expressions split across separate lines, silently merging text like {count} and {label} into '5posts'. Here's why it happens and the one-character fix."
+date: 2026-07-30
+category: guides-fixes
+tags: ["astro", "jsx", "bug-fix", "templating"]
+relatedSlugs: ["fix-missing-author-json-ld-astro-blog"]
+coverImage: "./cover.png"
+coverImageAlt: 'Side-by-side code comparison: broken Astro markup with {count} and {label} on separate lines rendering as ''5posts'', next to the fixed version with an explicit {" "} rendering correctly as ''5 posts'''
+---
+
+Astro collapses the whitespace between two expressions when they sit on separate lines with nothing but a line break between them. Write `{count}` and `{label}` as two lines inside a component, and the rendered page shows `5posts` instead of `5 posts` — the space silently disappears. The fix is a one-character addition: an explicit `{" "}` expression where the space used to be.
+
+It's easy to miss because the source looks completely normal. The bug only shows up in the rendered output, and by the time a word runs together on the live page, the actual cause is several files and a formatting pass away from where you're looking.
+
+## Why Astro does this
+
+Astro's template syntax is JSX-derived, and JSX has a long-standing whitespace rule: text made up of nothing but spaces, tabs, and newlines between two elements or expressions gets trimmed away entirely, not condensed into a single space. That rule exists because indentation whitespace is assumed to be there for readability, not as meaningful content.
+
+The trap is that the rule doesn't distinguish between "this newline is just indentation" and "this newline replaced a space I actually wanted." When both things you're rendering are expressions, rather than static text, there's no literal space character anywhere in the template for the compiler to preserve. So nothing renders between them.
+
+## The fix: an explicit space expression
+
+```astro title="broken — renders as 5posts"
+<p>
+  {count}
+  {label}
+</p>
+```
+
+```astro title="fixed — explicit space"
+<p>
+  {count}{" "}
+  {label}
+</p>
+```
+
+`{" "}` is itself an expression — a string literal containing one space — so it's no longer whitespace-only text sitting between two expressions. It's a real value, and Astro renders it exactly as written.
+
+<Callout
+  type="warning"
+  title="This can appear after you didn't touch the content"
+>
+  Prettier collapses the explicit space placeholder from the fixed example above
+  back down to a plain, single-line space whenever the whole tag's content fits
+  on one line — a single-line string there is unambiguous. The moment that same
+  content later wraps across multiple lines, whether from Prettier's own
+  line-length limit, a longer word, or a prop added nearby, the placeholder
+  becomes required again. Leave it out and the space vanishes with no change to
+  the words themselves. A totally unrelated formatting pass is what can
+  introduce a text-merging bug days after the paragraph was written correctly.
+</Callout>
+
+## How to actually confirm it's fixed
+
+Don't trust how the source looks — trust the built output. A missing space collapses invisibly in the editor; nothing about `{count}{"·"}\n{label}` versus `{count}\n{label}` reads differently at a glance. The only way to know for certain is to inspect the compiled HTML.
+
+```bash title="check the real rendered text"
+node -e "
+const fs = require('fs');
+const html = fs.readFileSync('dist/client/archive/index.html', 'utf8');
+const match = html.match(/<p class=\"archive-count\"[^>]*>([^<]*)<\/p>/);
+console.log(match && match[1]);
+"
+```
+
+If that prints `5 posts across 4 categories` with real spaces, it's fixed. If it prints `5postsacross4categories`, a `{" "}` is missing somewhere in that block — go find it before shipping, not after a reader points it out.
+
+## When this is actually worth checking
+
+Reach for this check wherever a paragraph or heading interleaves more than one expression with no static text holding them apart — counts, dates, or anything assembled from a few pieces like `{count} {label}`. A component that renders a single expression, or expressions already separated by real static text (`Posted on {date}`), never hits this rule and doesn't need it.
+
+This is one of a few Astro-specific gotchas this site has run into directly — see [fixing the Rich Results Test's missing-author error](/guides-fixes/fix-missing-author-json-ld-astro-blog/) for another one that only shows up after you've already shipped. For the full rundown of Astro's template expression syntax, see the [official Astro syntax docs](https://docs.astro.build/en/basics/astro-syntax/).

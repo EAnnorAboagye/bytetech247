@@ -1,0 +1,11 @@
+# Local-dev secrets. Copy to `.dev.vars` (gitignored) and fill in real
+# values — never commit the real file. Production secrets are set
+# separately via the Cloudflare dashboard / `wrangler secret put <NAME>`,
+# not from this file.
+
+# Pexels API key (write-article skill only — read at authoring time when
+# sourcing a cover image for a conceptual post; never shipped to the
+# deployed Worker, since images are downloaded once and committed as
+# static assets, not fetched at build or request time). Free key from
+# https://www.pexels.com/api/.
+PEXELS_API_KEY=your-pexels-api-key-here

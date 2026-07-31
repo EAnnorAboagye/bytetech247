@@ -38,6 +38,22 @@ const blog = defineCollection({
         coverImageAlt: z
           .string()
           .min(1, "coverImageAlt is required and cannot be empty"),
+        // Only present when the cover is a sourced Pexels photo (the
+        // write-article skill's Pexels fallback path) — omitted entirely
+        // for an author's own screenshot/diagram, never fabricated.
+        coverImageCredit: z
+          .object({ name: z.string(), url: z.string().url() })
+          .optional(),
+        // Structured, not prose-in-the-body — a single source of truth
+        // that both renders (FaqSection.astro) and emits FAQPage JSON-LD
+        // (src/lib/json-ld.ts), rather than duplicating the same content
+        // as unstructured MDX text that would need re-parsing. Empty by
+        // default; the write-article skill only fills this in when a post
+        // has genuinely distinct follow-up questions, never to hit a
+        // word count.
+        faq: z
+          .array(z.object({ question: z.string(), answer: z.string() }))
+          .default([]),
       })
       .refine((post) => Boolean(post.series) === Boolean(post.seriesOrder), {
         message: "series and seriesOrder must be provided together",

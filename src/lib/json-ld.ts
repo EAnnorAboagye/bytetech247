@@ -1,5 +1,6 @@
 import type { CollectionEntry } from "astro:content";
-import { siteConfig, type CategorySlug } from "../config";
+import { siteConfig, getCategoryName, type CategorySlug } from "../config";
+import { countWords } from "./reading-time";
 
 // Small, plain object shapes rather than a full schema.org type package —
 // this file is the single place that assembles JSON-LD from siteConfig +
@@ -85,10 +86,18 @@ export function articleSchemaType(
  * already be resolved image metadata (true for any post reached via
  * getCollection/getStaticPaths in a page template — see
  * src/content.config.ts for why it can't be resolved earlier).
+ *
+ * `lastVerifiedDate` is the real dateModified signal (src/lib/last-verified.ts,
+ * pulled from the post's own git history) — falling back to datePublished
+ * when a file has no commit history yet (freshly added, uncommitted) is
+ * correct, but silently claiming every post was "modified" on its
+ * publish date forever, even after real edits, is the kind of quiet lie
+ * that erodes exactly the trust signal this field exists to provide.
  */
 export function articleJsonLd(
   post: CollectionEntry<"blog">,
   pageUrl: string,
+  lastVerifiedDate: Date | null,
 ): JsonLdObject {
   const authorEntry = person();
   const node: JsonLdObject = {
@@ -98,12 +107,39 @@ export function articleJsonLd(
     description: post.data.description,
     image: [absoluteUrl(post.data.coverImage.src)],
     datePublished: post.data.date.toISOString(),
-    dateModified: post.data.date.toISOString(),
+    dateModified: (lastVerifiedDate ?? post.data.date).toISOString(),
     publisher: organization(),
     mainEntityOfPage: { "@type": "WebPage", "@id": pageUrl },
+    inLanguage: "en-US",
+    articleSection: getCategoryName(post.data.category),
+    wordCount: countWords(post.body ?? ""),
   };
   if (authorEntry) node.author = authorEntry;
+  if (post.data.tags.length > 0) node.keywords = post.data.tags.join(", ");
   return node;
+}
+
+/**
+ * FAQPage block — only ever built from post.data.faq (src/content.config.ts),
+ * the same structured array FaqSection.astro renders, so the visible
+ * section and the schema can't drift apart. Callers should only emit this
+ * block when the array is non-empty.
+ */
+export function faqJsonLd(
+  faq: { question: string; answer: string }[],
+): JsonLdObject {
+  return {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: faq.map((item) => ({
+      "@type": "Question",
+      name: item.question,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: item.answer,
+      },
+    })),
+  };
 }
 
 export function breadcrumbJsonLd(

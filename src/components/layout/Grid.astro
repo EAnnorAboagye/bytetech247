@@ -29,8 +29,19 @@ const {
 <style>
   .auto-grid {
     display: grid;
+    /* auto-fill, not auto-fit — auto-fit collapses empty tracks once
+       there are fewer items than would fit a row, so the 1fr on the
+       *existing* items' tracks then stretches them to fill the freed
+       space instead. With few posts across the site right now (several
+       category/related/recent sections genuinely have just one card),
+       that meant a single card stretching to the full content width
+       instead of staying at its natural size. auto-fill keeps those
+       extra tracks in place (empty, but still reserved), so real items
+       stay left-aligned at minItemWidth regardless of how many there
+       are — same multi-column behavior once there are enough items to
+       fill a row either way. */
     grid-template-columns: repeat(
-      auto-fit,
+      auto-fill,
       minmax(min(var(--grid-min-item-width, 16rem), 100%), 1fr)
     );
     gap: var(--grid-space, var(--spacing));
