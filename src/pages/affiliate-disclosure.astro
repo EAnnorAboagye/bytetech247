@@ -1,17 +1,93 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { siteConfig } from "../config";
+const lastUpdated = "July 31, 2026";
 ---
 
 <BaseLayout
   title={`Affiliate & Advertising Disclosure — ${siteConfig.name}`}
-  description={`How ${siteConfig.name} handles affiliate links and sponsored content.`}
+  description={`How ${siteConfig.name} handles affiliate links, sponsored content, and advertising.`}
 >
-  <h1>Affiliate &amp; Advertising Disclosure</h1>
-  <p>
-    This is a placeholder. {siteConfig.name} does not currently run affiliate links
-    or advertising. This page will be filled in with the real disclosure policy before
-    either is enabled (see build-spec.md Phase 14) — per-post disclosure callouts
-    on affiliate/sponsored content link back here.
-  </p>
+  <article class="legal">
+    <h1>Affiliate &amp; Advertising Disclosure</h1>
+    <p class="legal__updated">Last updated: {lastUpdated}</p>
+
+    <h2>Current status</h2>
+    <p>
+      {siteConfig.name} does not currently run affiliate links, sponsored
+      posts, or advertising of any kind. Every link in every post links to
+      what the author actually recommends, with no referral relationship
+      behind it, and nobody has paid for placement or coverage on this
+      site.
+    </p>
+
+    <h2>If that changes</h2>
+    <p>
+      If affiliate links or advertising are added in the future, they will
+      follow standard disclosure practice:
+    </p>
+    <ul>
+      <li>
+        Any post containing affiliate links will carry a visible disclosure
+        callout directly below the title, in addition to this page — not
+        instead of it.
+      </li>
+      <li>
+        Affiliate links will be routed through a clearly-marked redirect
+        and will carry <code>rel="sponsored nofollow"</code>, per search
+        engine guidelines for paid/affiliate links.
+      </li>
+      <li>
+        Sponsored content, if ever published, will be labeled as sponsored
+        both visibly on the page and in the post's metadata — it will never
+        be presented as regular editorial content.
+      </li>
+      <li>
+        Any advertising added will come from a privacy-respecting,
+        developer-focused network — no invasive tracking, no cookie-based
+        ad targeting without consent.
+      </li>
+    </ul>
+
+    <h2>Editorial independence</h2>
+    <p>
+      Whether or not monetization is ever added, editorial judgment on{" "}
+      {siteConfig.name} is not for sale — see the{" "}
+      <a href="/editorial-policy/">Editorial Policy</a> for how posts are
+      researched, written, and corrected.
+    </p>
+
+    <p class="legal__disclaimer">
+      This page is provided for transparency and is not a substitute for
+      legal advice.
+    </p>
+  </article>
 </BaseLayout>
+
+<style>
+  .legal {
+    max-width: 42rem;
+  }
+
+  .legal__updated {
+    font-size: var(--text-sm);
+    color: var(--color-fg-muted);
+    margin-top: calc(var(--spacing) * -2);
+  }
+
+  .legal h2 {
+    margin-top: calc(var(--spacing) * 6);
+  }
+
+  .legal li {
+    margin-top: calc(var(--spacing) * 1);
+  }
+
+  .legal__disclaimer {
+    margin-top: calc(var(--spacing) * 8);
+    padding-top: calc(var(--spacing) * 4);
+    border-top: 1px solid var(--color-border);
+    font-size: var(--text-sm);
+    color: var(--color-fg-muted);
+  }
+</style>

@@ -28,5 +28,48 @@ jobs:
       - name: Astro check
         run: npm run check
 
+      - name: Unit tests
+        run: npm run test:unit
+
       - name: Build
         run: npm run build
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: E2E + accessibility tests
+        run: npm run test:e2e
+
+      - name: Lighthouse CI (mobile preset)
+        run: npx @lhci/cli@0.13.x autorun --config=.lighthouserc.json
+
+  deploy:
+    # build-spec.md Phase 11: CI builds then deploys via `wrangler deploy`
+    # as an explicit step — there is no Pages project to auto-build on
+    # push. Requires CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID as
+    # repo secrets (Settings -> Secrets and variables -> Actions) before
+    # this job can actually deploy; it will fail loudly without them
+    # rather than silently no-op.
+    needs: build
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: ".nvmrc"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Deploy to Cloudflare Workers
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: deploy

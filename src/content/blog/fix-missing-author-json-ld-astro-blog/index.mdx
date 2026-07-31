@@ -1,0 +1,61 @@
+---
+title: "Fixing 'Missing Field Author' in Google's Rich Results Test for an Astro Blog"
+description: "Why Google's Rich Results Test flags a missing author field on Article pages, and how to add correct Person and Organization JSON-LD in Astro to resolve it."
+date: 2026-07-27
+category: guides-fixes
+tags: ["seo", "json-ld", "astro", "troubleshooting"]
+coverImage: "./cover.jpg"
+coverImageAlt: "A magnifying glass over lines of code, representing debugging structured data"
+---
+
+You run a post through Google's [Rich Results Test](https://search.google.com/test/rich-results) and the `Article` and `BreadcrumbList` blocks both come back valid — but there's a note sitting under Article: **"Missing field 'author' (optional but recommended)."** The page visibly shows a byline. So why is Google saying the field is missing?
+
+## Why this happens
+
+A byline you can see on the page and an `author` field in the page's structured data are two unrelated things. Rich results are read from a `<script type="application/ld+json">` block, not from the rendered HTML — so a page can display "By Jane Doe" in plain text while emitting no `author` property in its JSON-LD at all, and the two will never be reconciled automatically. This is exactly what happens on a lot of Astro blogs: the visual layout was built first, structured data was never added, and everything looks correct until you check what Google actually parses.
+
+The `Article` type's `author` property expects a `Person` (or `Organization`) object with, at minimum, a `name`. Google also recommends a `publisher` — an `Organization` with its own `name` and `logo` — since that's what ties the article to the site as a whole rather than just the individual page.
+
+## The fix
+
+Build the JSON-LD from the same data already driving the page — the post's frontmatter and the site's config — rather than hand-typing it per post. In an Astro layout:
+
+```astro title="src/layouts/BaseLayout.astro"
+---
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Article",
+  headline: title,
+  datePublished: date.toISOString(),
+  author: {
+    "@type": "Person",
+    name: siteConfig.author.name,
+    url: `${siteConfig.url}/about/`,
+  },
+  publisher: {
+    "@type": "Organization",
+    name: siteConfig.name,
+    logo: {
+      "@type": "ImageObject",
+      url: `${siteConfig.url}/logo-mark.svg`,
+    },
+  },
+};
+---
+
+<script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+```
+
+Two details matter here. First, `author` links to a real URL — typically an About or author-bio page — because Google treats an author with a resolvable page as a stronger, more trustworthy signal than a bare name string. Second, `publisher.logo` needs a real image URL that actually resolves; a broken or placeholder logo link can cause its own separate validation warning.
+
+<Callout type="warning" title="Use set:html with JSON.stringify, not a template string">
+Don't build the JSON-LD by hand-interpolating values into a string. An apostrophe or unescaped quote in a title will silently break the JSON parse, and the whole block fails without any visible error on the page. `JSON.stringify()` handles escaping correctly; Astro's `set:html` then injects it without HTML-escaping the JSON itself (which would corrupt it just as badly).
+</Callout>
+
+## Verifying the fix
+
+After deploying, run the live URL back through the Rich Results Test. The "Missing field 'author'" note should be gone, and Google's own [Structured Data Markup Helper](https://support.google.com/webmasters/answer/9007506) or [Schema Markup Validator](https://validator.schema.org/) will show the `author` and `publisher` objects present with their resolved values. It's worth checking a couple of different posts, not just one — a bug in how the layout pulls frontmatter (a missing `date`, for instance) can make the field present on some pages and absent on others, which is easy to miss if you only ever test the same one URL.
+
+<Callout type="tip" title="One layout, every post">
+Because this lives in the shared layout and reads from `siteConfig` and each post's own frontmatter, every existing and future post gets correct `author` and `publisher` data automatically — there's nothing to remember to add per article.
+</Callout>

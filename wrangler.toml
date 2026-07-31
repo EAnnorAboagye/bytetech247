@@ -1,0 +1,26 @@
+# build-spec.md Phase 11 / §11: a single native Cloudflare Worker named
+# "bytetech247", live at bytetech247.workers.dev — deliberately not
+# Cloudflare Pages (only a standalone Worker can be issued a
+# *.workers.dev domain). This Worker serves the static Astro build via
+# the [assets] binding and handles a small number of dynamic routes in
+# worker/index.ts, falling through to static-asset serving for
+# everything else.
+name = "bytetech247"
+main = "worker/index.ts"
+compatibility_date = "2026-07-30"
+
+[assets]
+directory = "./dist"
+binding = "ASSETS"
+
+# Real namespaces already provisioned in the Cloudflare account (created
+# 2026-07-29) — bound here rather than re-created. If these ever need to
+# be recreated, run `wrangler kv namespace create` and update the ids
+# below.
+[[kv_namespaces]]
+binding = "COUNTERS_KV"
+id = "c7eee15b1c3845f5b5da81c8ac614320"
+
+[[kv_namespaces]]
+binding = "SESSION_KV"
+id = "e0a5e383f6b14dee8b8c5c14045e614c"

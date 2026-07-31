@@ -1,0 +1,74 @@
+---
+// build-spec.md §9: tags are flat (not nested categories), and a /tag/[tag]
+// page is exactly the discoverability payoff that design decision promises
+// — every TagPill across the site links here instead of being inert text.
+import { getCollection } from "astro:content";
+import type { InferGetStaticPropsType } from "astro";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import Center from "../../components/layout/Center.astro";
+import Grid from "../../components/layout/Grid.astro";
+import PostCard from "../../components/PostCard.astro";
+import { siteConfig } from "../../config";
+import { slugifyTag } from "../../lib/taxonomy";
+
+export async function getStaticPaths() {
+  const posts = await getCollection("blog");
+
+  // slug -> first-seen display casing, e.g. "json-ld" -> "json-ld" or
+  // "Cloud Hosting" -> "cloud-hosting" display "Cloud Hosting".
+  const tagDisplayBySlug = new Map<string, string>();
+  for (const post of posts) {
+    for (const tag of post.data.tags) {
+      const slug = slugifyTag(tag);
+      if (!tagDisplayBySlug.has(slug)) tagDisplayBySlug.set(slug, tag);
+    }
+  }
+
+  return [...tagDisplayBySlug.entries()].map(([slug, display]) => ({
+    params: { tag: slug },
+    props: {
+      display,
+      posts: posts
+        .filter((post) => post.data.tags.some((t) => slugifyTag(t) === slug))
+        .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf()),
+    },
+  }));
+}
+
+type Props = InferGetStaticPropsType<typeof getStaticPaths>;
+const { display, posts } = Astro.props as Props;
+---
+
+<BaseLayout
+  title={`#${display} — ${siteConfig.name}`}
+  description={`Posts tagged "${display}" on ${siteConfig.name}.`}
+>
+  <Center>
+    <p><a href="/" class="home-link">Home</a></p>
+    <h1>#{display}</h1>
+
+    {
+      posts.length === 0 ? (
+        <p>No posts yet with this tag.</p>
+      ) : (
+        <Grid minItemWidth="18rem" space="4" class="tag-grid">
+          {posts.map((post) => (
+            <PostCard post={post} />
+          ))}
+        </Grid>
+      )
+    }
+  </Center>
+</BaseLayout>
+
+<style>
+  .home-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+  }
+
+  .tag-grid {
+    margin-top: calc(var(--spacing) * 6);
+  }
+</style>

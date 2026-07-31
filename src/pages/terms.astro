@@ -1,15 +1,100 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { siteConfig } from "../config";
+const lastUpdated = "July 31, 2026";
 ---
 
 <BaseLayout
   title={`Terms & Conditions — ${siteConfig.name}`}
-  description={`${siteConfig.name}'s terms and conditions.`}
+  description={`${siteConfig.name}'s terms and conditions for using this site.`}
 >
-  <h1>Terms &amp; Conditions</h1>
-  <p>
-    This is a placeholder. Replace this page with {siteConfig.name}'s actual
-    terms of use before launch.
-  </p>
+  <article class="legal">
+    <h1>Terms &amp; Conditions</h1>
+    <p class="legal__updated">Last updated: {lastUpdated}</p>
+
+    <p>
+      These terms cover your use of {siteConfig.name} ({siteConfig.url}).
+      By reading or using this site, you agree to them.
+    </p>
+
+    <h2>Content is for information, not professional advice</h2>
+    <p>
+      Posts on {siteConfig.name} cover developer tools, automation, AI
+      productivity, and technical guides/fixes. Code samples, configuration
+      snippets, and instructions are provided as-is, based on the author's
+      own testing at the time of writing. Software, APIs, and tooling
+      change — always verify commands and configuration against current
+      official documentation before running them, especially in production
+      environments. {siteConfig.name} is not liable for outcomes from
+      following content on this site.
+    </p>
+
+    <h2>Intellectual property</h2>
+    <p>
+      Unless otherwise noted, written content and original graphics on
+      {siteConfig.name} are the author's own work. Short excerpts may be
+      quoted with attribution and a link back to the original post. Code
+      samples in posts may be copied and used freely in your own projects.
+      Full-article republishing requires permission — reach out via the{" "}
+      <a href="/contact/">Contact</a> page.
+    </p>
+
+    <h2>Third-party tools and trademarks</h2>
+    <p>
+      Product names, logos, and brands mentioned on {siteConfig.name}{" "}
+      (e.g. tools, languages, and platforms discussed in posts) belong to
+      their respective owners and are referenced for identification and
+      commentary purposes only. Mentioning a product does not imply
+      endorsement by that product's owner, and does not imply
+      {siteConfig.name} endorses it beyond what's written in the post
+      itself.
+    </p>
+
+    <h2>Comments and community content</h2>
+    <p>
+      If commenting is enabled on a post (via Giscus, backed by GitHub
+      Discussions), you're responsible for what you post. Comments that are
+      abusive, spam, or unrelated to the post may be removed. Comment
+      hosting and moderation tooling is provided by GitHub, subject to{" "}
+      GitHub's own terms.
+    </p>
+
+    <h2>Changes</h2>
+    <p>
+      These terms may be updated as the site grows (for example, if
+      affiliate links, ads, or a membership tier are added — see the{" "}
+      <a href="/affiliate-disclosure/">Affiliate/Advertising Disclosure</a>{" "}
+      page for current status). The "Last updated" date above reflects the
+      most recent revision.
+    </p>
+
+    <p class="legal__disclaimer">
+      This page is provided for transparency and is not a substitute for
+      legal advice.
+    </p>
+  </article>
 </BaseLayout>
+
+<style>
+  .legal {
+    max-width: 42rem;
+  }
+
+  .legal__updated {
+    font-size: var(--text-sm);
+    color: var(--color-fg-muted);
+    margin-top: calc(var(--spacing) * -2);
+  }
+
+  .legal h2 {
+    margin-top: calc(var(--spacing) * 6);
+  }
+
+  .legal__disclaimer {
+    margin-top: calc(var(--spacing) * 8);
+    padding-top: calc(var(--spacing) * 4);
+    border-top: 1px solid var(--color-border);
+    font-size: var(--text-sm);
+    color: var(--color-fg-muted);
+  }
+</style>

@@ -9,6 +9,7 @@
 // assistive tech, flagged by axe-core's nested-interactive rule). The
 // panel's "View all in X" link is the one real, unambiguous way in.
 import { CATEGORIES, getCategoryName, type CategorySlug } from "../config";
+import { slugifyTag } from "../lib/taxonomy";
 
 interface Props {
   topTagsByCategory: Record<CategorySlug, string[]>;
@@ -29,7 +30,9 @@ const { topTagsByCategory, variant = "vertical" } = Astro.props;
           <ul class="category-nav-list__panel">
             {topTagsByCategory[category.slug].map((tag) => (
               <li>
-                <span class="category-nav-list__tag">{tag}</span>
+                <a href={`/tag/${slugifyTag(tag)}/`} class="category-nav-list__tag">
+                  {tag}
+                </a>
               </li>
             ))}
             <li>

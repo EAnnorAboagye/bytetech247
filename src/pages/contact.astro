@@ -1,12 +1,87 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { siteConfig } from "../config";
+
+// Zero-JS mailto contact — no form backend/email-provider API is wired up
+// yet (build-spec.md Phase 14 territory), so this is the honest, working
+// option rather than a form that silently goes nowhere.
+const contactEmail = "emmanuelannoraboagye@gmail.com";
+const socialLinks = Object.entries(siteConfig.social);
 ---
 
 <BaseLayout
   title={`Contact — ${siteConfig.name}`}
   description={`How to reach ${siteConfig.name}.`}
 >
-  <h1>Contact</h1>
-  <p>Contact details are not yet published here. Check back soon.</p>
+  <article class="legal">
+    <h1>Contact</h1>
+    <p>
+      Questions, corrections, or feedback on a post — the fastest way to
+      reach {siteConfig.name} is email:
+    </p>
+    <p>
+      <a href={`mailto:${contactEmail}`} class="contact-email">
+        {contactEmail}
+      </a>
+    </p>
+
+    {
+      socialLinks.length > 0 && (
+        <>
+          <p>You can also find {siteConfig.name} on:</p>
+          <ul class="contact-social">
+            {socialLinks.map(([platform, href]) => (
+              <li>
+                <a href={href}>{platform}</a>
+              </li>
+            ))}
+          </ul>
+        </>
+      )
+    }
+
+    <p class="legal__disclaimer">
+      Spotted something outdated or incorrect in a post? See the{" "}
+      <a href="/editorial-policy/">Editorial Policy</a> for how corrections
+      are handled.
+    </p>
+  </article>
 </BaseLayout>
+
+<style>
+  .legal {
+    max-width: 42rem;
+  }
+
+  .contact-email {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+    font-size: var(--text-lg);
+    font-weight: 600;
+    color: var(--color-accent);
+  }
+
+  .contact-social {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    gap: calc(var(--spacing) * 3);
+    text-transform: capitalize;
+  }
+
+  .contact-social a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+  }
+
+  .legal__disclaimer {
+    margin-top: calc(var(--spacing) * 8);
+    padding-top: calc(var(--spacing) * 4);
+    border-top: 1px solid var(--color-border);
+    font-size: var(--text-sm);
+    color: var(--color-fg-muted);
+  }
+</style>

@@ -1,9 +1,12 @@
 ---
 // Single component reused at the bottom of every post (Phase 9) and on
-// /about (wired below). siteConfig.author.name is an open item (§11) —
-// not yet supplied — so this renders a plain placeholder instead of a
-// fabricated identity until real details land.
+// /about (wired below). Real identity resolved in build-spec.md §11
+// (v3.2) — siteConfig.author.name/social are populated, and the real
+// photo lives at src/assets/author-aboagye-annor.jpg. The `hasAuthor`
+// fallback stays in place as a guard, not because it's expected to fire.
+import { Image } from "astro:assets";
 import { siteConfig } from "../config";
+import authorPhoto from "../assets/author-aboagye-annor.jpg";
 
 const hasAuthor = siteConfig.author.name.length > 0;
 const socialLinks = Object.entries(siteConfig.social);
@@ -12,7 +15,13 @@ const socialLinks = Object.entries(siteConfig.social);
 {
   hasAuthor ? (
     <div class="author-bio">
-      <div class="author-bio__avatar" aria-hidden="true" />
+      <Image
+        src={authorPhoto}
+        alt={siteConfig.author.name}
+        width={128}
+        height={128}
+        class="author-bio__avatar"
+      />
       <div>
         <p class="author-bio__name">{siteConfig.author.name}</p>
         {siteConfig.author.bio && (
@@ -45,7 +54,7 @@ const socialLinks = Object.entries(siteConfig.social);
     width: calc(var(--spacing) * 8);
     height: calc(var(--spacing) * 8);
     border-radius: 9999px;
-    background-color: var(--color-border);
+    object-fit: cover;
     flex-shrink: 0;
   }
 

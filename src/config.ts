@@ -36,16 +36,24 @@ export const siteConfig = {
   description:
     "ByteTech247 delivers expert Dev Tools, Data & Automation, and AI Productivity insights. Get production-ready Guides & Fixes to optimize your technical workflows.",
   author: {
-    // Open item (build-spec.md §11): real author name/bio not yet supplied.
-    // Do not fabricate a name here — Phase 9 fills this in once provided.
-    name: "",
+    // Resolved in build-spec.md §11 (v3.2) — real author identity.
+    name: "Aboagye Annor",
+    // A short credentials line is still not supplied — leave empty rather
+    // than inventing one (§11: "leave it empty/omitted rather than
+    // inventing one").
     bio: "",
   },
-  social: {} as Record<string, string>,
-  // Open item (build-spec.md §11): no real social/GitHub handles registered
-  // yet. Do not invent a placeholder @bytetech247 handle on any platform.
+  // Resolved in build-spec.md §11 (v3.2) — real accounts, all @bytetech247.
+  social: {
+    facebook: "https://www.facebook.com/bytetech247",
+    x: "https://x.com/bytetech247",
+    instagram: "https://www.instagram.com/bytetech247",
+    tiktok: "https://www.tiktok.com/@bytetech247",
+  } as Record<string, string>,
 
-  // Open item (build-spec.md §11 / Phase 10-11): real OG fallback asset not
-  // yet supplied.
-  defaultOgImage: null as string | null,
+  // Falls back to the full mark (128x128, clears Google's 112x112 minimum
+  // for Organization.logo) per build-spec.md §11. Swap for a dedicated
+  // 1200x630 OG asset if/when one is designed — this is a safe default,
+  // not a placeholder.
+  defaultOgImage: "/logo-mark.svg" as string | null,
 } as const;
