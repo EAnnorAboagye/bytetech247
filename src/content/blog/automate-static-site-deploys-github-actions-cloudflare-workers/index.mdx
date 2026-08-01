@@ -5,7 +5,9 @@ date: 2026-07-27
 category: data-automation
 tags: ["automation", "ci-cd", "cloudflare", "github-actions"]
 coverImage: "./cover.jpg"
-coverImageAlt: "Rows of server racks representing automated cloud infrastructure"
+coverImageAlt: "Close-up of a data center server rack, representing automated cloud infrastructure"
+coverImageCredit:
+  { name: "panumas nikhomkhai", url: "https://www.pexels.com/@cookiecutter" }
 ---
 
 Running `wrangler deploy` from your own machine works fine for the first week of a project. It stops working the moment you want deploys to happen consistently — from a clean environment, without depending on whoever happens to be at their keyboard, and ideally gated on the build actually passing first. That's what automated deploys solve, and for a static site on Cloudflare Workers there are two reasonable ways to set it up.
