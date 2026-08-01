@@ -6,13 +6,56 @@ import { siteConfig } from "../config";
 
 <BaseLayout
   title={`About — ${siteConfig.name}`}
-  description={`About ${siteConfig.name} and its author.`}
+  description={`About ${siteConfig.name}: a single-author technical blog covering Dev Tools, Data & Automation, AI Productivity, and Guides & Fixes.`}
 >
-  <h1>About</h1>
-  <p>
-    {siteConfig.name} is a single-author technical blog covering Dev Tools, Data &amp;
-    Automation, AI Productivity, and Guides &amp; Fixes.
-  </p>
+  <article class="legal">
+    <h1>About</h1>
+    <p>
+      {siteConfig.name} is a single-author technical blog built around one rule: every
+      post exists to solve one real, specific problem, not to fill a content calendar.
+      If you landed here searching an exact error message, a specific CLI flag, or
+      how one tool actually behaves compared to another in practice, that's the kind
+      of question this site is written to answer.
+    </p>
 
-  <AuthorBio />
+    <p>Four areas get covered, each for a different kind of question:</p>
+    <ul>
+      <li>
+        <strong>Dev Tools</strong> — editors, CLIs, Git workflows, and the tooling
+        developers reach for every day.
+      </li>
+      <li>
+        <strong>Data &amp; Automation</strong> — CI/CD, deploy pipelines, and scripts
+        that remove a manual step from someone's week.
+      </li>
+      <li>
+        <strong>AI Productivity</strong> — using AI coding assistants well: prompting,
+        review habits, and where they genuinely help versus where they don't.
+      </li>
+      <li>
+        <strong>Guides &amp; Fixes</strong> — the specific bug, the specific error,
+        the fix that isn't in the official docs yet.
+      </li>
+    </ul>
+
+    <AuthorBio />
+
+    <p>
+      Every post is fact-checked and run by the author before it's published —
+      see the <a href="/editorial-policy/">Editorial Policy</a> for exactly how. Spotted
+      something outdated, or have a topic worth covering? <a href="/contact/"
+        >Get in touch</a
+      >.
+    </p>
+  </article>
 </BaseLayout>
+
+<style>
+  .legal {
+    max-width: 42rem;
+  }
+
+  .legal li {
+    margin-top: calc(var(--spacing) * 1);
+  }
+</style>

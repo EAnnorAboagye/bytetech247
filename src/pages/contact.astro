@@ -2,10 +2,6 @@
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { siteConfig } from "../config";
 
-// Zero-JS mailto contact — no form backend/email-provider API is wired up
-// yet (build-spec.md Phase 14 territory), so this is the honest, working
-// option rather than a form that silently goes nowhere.
-const contactEmail = "emmanuelannoraboagye@gmail.com";
 const socialLinks = Object.entries(siteConfig.social);
 ---
 
@@ -16,14 +12,18 @@ const socialLinks = Object.entries(siteConfig.social);
   <article class="legal">
     <h1>Contact</h1>
     <p>
-      Questions, corrections, or feedback on a post — the fastest way to reach {
-        siteConfig.name
-      } is email:
+      Questions, corrections, story tips, or anything else — the fastest way to
+      reach {siteConfig.name} is email:
     </p>
     <p>
-      <a href={`mailto:${contactEmail}`} class="contact-email">
-        {contactEmail}
+      <a href={`mailto:${siteConfig.contactEmail}`} class="contact-email">
+        {siteConfig.contactEmail}
       </a>
+    </p>
+    <p>
+      Prefer a form instead of email?{" "}
+      <a href={siteConfig.contactFormUrl}>Use the contact form</a> — it goes to the
+      same inbox.
     </p>
 
     {
@@ -41,6 +41,14 @@ const socialLinks = Object.entries(siteConfig.social);
       )
     }
 
+    <h2>Reporting a security issue</h2>
+    <p>
+      Found a security vulnerability rather than a content issue? Please use the
+      contact method listed in{" "}
+      <a href="/.well-known/security.txt">security.txt</a> (RFC 9116) instead, so
+      it's handled separately from general messages.
+    </p>
+
     <p class="legal__disclaimer">
       Spotted something outdated or incorrect in a post? See the{" "}
       <a href="/editorial-policy/">Editorial Policy</a> for how corrections are handled.
@@ -51,6 +59,10 @@ const socialLinks = Object.entries(siteConfig.social);
 <style>
   .legal {
     max-width: 42rem;
+  }
+
+  .legal h2 {
+    margin-top: calc(var(--spacing) * 6);
   }
 
   .contact-email {

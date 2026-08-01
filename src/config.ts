@@ -63,4 +63,19 @@ export const siteConfig = {
   // clears Google's 112x112 minimum for Organization.logo (build-spec.md
   // §11) — a wide banner image with tagline text isn't a "logo."
   logoImage: "/logo-mark.svg" as string | null,
+
+  // Real contact channels. info@bytetech247.com forwards via Cloudflare
+  // Email Routing to the operator's inbox (set up, not yet test-confirmed
+  // as of this writing — verify by sending a real email through before
+  // relying on it). The form is the same one public/.well-known/security.txt
+  // uses for security reports — kept in sync by hand, not templated,
+  // since it serves a different purpose (vulnerability reports
+  // specifically, not general contact).
+  contactEmail: "info@bytetech247.com",
+  contactFormUrl:
+    "https://docs.google.com/forms/d/e/1FAIpQLSeeZu9cdFWVJcncLjnrSG6Xyou-ndQNjynnQ7HeXmVwe3MJcw/viewform",
+
+  // The Privacy/Terms pages are written against this jurisdiction —
+  // where the site's operator, Aboagye Annor, is based.
+  jurisdiction: "Ghana",
 } as const;
