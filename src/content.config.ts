@@ -21,7 +21,13 @@ const blog = defineCollection({
   schema: ({ image }) =>
     z
       .object({
-        title: z.string(),
+        // Capped at 60 chars — past that, Google truncates the title in
+        // search snippets (and it stops fitting a browser tab/SERP link
+        // cleanly), so a title that only "mostly" fits defeats the point.
+        // A build-time error here is deliberate: the write-article skill
+        // already asks for this, but a schema check catches it even when
+        // a draft skips the skill's own checklist.
+        title: z.string().max(60, "Title must be 60 characters or fewer"),
         description: z.string(),
         date: z.coerce.date(),
         category: z.enum(CATEGORY_SLUGS),

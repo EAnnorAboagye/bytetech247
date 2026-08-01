@@ -14,19 +14,20 @@ Every post on this site is written for a reader who has a specific problem, not 
 
 ## 2. Structure, top to bottom
 
-1. **Title** — the primary keyword near the front, phrased the way a person would actually search or ask, not a slogan.
-2. **Opening (1-2 short paragraphs)** — answer the core question directly in the first 40-80 words, then give the one sentence of context that earns the rest of the article. This is the paragraph search engines lift into featured snippets and the one AI answer engines quote — treat it as load-bearing, not throat-clearing. See the opening of `src/content/blog/git-worktrees-parallel-feature-development/index.mdx` for the pattern: state the friction, then state the fix, no preamble.
-3. **Body sections (`##`/`###`)** — one real sub-question per heading, in the order a reader would actually ask them. Each section makes exactly one point and backs it with a command, a number, or a concrete example — never "many developers find that...". Use the site's actual MDX components where they earn their place, not by default:
+1. **Title** — the primary keyword near the front, phrased the way a person would actually search or ask, not a slogan. **60 characters or fewer, no exceptions** — past that, Google truncates it in search snippets, and `src/content.config.ts` enforces the same limit as a build error, so a draft that skips this check fails the build, not just the review. Count it before you move on; don't estimate.
+2. **Meta description (frontmatter `description`)** — one or two sentences that would make someone click, written for the SERP snippet, not a summary written for the reader who already opened the post. Must contain the primary keyword/phrase from step 1 — a description that only gestures at the topic, without the actual term, doesn't confirm the match a searcher is scanning for.
+3. **Opening (1-2 short paragraphs)** — answer the core question directly in the first 40-80 words, then give the one sentence of context that earns the rest of the article. The primary keyword/phrase belongs somewhere in this opening, naturally — not forced into the first sentence if it reads awkwardly there, but present before the paragraph ends. This is the paragraph search engines lift into featured snippets and the one AI answer engines quote — treat it as load-bearing, not throat-clearing. See the opening of `src/content/blog/git-worktrees-parallel-feature-development/index.mdx` for the pattern: state the friction, then state the fix, no preamble.
+4. **Body sections (`##`/`###`)** — one real sub-question per heading, in the order a reader would actually ask them. Each section makes exactly one point and backs it with a command, a number, or a concrete example — never "many developers find that...". Use the site's actual MDX components where they earn their place, not by default:
    - `<Callout type="tip|warning|note">` for a genuinely separable aside (a gotcha, a caveat) — not for restating the paragraph above it.
    - `<CodeTabs>` only when there are truly two comparable approaches worth seeing side by side.
    - `<Benchmark>` only when you have real numbers to show, not illustrative ones.
    - `<Figure>` with a required, descriptive `alt` — never decorative-only images.
    - Fenced code blocks with a `title="..."` comment when the filename matters to following along.
-4. **Lists/tables** — only for content that is genuinely sequential (steps) or comparative (options/specs). If a bullet list could be one plain sentence, make it one plain sentence.
-5. **Internal links (2-4)** — placed inline where the connection is real (a related post, that post's category index), not batched into a "see also" dump at the end.
-6. **External citation (1-3)** — link to the primary source (official docs, the standard itself, the original benchmark), not a secondary blog restating the same primary source.
-7. **FAQ block** — add only if there are genuinely distinct follow-up questions a reader would still have after the body. If you're inventing questions to fill a section, skip it entirely; a forced FAQ is stuffing with a different name. When one is genuinely warranted, put it in frontmatter as `faq: [{question, answer}]` (`src/content.config.ts`), not prose in the MDX body — `FaqSection.astro` renders it and `src/lib/json-ld.ts` emits matching `FAQPage` schema from that same array, so the visible section and the structured data can never drift apart. Never write the FAQ as body text only; the frontmatter array is the single source of truth for this.
-8. **Closing paragraph** — a real judgment call or next step ("reach for X when Y; skip it if Z"), never a restatement of the opening. If you'd delete it and lose nothing, delete it.
+5. **Lists/tables** — only for content that is genuinely sequential (steps) or comparative (options/specs). If a bullet list could be one plain sentence, make it one plain sentence.
+6. **Internal links (2-4)** — placed inline where the connection is real (a related post, that post's category index), not batched into a "see also" dump at the end.
+7. **External citation (1-3)** — link to the primary source (official docs, the standard itself, the original benchmark), not a secondary blog restating the same primary source.
+8. **FAQ block** — add only if there are genuinely distinct follow-up questions a reader would still have after the body. If you're inventing questions to fill a section, skip it entirely; a forced FAQ is stuffing with a different name. When one is genuinely warranted, put it in frontmatter as `faq: [{question, answer}]` (`src/content.config.ts`), not prose in the MDX body — `FaqSection.astro` renders it and `src/lib/json-ld.ts` emits matching `FAQPage` schema from that same array, so the visible section and the structured data can never drift apart. Never write the FAQ as body text only; the frontmatter array is the single source of truth for this.
+9. **Closing paragraph** — a real judgment call or next step ("reach for X when Y; skip it if Z"), never a restatement of the opening. If you'd delete it and lose nothing, delete it.
 
 ## 3. Cover image sourcing (Pexels)
 
@@ -71,7 +72,9 @@ Cut these on sight — each is a well-known tell of generated, not authored, tex
 
 ## 6. Before calling a draft done, check every one of these
 
-- [ ] The first 80 words answer the actual question, with no throat-clearing before them.
+- [ ] Title is 60 characters or fewer (count it — `src/content.config.ts` fails the build otherwise) and carries the primary keyword near the front.
+- [ ] The meta `description` contains the primary keyword/phrase.
+- [ ] The first 80 words answer the actual question, contain the primary keyword/phrase, and have no throat-clearing before them.
 - [ ] Every `##` heading is a real sub-question, in the order a reader would ask.
 - [ ] Every paragraph makes one point and could be summarized in a single clause.
 - [ ] At least one detail in the post could only come from having actually done the thing (a command, a number, a specific failure).
