@@ -7,6 +7,11 @@ tags: ["astro", "jsx", "bug-fix", "templating"]
 relatedSlugs: ["fix-missing-author-json-ld-astro-blog"]
 coverImage: "./cover.png"
 coverImageAlt: 'Side-by-side code comparison: broken Astro markup with {count} and {label} on separate lines rendering as ''5posts'', next to the fixed version with an explicit {" "} rendering correctly as ''5 posts'''
+faq:
+  - question: "Why does Astro merge two expressions like {count} and {label} into '5posts' with no space?"
+    answer: "Astro's JSX-derived template syntax trims whitespace-only text — just spaces, tabs, or newlines — between two expressions instead of preserving it as a space. When nothing but a line break separates {count} and {label}, that line break is treated as pure indentation and discarded, so the rendered output has no space at all."
+  - question: "How do you fix a missing space between two Astro template expressions?"
+    answer: 'Add an explicit {" "} expression where the space should be. A string literal containing one space is a real value, not whitespace-only text, so Astro renders it exactly as written regardless of how the surrounding lines wrap.'
 ---
 
 Astro collapses the whitespace between two expressions when they sit on separate lines with nothing but a line break between them. Write `{count}` and `{label}` as two lines inside a component, and the rendered page shows `5posts` instead of `5 posts` — the space silently disappears. The fix is a one-character addition: an explicit `{" "}` expression where the space used to be.

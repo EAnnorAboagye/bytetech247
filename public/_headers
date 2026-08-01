@@ -1,0 +1,13 @@
+# Cloudflare Workers Static Assets serves files by extension, ignoring
+# whatever Content-Type an Astro endpoint (llms.txt.ts, [slug].md.ts) set
+# on its Response at build time — confirmed live: both shipped as
+# text/plain and text/markdown respectively, with no charset parameter,
+# which mis-renders em-dashes and other non-ASCII characters for anyone
+# opening the raw file directly in a browser. This file (the same
+# mechanism Cloudflare Pages uses) is the only way to attach a real
+# charset to a static asset response.
+/llms.txt
+  Content-Type: text/plain; charset=utf-8
+
+/*/*.md
+  Content-Type: text/markdown; charset=utf-8

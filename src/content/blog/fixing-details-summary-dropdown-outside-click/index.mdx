@@ -7,6 +7,11 @@ tags: ["html", "javascript", "accessibility", "bug-fix"]
 relatedSlugs: ["astro-whitespace-collapse-expression-bug"]
 coverImage: "./cover.png"
 coverImageAlt: "Diagram of a details/summary dropdown menu with an X marking a click outside it, and an arrow showing the dropdown closing in response"
+faq:
+  - question: "Why doesn't a native <details> dropdown close when you click outside it?"
+    answer: "The HTML spec only wires up one interaction for <details>: toggling via its own <summary>. For a plain collapsible section — an FAQ answer, a spoiler — staying open no matter where else a reader clicks is the correct behavior, and the browser has no way to know a page is using it as a dropdown menu instead."
+  - question: "How do you make a <details> dropdown close on outside click and Escape?"
+    answer: "Add a document-wide click listener that closes any open <details> unless the click happened inside that same element, and a separate keydown listener that closes every open <details> when Escape is pressed, regardless of where focus currently sits."
 ---
 
 A native `<details>` element only toggles when you click its own `<summary>`. Click anywhere else — a different dropdown, a button, empty page space — and it stays open, because the browser never wired up outside-click handling for it. The fix is a small, dependency-free script: on every click anywhere in the document, close any open `<details>` unless the click happened inside that same element.

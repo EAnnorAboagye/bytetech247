@@ -34,7 +34,7 @@ export const siteConfig = {
   // Locked verbatim in build-spec.md §11 — do not reword.
   title: "ByteTech247 | Dev Tools, Automation & AI Productivity",
   description:
-    "ByteTech247 delivers expert Dev Tools, Data & Automation, and AI Productivity insights, plus production-ready Guides & Fixes for your technical workflows.",
+    "ByteTech247 delivers expert Dev Tools, Data & Automation, and AI Productivity insights. Get production-ready Guides & Fixes to optimize your technical workflows.",
   author: {
     // Resolved in build-spec.md §11 (v3.2) — real author identity.
     name: "Aboagye Annor",

@@ -12,6 +12,10 @@ compatibility_date = "2026-07-30"
 [assets]
 directory = "./dist"
 binding = "ASSETS"
+# Without this, Workers Static Assets returns an empty-body 404 for any
+# unmatched route even though dist/404.html exists — "404-page" tells it
+# to actually serve that file (with a real 404 status) instead.
+not_found_handling = "404-page"
 
 # Real namespaces already provisioned in the Cloudflare account (created
 # 2026-07-29) — bound here rather than re-created. If these ever need to

@@ -26,8 +26,9 @@ export const GET: APIRoute = async () => {
   lines.push("## Posts");
   lines.push("");
   for (const post of posts.slice(0, 50)) {
+    const markdownUrl = `${siteConfig.url}/${post.data.category}/${post.id}.md`;
     lines.push(
-      `- [${post.data.title}](${postUrl(post)}): ${post.data.description}`,
+      `- [${post.data.title}](${postUrl(post)}): ${post.data.description} (Markdown: ${markdownUrl})`,
     );
   }
   lines.push("");

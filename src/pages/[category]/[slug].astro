@@ -100,6 +100,10 @@ const preloadCover = await getImage({
 // Same hierarchy as the visible breadcrumb below, per build-spec.md §10 —
 // visible and structured data must agree, not drift independently.
 const pageUrl = new URL(Astro.url.pathname, siteConfig.url).href;
+const markdownUrl = new URL(
+  `/${post.data.category}/${post.id}.md`,
+  siteConfig.url,
+).href;
 const categoryUrl = new URL(`/${post.data.category}/`, siteConfig.url).href;
 const breadcrumbItems = [
   { name: "Home", url: siteConfig.url },
@@ -134,6 +138,7 @@ const nextInSeries =
   type="article"
   image={post.data.coverImage.src}
   preloadImage={preloadCover.src}
+  markdownUrl={markdownUrl}
   jsonLd={articleJsonLdBlocks}
   showReadingProgress
 >
@@ -159,11 +164,14 @@ const nextInSeries =
               timeZone: "UTC",
             })
           }
-        </time>
+        </time>{" "}
         · {readingTime} min read
       </p>
       <LastVerified date={lastVerifiedDate} />
       <ShareButtons url={pageUrl} title={post.data.title} class="post-share" />
+      <p class="post-markdown-link">
+        <a href={markdownUrl}>View as Markdown</a>
+      </p>
 
       <Picture
         src={post.data.coverImage}
@@ -298,6 +306,19 @@ const nextInSeries =
   h1 {
     font-family: var(--font-serif);
     letter-spacing: normal;
+  }
+
+  .post-markdown-link {
+    margin: calc(var(--spacing) * 2) 0 0;
+    font-size: var(--text-sm);
+  }
+
+  .post-markdown-link a {
+    color: var(--color-fg-muted);
+  }
+
+  .post-markdown-link a:hover {
+    text-decoration: underline;
   }
 
   .post-layout {

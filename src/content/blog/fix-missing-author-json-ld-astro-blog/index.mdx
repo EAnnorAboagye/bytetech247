@@ -8,6 +8,11 @@ coverImage: "./cover.jpg"
 coverImageAlt: "Close-up of colorful syntax-highlighted code on a screen, representing debugging structured data"
 coverImageCredit:
   { name: "Godfrey Atima", url: "https://www.pexels.com/@godiatima" }
+faq:
+  - question: "Why does Google's Rich Results Test flag a missing author field when the page already shows a byline?"
+    answer: 'Rich results are read from the page''s JSON-LD script block, not the rendered HTML. A page can display "By Jane Doe" in plain text while emitting no author property in its structured data at all, and the two are never reconciled automatically — that mismatch is exactly what the warning is catching.'
+  - question: "What does an Article's JSON-LD need to resolve the missing-author warning?"
+    answer: "An author property with a Person object that has at minimum a name (ideally linking to a real About or author-bio page), plus a publisher property with an Organization object that includes a name and a resolvable logo image URL."
 ---
 
 You run a post through Google's [Rich Results Test](https://search.google.com/test/rich-results) and the `Article` and `BreadcrumbList` blocks both come back valid — but there's a note sitting under Article: **"Missing field 'author' (optional but recommended)."** The page visibly shows a byline. So why is Google saying the field is missing?

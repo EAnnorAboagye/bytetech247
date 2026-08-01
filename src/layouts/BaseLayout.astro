@@ -24,6 +24,8 @@ interface Props {
   jsonLd?: Record<string, unknown> | Record<string, unknown>[];
   /** Root-relative URL of the page's LCP image, preloaded if given. */
   preloadImage?: string;
+  /** Absolute URL of the post's plain-Markdown export ([slug].md.ts), if any. */
+  markdownUrl?: string;
 }
 
 const {
@@ -34,6 +36,7 @@ const {
   type = "website",
   jsonLd,
   preloadImage,
+  markdownUrl,
 } = Astro.props;
 
 // Computed per-page, not a sitewide constant — every page needs its own
@@ -87,6 +90,11 @@ const jsonLdBlocks = [
       title={siteConfig.name}
       href={`${siteConfig.url}/rss.xml`}
     />
+    {
+      markdownUrl && (
+        <link rel="alternate" type="text/markdown" href={markdownUrl} />
+      )
+    }
 
     <!-- Favicon set: SVG for modern browsers, ICO fallback for everything
          else (older browsers and some crawlers don't render SVG favicons),
