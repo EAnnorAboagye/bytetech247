@@ -15,7 +15,9 @@
 # a fresh CF-Cache-Status: MISS request. A trailing wildcard *within* the
 # final segment (matching everything up to the literal ".md" suffix) is
 # the documented, working pattern, so this needs one line per category
-# rather than a single catch-all.
+# rather than a single catch-all. This is a plain static file, so it
+# can't import CATEGORY_SLUGS from src/config.ts — keep the four entries
+# below in sync with that list by hand if a category is ever added.
 /dev-tools/*.md
   Content-Type: text/markdown; charset=utf-8
 
