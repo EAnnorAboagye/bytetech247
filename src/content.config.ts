@@ -28,7 +28,13 @@ const blog = defineCollection({
         // already asks for this, but a schema check catches it even when
         // a draft skips the skill's own checklist.
         title: z.string().max(60, "Title must be 60 characters or fewer"),
-        description: z.string(),
+        // Capped at 160 chars — Google truncates meta descriptions past
+        // roughly this length in search snippets, same reasoning as the
+        // title cap above. A build-time error here, not just skill-file
+        // guidance a draft could skip.
+        description: z
+          .string()
+          .max(160, "Description must be 160 characters or fewer"),
         date: z.coerce.date(),
         category: z.enum(CATEGORY_SLUGS),
         tags: z.array(z.string()).default([]),

@@ -15,7 +15,7 @@ Every post on this site is written for a reader who has a specific problem, not 
 ## 2. Structure, top to bottom
 
 1. **Title** — the primary keyword near the front, phrased the way a person would actually search or ask, not a slogan. **60 characters or fewer, no exceptions** — past that, Google truncates it in search snippets, and `src/content.config.ts` enforces the same limit as a build error, so a draft that skips this check fails the build, not just the review. Count it before you move on; don't estimate.
-2. **Meta description (frontmatter `description`)** — one or two sentences that would make someone click, written for the SERP snippet, not a summary written for the reader who already opened the post. Must contain the primary keyword/phrase from step 1 — a description that only gestures at the topic, without the actual term, doesn't confirm the match a searcher is scanning for.
+2. **Meta description (frontmatter `description`)** — one or two sentences that would make someone click, written for the SERP snippet, not a summary written for the reader who already opened the post. **160 characters or fewer, no exceptions** — same truncation logic as the title, and `src/content.config.ts` enforces it as a build error. Must contain the primary keyword/phrase from step 1 — a description that only gestures at the topic, without the actual term, doesn't confirm the match a searcher is scanning for.
 3. **Opening (1-2 short paragraphs)** — answer the core question directly in the first 40-80 words, then give the one sentence of context that earns the rest of the article. The primary keyword/phrase belongs somewhere in this opening, naturally — not forced into the first sentence if it reads awkwardly there, but present before the paragraph ends. This is the paragraph search engines lift into featured snippets and the one AI answer engines quote — treat it as load-bearing, not throat-clearing. See the opening of `src/content/blog/git-worktrees-parallel-feature-development/index.mdx` for the pattern: state the friction, then state the fix, no preamble.
 4. **Body sections (`##`/`###`)** — one real sub-question per heading, in the order a reader would actually ask them. Each section makes exactly one point and backs it with a command, a number, or a concrete example — never "many developers find that...". Use the site's actual MDX components where they earn their place, not by default:
    - `<Callout type="tip|warning|note">` for a genuinely separable aside (a gotcha, a caveat) — not for restating the paragraph above it.
@@ -73,7 +73,7 @@ Cut these on sight — each is a well-known tell of generated, not authored, tex
 ## 6. Before calling a draft done, check every one of these
 
 - [ ] Title is 60 characters or fewer (count it — `src/content.config.ts` fails the build otherwise) and carries the primary keyword near the front.
-- [ ] The meta `description` contains the primary keyword/phrase.
+- [ ] The meta `description` is 160 characters or fewer (count it) and contains the primary keyword/phrase.
 - [ ] The first 80 words answer the actual question, contain the primary keyword/phrase, and have no throat-clearing before them.
 - [ ] Every `##` heading is a real sub-question, in the order a reader would ask.
 - [ ] Every paragraph makes one point and could be summarized in a single clause.
