@@ -6,6 +6,7 @@ import { siteWideJsonLd, absoluteUrl } from "../lib/json-ld";
 import Header from "../components/Header.astro";
 import Footer from "../components/Footer.astro";
 import CommandPalette from "../components/CommandPalette.astro";
+import CookieConsent from "../components/CookieConsent.astro";
 
 interface Props {
   title?: string;
@@ -51,6 +52,17 @@ const jsonLdBlocks = [
 <html lang="en">
   <head>
     <meta charset="utf-8" />
+    <!-- Backup ownership-verification method alongside the DNS TXT record
+         already in place (Cloudflare DNS) — Google Search Console's
+         "additional verification methods" page for
+         https://www.bytetech247.com/, added so verification doesn't
+         depend solely on the DNS record surviving forever. Do not remove:
+         GSC re-checks this tag periodically even after initial
+         verification succeeds. -->
+    <meta
+      name="google-site-verification"
+      content="Q7Gw17KC8cG9r4zyeMycGAfPXpAzdGeThLa9evSl-54"
+    />
     <script is:inline>
       // Dark mode, applied before first paint to avoid a flash of the
       // wrong theme (build-spec.md Phase 5) — a manually-saved preference
@@ -132,6 +144,8 @@ const jsonLdBlocks = [
     <Footer />
 
     <CommandPalette />
+
+    <CookieConsent />
 
     <script>
       // Astro's View Transitions swap content client-side, and can leave

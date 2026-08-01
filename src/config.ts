@@ -78,4 +78,11 @@ export const siteConfig = {
   // The Privacy/Terms pages are written against this jurisdiction —
   // where the site's operator, Aboagye Annor, is based.
   jurisdiction: "Ghana",
+
+  // GA4 property "ByteTech247" (analytics.google.com) — not a secret;
+  // a Measurement ID is inherently public, visible in every page's own
+  // source once loaded. CookieConsent.astro only loads gtag.js after a
+  // visitor accepts — see that component and privacy.astro's "What this
+  // site collects today" section, which this ID must stay consistent with.
+  analyticsId: "G-QRNX9JBMX4",
 } as const;
