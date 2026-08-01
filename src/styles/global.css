@@ -46,14 +46,21 @@
   /*
    * Type families — self-hosted IBM Plex (@font-face rules below this
    * block). Plex Sans carries body copy; Plex Mono is the display face
-   * (logotype, headings) — a deliberate choice, not the usual
-   * code-only role, matching the brand mark's "byte" identity.
+   * for brand/UI chrome (logo, nav, inline code) — a deliberate choice,
+   * not the usual code-only role, matching the brand mark's "byte"
+   * identity. Plex Serif is a second, narrower-scoped display role: the
+   * article template's own reading headlines (h1 + in-body h2/h3/h4)
+   * use it instead of Mono — a monospace face at repeated heading scale
+   * through a long article reads wider/heavier than it should; the
+   * family's own companion serif is a considered swap, not a random
+   * third font.
    */
   --font-body:
     "Plex Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
     Helvetica, Arial, sans-serif;
   --font-display:
     "Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --font-serif: "Plex Serif", Georgia, "Times New Roman", serif;
 
   /*
    * Spacing — 8px grid. Tailwind v4's `--spacing` is the multiplier for
@@ -169,6 +176,14 @@
   font-weight: 700;
   font-display: optional;
   src: url("/fonts/plex-mono-700.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Plex Serif";
+  font-style: normal;
+  font-weight: 700;
+  font-display: optional;
+  src: url("/fonts/plex-serif-700.woff2") format("woff2");
 }
 
 @layer base {

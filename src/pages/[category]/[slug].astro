@@ -288,6 +288,18 @@ const nextInSeries =
 </BaseLayout>
 
 <style>
+  /* Overrides the site-wide h1-h6 rule (global.css) for this page's own
+     post-title h1 specifically — Plex Mono at full headline scale reads
+     wider/heavier than it should for a long title; Plex Serif is the same
+     type family's dedicated companion face, a considered swap rather than
+     a random third font. In-body h2/h3/h4 get the same treatment further
+     down, scoped to .article-content so nav/card/footer headings
+     elsewhere keep the brand's Mono voice. */
+  h1 {
+    font-family: var(--font-serif);
+    letter-spacing: normal;
+  }
+
   .post-layout {
     display: grid;
     /* minmax(0, 1fr), not plain 1fr — a bare 1fr still lets this grid
@@ -491,6 +503,68 @@ const nextInSeries =
   .related-posts__grid,
   .recent-posts__grid {
     margin-top: calc(var(--spacing) * 4);
+  }
+
+  /* Prose rhythm for the rendered MDX body — Tailwind's reset zeroes
+     margin on every element by default, and nothing here ever replaced
+     it for plain paragraphs/headings/lists (only tables and code blocks
+     below had their own rules), so every element rendered flush against
+     the next with no vertical separation at all. font-size is a scoped
+     fluid clamp (not the global --text-base) so this reading column gets
+     slightly larger type on wide viewports without resizing buttons/nav/
+     forms sitewide; line-height is a touch more open than the site
+     default for sustained reading. */
+  .article-content {
+    font-size: clamp(1rem, 0.96rem + 0.2vw, 1.125rem);
+    line-height: 1.7;
+  }
+
+  .article-content :global(h2),
+  .article-content :global(h3),
+  .article-content :global(h4) {
+    font-family: var(--font-serif);
+    letter-spacing: normal;
+  }
+
+  /* More space above a heading than below it, so it visually belongs to
+     the section it introduces rather than the one before it. Paragraphs
+     only carry bottom margin — combined with zero top margin on both
+     sides, two adjacent elements never double up their gap. */
+  .article-content :global(p) {
+    margin: 0 0 1.25em;
+  }
+
+  .article-content :global(h2) {
+    margin: 2.5em 0 1em;
+  }
+
+  .article-content :global(h3) {
+    margin: 2em 0 0.75em;
+  }
+
+  .article-content :global(h4) {
+    margin: 1.5em 0 0.5em;
+  }
+
+  .article-content :global(> :first-child) {
+    margin-top: 0;
+  }
+
+  .article-content :global(ul),
+  .article-content :global(ol) {
+    margin: 0 0 1.25em;
+    padding-inline-start: 1.5em;
+  }
+
+  .article-content :global(li) {
+    margin-top: 0.4em;
+  }
+
+  .article-content :global(blockquote) {
+    margin: 1.5em 0;
+    padding-inline-start: 1em;
+    border-left: 3px solid var(--color-border);
+    color: var(--color-fg-muted);
   }
 
   /* GFM table styling, scoped to rendered MDX content — mobile scroll
