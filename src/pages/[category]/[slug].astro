@@ -12,6 +12,8 @@ import CodeTabs from "../../components/CodeTabs.astro";
 import Benchmark from "../../components/Benchmark.astro";
 import LastVerified from "../../components/LastVerified.astro";
 import FaqSection from "../../components/FaqSection.astro";
+import ShareButtons from "../../components/ShareButtons.astro";
+import AuthorBio from "../../components/AuthorBio.astro";
 import { Picture, getImage } from "astro:assets";
 import { siteConfig, getCategoryName } from "../../config";
 import { validateCoverImage } from "../../lib/validate-cover-image";
@@ -146,6 +148,7 @@ const nextInSeries =
         · {readingTime} min read
       </p>
       <LastVerified date={lastVerifiedDate} />
+      <ShareButtons url={pageUrl} title={post.data.title} class="post-share" />
 
       <Picture
         src={post.data.coverImage}
@@ -200,6 +203,10 @@ const nextInSeries =
       </div>
 
       <FaqSection faq={post.data.faq} />
+
+      <div class="post-author">
+        <AuthorBio />
+      </div>
 
       {
         post.data.tags.length > 0 && (
@@ -356,6 +363,22 @@ const nextInSeries =
   .post-meta {
     font-size: var(--text-sm);
     color: var(--color-fg-muted);
+  }
+
+  :global(.post-share) {
+    margin-top: calc(var(--spacing) * 1);
+  }
+
+  :global(.post-share .share-buttons__trigger) {
+    padding-left: 0;
+  }
+
+  .post-author {
+    margin: calc(var(--spacing) * 8) 0;
+    padding: calc(var(--spacing) * 4);
+    border: 1px solid var(--color-border);
+    border-radius: 0.75rem;
+    background-color: var(--color-bg-subtle);
   }
 
   .post-cover {
