@@ -82,6 +82,21 @@ const cropped1x1 = await getImage({
   format: "jpg",
 });
 
+// BaseLayout's preloadImage hint must point at the same small, already-
+// optimized asset the cover <Picture> below actually requests at mobile
+// widths — not post.data.coverImage.src, which is the raw, un-resized
+// source file. That mismatch was harmless when covers were generated
+// placeholders (small either way), but a real photo's raw source can be
+// 5-10x heavier than its 640w AVIF, and preloading it at fetchpriority
+// "high" competes with, rather than helps, the actual LCP request —
+// same width/format the Picture component generates below, so this
+// reuses that build output instead of generating a second copy.
+const preloadCover = await getImage({
+  src: post.data.coverImage,
+  width: 640,
+  format: "avif",
+});
+
 // Same hierarchy as the visible breadcrumb below, per build-spec.md §10 —
 // visible and structured data must agree, not drift independently.
 const pageUrl = new URL(Astro.url.pathname, siteConfig.url).href;
@@ -118,7 +133,7 @@ const nextInSeries =
   description={post.data.description}
   type="article"
   image={post.data.coverImage.src}
-  preloadImage={post.data.coverImage.src}
+  preloadImage={preloadCover.src}
   jsonLd={articleJsonLdBlocks}
   showReadingProgress
 >
