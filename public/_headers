@@ -9,5 +9,21 @@
 /llms.txt
   Content-Type: text/plain; charset=utf-8
 
-/*/*.md
+# A bare "*" segment (e.g. /*/*.md) does NOT reliably match one path
+# component in Cloudflare's _headers engine — confirmed live: it silently
+# matched nothing, every .md route kept serving without a charset even on
+# a fresh CF-Cache-Status: MISS request. A trailing wildcard *within* the
+# final segment (matching everything up to the literal ".md" suffix) is
+# the documented, working pattern, so this needs one line per category
+# rather than a single catch-all.
+/dev-tools/*.md
+  Content-Type: text/markdown; charset=utf-8
+
+/data-automation/*.md
+  Content-Type: text/markdown; charset=utf-8
+
+/ai-productivity/*.md
+  Content-Type: text/markdown; charset=utf-8
+
+/guides-fixes/*.md
   Content-Type: text/markdown; charset=utf-8
