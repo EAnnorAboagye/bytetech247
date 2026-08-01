@@ -153,6 +153,24 @@ export function faqJsonLd(
   };
 }
 
+/**
+ * ItemList block for a page whose main content is a list of posts (the
+ * homepage's "Recent" feed) — tells crawlers explicitly that the page
+ * enumerates these specific articles, rather than leaving that implicit
+ * in the rendered <PostCard> grid. `urls` should already be absolute.
+ */
+export function itemListJsonLd(urls: string[]): JsonLdObject {
+  return {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    itemListElement: urls.map((url, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      url,
+    })),
+  };
+}
+
 export function breadcrumbJsonLd(
   items: { name: string; url: string }[],
 ): JsonLdObject {

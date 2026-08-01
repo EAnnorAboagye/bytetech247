@@ -9,6 +9,7 @@ import Stack from "../components/layout/Stack.astro";
 import HeroTile from "../components/HeroTile.astro";
 import PostCard from "../components/PostCard.astro";
 import { CATEGORIES, siteConfig } from "../config";
+import { itemListJsonLd, absoluteUrl } from "../lib/json-ld";
 
 const allPosts = (await getCollection("blog")).sort(
   (a, b) => b.data.date.valueOf() - a.data.date.valueOf(),
@@ -16,9 +17,18 @@ const allPosts = (await getCollection("blog")).sort(
 
 const [heroPost, ...secondaryPosts] = allPosts;
 const recentPosts = allPosts.slice(0, 6);
+
+// Recent already covers heroPost (recentPosts[0] === heroPost) and is the
+// one section on this page that's genuinely "a list of these N posts" in
+// the ItemList sense — the per-category sections below repeat many of the
+// same posts, so listing those too would just duplicate entries rather
+// than describe anything new.
+const recentItemListJsonLd = itemListJsonLd(
+  recentPosts.map((post) => absoluteUrl(`/${post.data.category}/${post.id}/`)),
+);
 ---
 
-<BaseLayout>
+<BaseLayout jsonLd={recentItemListJsonLd}>
   {
     /* gutter="0" — <main> (BaseLayout) already applies its own
        padding-inline as a safety net for pages that don't wrap in
@@ -29,7 +39,14 @@ const recentPosts = allPosts.slice(0, 6);
   }
   <Center gutter="0">
     <Stack space="12" class="homepage-sections">
-      <h1 class="sr-only">{siteConfig.title}</h1>
+      <div>
+        <h1 class="sr-only">{siteConfig.title}</h1>
+        <p class="homepage-intro">
+          ByteTech247 covers developer tools, data & automation workflows, and
+          AI productivity — practical guides and fixes for people building and
+          shipping software, not news about it.
+        </p>
+      </div>
 
       {
         heroPost && (
@@ -91,6 +108,12 @@ const recentPosts = allPosts.slice(0, 6);
 </BaseLayout>
 
 <style>
+  .homepage-intro {
+    max-width: 40rem;
+    color: var(--color-fg-muted);
+    font-size: var(--text-lg);
+  }
+
   .homepage-secondary-grid {
     margin-top: calc(var(--spacing) * 4);
   }
