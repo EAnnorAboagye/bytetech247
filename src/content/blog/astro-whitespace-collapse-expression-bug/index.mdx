@@ -4,12 +4,12 @@ description: "Astro silently collapses whitespace between two expressions on sep
 date: 2026-07-30
 category: guides-fixes
 tags: ["astro", "jsx", "bug-fix", "templating"]
-relatedSlugs: ["fix-missing-author-json-ld-astro-blog"]
+relatedSlugs: ["fix-missing-author-json-ld-astro-blog", "fix-astro-7-compresshtml-spacing-bug"]
 coverImage: "./cover.png"
 coverImageAlt: 'Side-by-side code comparison: broken Astro markup with {count} and {label} on separate lines rendering as ''5posts'', next to the fixed version with an explicit {" "} rendering correctly as ''5 posts'''
 faq:
   - question: "Why does Astro merge two expressions like {count} and {label} into '5posts' with no space?"
-    answer: "Astro's JSX-derived template syntax trims whitespace-only text — just spaces, tabs, or newlines — between two expressions instead of preserving it as a space. When nothing but a line break separates {count} and {label}, that line break is treated as pure indentation and discarded, so the rendered output has no space at all."
+    answer: "Astro's compressHTML option defaults to 'jsx' as of Astro 7, which trims whitespace-only text (just spaces, tabs, or newlines) between two expressions instead of preserving it as a space. When nothing but a line break separates {count} and {label}, that line break is treated as pure indentation and discarded, so the rendered output has no space at all. Astro 6 defaulted to compressHTML: true instead, which did not have this effect; confirmed directly by building this exact case under both settings."
   - question: "How do you fix a missing space between two Astro template expressions?"
     answer: 'Add an explicit {" "} expression where the space should be. A string literal containing one space is a real value, not whitespace-only text, so Astro renders it exactly as written regardless of how the surrounding lines wrap.'
 ---
@@ -23,6 +23,10 @@ It's easy to miss because the source looks completely normal. The bug only shows
 Astro's template syntax is JSX-derived, and JSX has a long-standing whitespace rule: text made up of nothing but spaces, tabs, and newlines between two elements or expressions gets trimmed away entirely, not condensed into a single space. That rule exists because indentation whitespace is assumed to be there for readability, not as meaningful content.
 
 The trap is that the rule doesn't distinguish between "this newline is just indentation" and "this newline replaced a space I actually wanted." When both things you're rendering are expressions, rather than static text, there's no literal space character anywhere in the template for the compiler to preserve. So nothing renders between them.
+
+<Callout type="warning" title="This is an Astro 7 change, not a permanent Astro characteristic">
+This rule is controlled by the `compressHTML` config option, which defaults to `'jsx'` as of Astro 7. Astro 6 defaulted to `compressHTML: true` instead, which preserved this spacing (confirmed by building this exact page under both settings). Setting `compressHTML: true` in `astro.config.mjs` restores Astro 6's behavior sitewide if patching every instance isn't practical. The same default flip also breaks spacing between real HTML elements like `<strong>` and `<span>` on separate lines; see [fixing the Astro 7 compressHTML spacing bug](/guides-fixes/fix-astro-7-compresshtml-spacing-bug/) for that variant.
+</Callout>
 
 ## The fix: an explicit space expression
 
