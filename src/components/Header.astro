@@ -3,9 +3,13 @@
 // default, per the guardrail: sticky-on-scroll is an explicit Phase 13
 // upgrade, not something to default into.
 //
-// Bar order, left to right: logo, mobile menu toggle (mobile only — hidden
-// on desktop, where PrimaryNav renders inline instead), primary nav
-// (desktop only), search, dark/light toggle.
+// Bar order, left to right: logo, mobile menu toggle (mobile/tablet/narrow
+// desktop, below 72rem — hidden above it, where PrimaryNav's horizontal
+// variant renders inline instead), primary nav (≥72rem only), search,
+// dark/light toggle. The 72rem threshold isn't a conventional
+// phone/tablet/desktop split — it's sized to what the horizontal nav
+// actually needs to render without wrapping (see PrimaryNav.astro and
+// build-spec.md §10), which happens to land past a typical tablet width.
 import { getCollection } from "astro:content";
 import { siteConfig } from "../config";
 import { getTopTagsByCategory } from "../lib/taxonomy";
@@ -145,6 +149,7 @@ const topTagsByCategory = getTopTagsByCategory(posts);
   .site-header__actions {
     display: flex;
     gap: calc(var(--spacing) * 2);
+    margin-left: calc(var(--spacing) * 3);
   }
 
   .site-header__action {
@@ -232,7 +237,7 @@ const topTagsByCategory = getTopTagsByCategory(posts);
     padding: calc(var(--spacing) * 4);
   }
 
-  @media (max-width: 48rem) {
+  @media (max-width: 72rem) {
     .site-header__mobile-toggle {
       display: block;
     }
@@ -244,7 +249,10 @@ const topTagsByCategory = getTopTagsByCategory(posts);
     /* Touch targets: Apple/Google both recommend a 44px minimum hit area.
        Desktop's 40px action buttons stay as-is (mouse pointer, and the
        user wants that look preserved) — this only widens the tappable
-       area on mobile, via padding rather than changing the visual size. */
+       area below 72rem, via padding rather than changing the visual size.
+       That range now includes real touch tablets (iPad-class devices sit
+       well under 1152px), not just phones, so this is a correctness fix
+       for them too, not just unchanged behavior carried to a new number. */
     .site-header__action {
       width: 44px;
       height: 44px;
