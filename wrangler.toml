@@ -16,6 +16,18 @@ binding = "ASSETS"
 # unmatched route even though dist/404.html exists — "404-page" tells it
 # to actually serve that file (with a real 404 status) instead.
 not_found_handling = "404-page"
+# Cloudflare's documented default: a request that matches a real static
+# asset file (which the homepage and every article page do — they're
+# built as index.html) is served directly from the assets store, WITHOUT
+# ever invoking worker/index.ts's fetch(). Confirmed live: the RFC 8288
+# Link header and Accept: text/markdown negotiation added to fetch() had
+# zero effect in production until this was set, because those requests
+# never reached that code at all. This makes every request run the
+# Worker first, which then explicitly defers to env.ASSETS.fetch() for
+# anything it doesn't care about — the same pattern Cloudflare's own
+# migration guide uses whenever Worker logic needs to run ahead of asset
+# serving (auth checks, logging, or — here — response-header injection).
+run_worker_first = true
 
 # Real namespaces already provisioned in the Cloudflare account (created
 # 2026-07-29) — bound here rather than re-created. If these ever need to
