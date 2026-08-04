@@ -60,22 +60,20 @@ const jsonLdBlocks = [
          privacy.astro's analytics section, which must stay consistent
          with this).
 
-         fetchpriority="low" is required, not decorative: confirmed via a
-         local Lighthouse run that placing this script in <head> without it
-         pushed LCP to 3158ms, over .lighthouserc.json's 3000ms error
-         threshold — the old consent-gated version never made this request
-         during an automated audit (nothing clicks Accept), so this
-         regression only appeared once loading went unconditional. `async`
-         alone stops it from blocking HTML parsing, but Chrome still gives
-         it default (High) fetch priority, letting it compete with the
-         page's actual LCP resources (fonts, hero image) for early
-         bandwidth. Lowering its priority fixed the measured regression
-         without moving the tag out of <head>. -->
-    <script
-      async
-      fetchpriority="low"
-      src={`https://www.googletagmanager.com/gtag/js?id=${siteConfig.analyticsId}`}
-    ></script>
+         The actual gtag.js fetch is deferred until the window "load" event,
+         not a static <script src> tag — the old consent-gated version
+         never made this request during an automated Lighthouse audit
+         (nothing clicks Accept), so this LCP regression only appeared once
+         loading went unconditional. A static tag with `async` still gets
+         default (High) fetch priority in Chrome, competing with the page's
+         real LCP resources for early bandwidth; `fetchpriority="low"`
+         measured 2414ms locally (comfortably under the 3000ms budget) but
+         still failed the same threshold on the GitHub Actions runner twice
+         — a soft priority hint the browser may or may not honor
+         consistently isn't reliable enough. Not starting the fetch until
+         "load" (by definition after every LCP candidate has already
+         rendered) removes the competition entirely rather than hoping a
+         hint wins a scheduling race. -->
     <script define:vars={{ analyticsId: siteConfig.analyticsId }}>
       // A bare top-level `function gtag(){}` here stays scoped to this
       // script's own wrapper (Astro implicitly treats a `define:vars`
@@ -90,6 +88,14 @@ const jsonLdBlocks = [
       };
       window.gtag("js", new Date());
       window.gtag("config", analyticsId);
+
+      window.addEventListener("load", () => {
+        const script = document.createElement("script");
+        script.async = true;
+        script.fetchPriority = "low";
+        script.src = `https://www.googletagmanager.com/gtag/js?id=${analyticsId}`;
+        document.head.appendChild(script);
+      });
     </script>
     <!-- Backup ownership-verification method alongside the DNS TXT record
          already in place (Cloudflare DNS) — Google Search Console's

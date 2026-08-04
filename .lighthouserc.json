@@ -7,7 +7,7 @@
         "http://localhost/dev-tools/index.html",
         "http://localhost/dev-tools/git-worktrees-parallel-feature-development/index.html"
       ],
-      "numberOfRuns": 1
+      "numberOfRuns": 3
     },
     "assert": {
       "assertions": {
