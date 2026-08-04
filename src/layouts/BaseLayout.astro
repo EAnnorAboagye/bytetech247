@@ -112,7 +112,21 @@ const jsonLdBlocks = [
       // Dark mode, applied before first paint to avoid a flash of the
       // wrong theme (build-spec.md Phase 5) — a manually-saved preference
       // wins, otherwise this follows the system preference.
-      (function () {
+      //
+      // Also re-applied on "astro:after-swap", not just once at parse
+      // time — confirmed live: after a View Transition navigation, the
+      // new page's <html> had no data-theme attribute at all, even though
+      // localStorage still correctly had "dark" saved (the toggle itself
+      // was never broken). This inline <head> script only runs once, on
+      // the true first load; Astro's ClientRouter swaps in each new
+      // page's content without re-executing it, so a saved dark
+      // preference silently stopped applying after the very first
+      // navigation, reading as "toggle it dark, click somewhere, it turns
+      // white." after-swap (not the later page-load event) is Astro's own
+      // documented hook for exactly this — it fires right after the DOM
+      // swap, before the next paint, so there's no flash of the wrong
+      // theme either.
+      function applyStoredTheme() {
         const stored = localStorage.getItem("theme");
         const theme =
           stored ??
@@ -120,7 +134,9 @@ const jsonLdBlocks = [
             ? "dark"
             : "light");
         document.documentElement.setAttribute("data-theme", theme);
-      })();
+      }
+      applyStoredTheme();
+      document.addEventListener("astro:after-swap", applyStoredTheme);
     </script>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>

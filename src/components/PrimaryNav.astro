@@ -161,11 +161,16 @@ const legalLinks = [
   }
 
   /* Desktop: nav items sit in a horizontal row, each panel drops down
-     below its own trigger instead of pushing content down inline. */
+     below its own trigger instead of pushing content down inline.
+     gap is required, not decorative — confirmed live: without it, every
+     item's own padding is vertical-only, so "Home", "Dev Tools ▾", "Data
+     & Automation ▾" etc. rendered touching each other edge to edge with
+     zero breathing room between them. */
   .primary-nav--horizontal {
     flex-direction: row;
     align-items: center;
     flex-wrap: wrap;
+    gap: calc(var(--spacing) * 3);
   }
 
   .primary-nav--horizontal > li {
