@@ -1,9 +1,9 @@
 ---
 name: pillar-cluster
-description: Research and draft a Topic Cluster (1 Core Pillar + 5 Sub-Topic Clusters) for a ByteTech247 content category, grounded in live GitHub issues, changelogs, and search trends. Use whenever asked to plan a content cluster, topic map, or pillar/cluster strategy for dev-tools, data-automation, ai-productivity, or guides-fixes — this produces the plan only, not the articles (hand approved clusters to the write-article skill one at a time).
+description: Research and draft a Topic Cluster (1 Core Pillar + 10 Sub-Topic Clusters) for a ByteTech247 content category, grounded in live GitHub issues, changelogs, and search trends. Use whenever asked to plan a content cluster, topic map, or pillar/cluster strategy for dev-tools, data-automation, ai-productivity, or guides-fixes — this produces the plan only, not the articles (hand approved clusters to the write-article skill one at a time).
 ---
 
-This is the planning stage that runs _before_ `write-article`. It answers "what should we write and why will it rank" — never the drafting itself. Output is a Pillar + 5 Clusters map the user reviews and approves before any article gets written.
+This is the planning stage that runs _before_ `write-article`. It answers "what should we write and why will it rank" — never the drafting itself. Output is a Pillar + 10 Clusters map the user reviews and approves before any article gets written.
 
 ## 1. Resolve inputs before researching
 
@@ -33,9 +33,9 @@ One core, structural, high-volume breaking point — never a generic "how to lea
 
 - Affects most people on the current major/minor version of the target ecosystem, not an edge case.
 - Is timely (inside the research window from step 1), so the cluster reads as "active right now," not evergreen filler.
-- Is broad enough structurally to genuinely support 5 distinct, non-overlapping sub-errors underneath it — if you're stretching to find a fifth cluster, the pillar is too narrow.
+- Is broad enough structurally to genuinely support 10 distinct, non-overlapping sub-errors underneath it — if you're stretching to find a tenth cluster, the pillar is too narrow.
 
-## 5. Generate exactly 5 clusters
+## 5. Generate exactly 10 clusters
 
 Each cluster needs all of these fields — this is stricter than the original prompt template specifically to close gaps found running it:
 
@@ -60,7 +60,7 @@ CLUSTER 1
 - Source: <link/issue + date>
 - Interlinks: <existing slug(s) or "none yet">
 
-CLUSTER 2-5: same shape
+CLUSTER 2-10: same shape
 ```
 
 ## 7. Persist the plan to a tracking file
@@ -88,7 +88,7 @@ Status values: pending (researched, not yet approved) -> approved (user greenlit
 - Source: <link + date>
 - Interlinks: <existing slug(s) or "none yet">
 
-### 2-5: same shape
+### 2-10: same shape
 ```
 
 - On a fresh research run, write every entry as `pending`.
