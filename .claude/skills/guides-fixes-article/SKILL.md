@@ -9,6 +9,8 @@ This is an addendum to `write-article`, not a replacement — run both. `write-a
 
 Only apply this blueprint when `category: guides-fixes` in the post's frontmatter. If the post originated from an approved [pillar-cluster](../pillar-cluster/SKILL.md) entry, pull its **Source + date**, **verbatim/paraphrased label**, and **Interlink target** straight from that plan — don't re-research from scratch if it's already sourced.
 
+If `.claude/content-plans/guides-fixes.md` exists, find this topic's entry there and confirm its **Status** is `approved` (not still `pending`) before drafting. Once the MDX file is created, flip that entry's Status to `written` and fill in its Slug — this is what lets the batch loop ("write every approved cluster") resume correctly if the session ends mid-batch.
+
 ## 2. Before drafting: keyword targeting
 
 Same discipline as `write-article` step 1, made concrete for an error-fix post:
@@ -101,6 +103,7 @@ Run `write-article`'s full checklist first, then check these on top:
 - [ ] 2-4 internal links include the category/tag index and any pillar-cluster interlink target, not just sibling posts.
 - [ ] FAQ was genuinely considered, not defaulted to skipped — added only if real distinct questions exist.
 - [ ] Cover image is a real screenshot of the error/fix, or an approved Pexels photo only if the topic is genuinely conceptual.
+- [ ] `.claude/content-plans/guides-fixes.md` (if it exists) has this entry flipped to `written` with the real slug filled in.
 - [ ] Zero em dashes in the prose (verbatim quoted strings are the only exception).
 - [ ] Tone reads as direct imperative, not hedged suggestion.
 - [ ] Read the draft's sentences aloud: short, plain, one idea each — consistent with a 90-100 Flesch Reading Ease target.

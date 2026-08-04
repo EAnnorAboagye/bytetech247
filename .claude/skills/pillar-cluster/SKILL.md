@@ -63,7 +63,40 @@ CLUSTER 1
 CLUSTER 2-5: same shape
 ```
 
-## 7. Adapting the engine per category
+## 7. Persist the plan to a tracking file
+
+A plan that only exists in chat can't survive a session ending mid-batch. Write (or update) `.claude/content-plans/<category-slug>.md` — same fields as the step 6 output, plus **Status** (`pending` → `approved` → `written`) and **Slug** per pillar/cluster:
+
+```
+# Content Plan — <Category Name>
+
+Status values: pending (researched, not yet approved) -> approved (user greenlit) -> written (MDX file exists in src/content/blog).
+
+## Pillar
+**<title>**
+- Status: pending
+- Slug: -
+- Why pillar: <1-2 sentence rationale>
+
+## Clusters
+
+### 1. <Proposed H1>
+- Status: pending
+- Slug: -
+- Search Intent / Signal: <verbatim [confirmed] or symptom [paraphrased]>
+- Structural Problem: <explanation>
+- Source: <link + date>
+- Interlinks: <existing slug(s) or "none yet">
+
+### 2-5: same shape
+```
+
+- On a fresh research run, write every entry as `pending`.
+- When the user approves specific clusters in chat, flip those to `approved` before writing starts — don't leave the file out of sync with what was actually greenlit.
+- Leave `written`/`Slug` updates to `guides-fixes-article` (or the equivalent category skill) once the MDX file actually exists — this skill's job ends at a reviewed, persisted plan.
+- If a file for this category already exists, update it in place rather than overwriting — a second research run should merge in new clusters, not erase progress on ones already `approved` or `written`.
+
+## 8. Adapting the engine per category
 
 The concrete methodology above (structural breaking point sourced from GitHub issues/changelogs) is proven for `guides-fixes`. The other three categories bend the same shape without changing the process in sections 1-6:
 
@@ -73,7 +106,7 @@ The concrete methodology above (structural breaking point sourced from GitHub is
 
 If the user supplies a category-specific prompt (as they did for `guides-fixes`), treat its exact wording as authoritative for that category's flavor and fold it in here rather than relying on the generalization above.
 
-## 8. Before handing the plan back, check every one of these
+## 9. Before handing the plan back, check every one of these
 
 - [ ] Category is exactly one of the four `CATEGORY_SLUGS`.
 - [ ] Pillar is structural and timely, not a generic/evergreen concept.
@@ -82,4 +115,5 @@ If the user supplies a category-specific prompt (as they did for `guides-fixes`)
 - [ ] `src/content/blog` was actually checked for collisions, not assumed clear.
 - [ ] Every cluster names a real source and date, not a vague "recent issue."
 - [ ] Interlink targets are named where they exist, not left implicit.
+- [ ] `.claude/content-plans/<category-slug>.md` was written or updated (merged, not overwritten) to match this output.
 - [ ] Output makes clear this is a plan for review, not a request to start drafting — drafting starts only after the user approves specific clusters, and then goes through `write-article` one cluster at a time.
