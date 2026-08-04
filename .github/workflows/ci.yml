@@ -56,6 +56,12 @@ jobs:
     # repo secrets (Settings -> Secrets and variables -> Actions) before
     # this job can actually deploy; it will fail loudly without them
     # rather than silently no-op.
+    #
+    # GOOGLE_INDEXING_SERVICE_ACCOUNT (optional, separate secret) enables
+    # scripts/submit-google-indexing.mjs — the whole downloaded service-
+    # account JSON key as one secret value. Without it, that step logs a
+    # skip message and the deploy still succeeds; see that script's own
+    # comment for the Google Cloud/Search Console setup it requires.
     needs: build
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
@@ -88,3 +94,8 @@ jobs:
 
       - name: Submit URLs to IndexNow
         run: node scripts/submit-indexnow.mjs
+
+      - name: Submit URLs to Google Indexing API
+        env:
+          GOOGLE_INDEXING_SERVICE_ACCOUNT: ${{ secrets.GOOGLE_INDEXING_SERVICE_ACCOUNT }}
+        run: node scripts/submit-google-indexing.mjs
