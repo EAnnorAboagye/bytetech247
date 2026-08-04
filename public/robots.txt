@@ -16,7 +16,16 @@ Allow: /
 User-agent: PerplexityBot
 Allow: /
 
+# Content Signals (contentsignals.org, draft-romm-aipref-contentsignals):
+# a crawler-agnostic usage declaration layered on top of the per-bot Allow
+# rules above, not a replacement for them. Values are deliberately
+# consistent with those rules rather than contradicting them — GPTBot,
+# ClaudeBot, and Google-Extended (all AI-training crawlers) are already
+# explicitly allowed above, so ai-train=no here would just send a mixed
+# signal. Flip ai-train to "no" if that stance ever changes; also update
+# the matching per-bot rules above so the two don't disagree again.
 User-agent: *
+Content-Signal: search=yes, ai-input=yes, ai-train=yes
 Allow: /
 
 Sitemap: https://bytetech247.com/sitemap.xml

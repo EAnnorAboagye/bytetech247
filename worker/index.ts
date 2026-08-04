@@ -9,10 +9,73 @@
 // backend" model: article content is always static HTML from `env.ASSETS`,
 // never rendered per-request.
 
+import { CATEGORY_SLUGS } from "../src/config";
+
 export interface Env {
   ASSETS: Fetcher;
   COUNTERS_KV: KVNamespace;
   SESSION_KV: KVNamespace;
+}
+
+// Sitewide preference declaration (contentsignals.org / draft-romm-aipref-
+// contentsignals): same three values as the Content-Signal line in
+// public/robots.txt, kept in sync by hand — that file is the primary
+// declaration, this header just repeats it for agents that check response
+// headers instead of fetching /robots.txt separately (this is exactly how
+// Cloudflare's own "Markdown for Agents" feature echoes it, confirmed
+// against a live example response from their docs).
+const CONTENT_SIGNAL = "search=yes, ai-input=yes, ai-train=yes";
+
+const ARTICLE_PATH = /^\/([a-z-]+)\/([a-z0-9-]+)\/?$/;
+
+// Every HTML page that has a real, already-published markdown counterpart
+// — the homepage's is the sitewide llms.txt index (src/pages/llms.txt.ts),
+// every article's is its own [category]/[slug].md route (src/pages/
+// [category]/[slug].md.ts). Deliberately does NOT invent an alternate for
+// category/tag index pages, which have no markdown export to point to.
+export function resolveMarkdownAlternate(
+  pathname: string,
+): { path: string; type: string } | null {
+  if (pathname === "/") {
+    return { path: "/llms.txt", type: "text/plain" };
+  }
+  const match = pathname.match(ARTICLE_PATH);
+  if (match) {
+    const [, category, slug] = match;
+    if ((CATEGORY_SLUGS as readonly string[]).includes(category)) {
+      return { path: `/${category}/${slug}.md`, type: "text/markdown" };
+    }
+  }
+  return null;
+}
+
+// Minimal RFC 7231 §5.3.2 Accept-header comparison: true only when the
+// client names text/markdown with a q-value at or above text/html's (both
+// default to q=1 when present with no q param, 0 when absent). Real
+// browsers never send text/markdown at all, so this never fires for
+// ordinary visitors — only for a client that explicitly asked for it.
+export function prefersMarkdown(request: Request): boolean {
+  const accept = request.headers.get("Accept");
+  if (!accept) return false;
+
+  const qualityOf = (mediaType: string): number => {
+    for (const part of accept.split(",")) {
+      const [range, ...params] = part
+        .trim()
+        .split(";")
+        .map((s) => s.trim());
+      if (range === mediaType) {
+        const qParam = params.find((p) => p.startsWith("q="));
+        const q = qParam ? Number.parseFloat(qParam.slice(2)) : 1;
+        return Number.isNaN(q) ? 1 : q;
+      }
+    }
+    return 0;
+  };
+
+  const markdownQ = qualityOf("text/markdown");
+  if (markdownQ <= 0) return false;
+  return markdownQ >= qualityOf("text/html");
 }
 
 export default {
@@ -35,7 +98,59 @@ export default {
     //   /affiliate-disclosure/. Build this when that changes, not
     //   speculatively ahead of it.
 
-    return env.ASSETS.fetch(request);
+    const alternate = resolveMarkdownAlternate(url.pathname);
+
+    // Real Accept-based content negotiation (RFC 9110 §12), not a
+    // suffix-only route: an agent that sends `Accept: text/markdown` to
+    // the *article URL itself* now gets the markdown representation of
+    // that same URL, instead of needing to already know the separate
+    // `.md` path. Cache-Control: no-store on this branch only — Cloudflare's
+    // edge cache keys on URL alone by default and ignores Vary, so without
+    // this a markdown response fetched here could get cached and then
+    // served back to a plain-HTML browser request for the same URL (and
+    // vice versa). The `.md`/`llms.txt` assets it fetches from are cheap,
+    // edge-local Workers Static Assets — never an origin round trip — so
+    // disabling caching on just this branch costs nothing.
+    if (alternate && request.method === "GET" && prefersMarkdown(request)) {
+      const markdownResponse = await env.ASSETS.fetch(
+        new URL(alternate.path, url).toString(),
+      );
+      if (markdownResponse.ok) {
+        const headers = new Headers(markdownResponse.headers);
+        headers.set("Vary", "Accept");
+        headers.set("Cache-Control", "private, no-store");
+        headers.set("Content-Signal", CONTENT_SIGNAL);
+        return new Response(markdownResponse.body, {
+          status: markdownResponse.status,
+          headers,
+        });
+      }
+    }
+
+    const response = await env.ASSETS.fetch(request);
+
+    // RFC 8288 Link response header, advertising the real markdown
+    // alternate for agents that check headers before deciding whether to
+    // fetch/parse the HTML body — only added where one genuinely exists.
+    if (
+      alternate &&
+      response.headers.get("Content-Type")?.includes("text/html")
+    ) {
+      const headers = new Headers(response.headers);
+      headers.append(
+        "Link",
+        `<${alternate.path}>; rel="alternate"; type="${alternate.type}"`,
+      );
+      headers.set("Content-Signal", CONTENT_SIGNAL);
+      const existingVary = headers.get("Vary");
+      headers.set("Vary", existingVary ? `${existingVary}, Accept` : "Accept");
+      return new Response(response.body, {
+        status: response.status,
+        headers,
+      });
+    }
+
+    return response;
   },
 };
 
