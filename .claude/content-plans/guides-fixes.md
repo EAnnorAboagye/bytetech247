@@ -51,10 +51,13 @@ Series wiring: every cluster written from this plan uses frontmatter `series: "A
 - Source: [withastro/astro#16790](https://github.com/withastro/astro/issues/16790); [withastro/astro#15134](https://github.com/withastro/astro/issues/15134).
 - Interlinks: **[automate-static-site-deploys-github-actions-cloudflare-workers](../../src/content/blog/automate-static-site-deploys-github-actions-cloudflare-workers/index.mdx)** (category: data-automation) — not a collision, a sequel. That post covers choosing a deploy method; this cluster covers the runtime errors after deploy is already wired up. Link forward from that post once this is written.
 
-### 5. Fix "Property render Does Not Exist" in Astro
-- Status: pending
-- Slug: -
-- Search Intent / Signal: [confirmed] `Property 'render' does not exist on type 'never'`
-- Structural Problem: After a schema edit or a major-version bump, Astro's generated collection types in `.astro/types.d.ts` go stale. TypeScript then narrows collection entries to `never`, so calling `.render()` or accessing a new schema field throws a compile-time type error that looks like a content bug but is really a stale type cache — fixed by running `astro sync` (or deleting `.astro/types.d.ts` and re-syncing).
-- Source: [Content collections | Docs](https://docs.astro.build/en/guides/content-collections/) — `astro sync` guidance, current v7 docs.
-- Interlinks: none yet.
+### 5. RETIRED — replaced by a standalone post, not part of this series
+
+The original plan ("Property render Does Not Exist" / stale `.astro/types.d.ts` narrowing to `never`) did not survive verification against this repo's real `astro@7.1.3`:
+
+- `.render()` as an entry method doesn't exist in this site's API at all (`import { render } from "astro:content"` is a standalone function here, not `entry.render()` — that method belongs to Astro's pre-content-layer API).
+- The "stale types" mechanism doesn't reproduce either. Tested live: editing `content.config.ts` with the dev server running triggered `Content config changed -> Clearing content store -> Synced content` automatically, and `InferEntrySchema` imports the real schema file directly rather than caching a snapshot, so TypeScript types stay current regardless of sync timing. Never got `never` to actually occur.
+
+Replaced with a verified, real, reproducible error: **[Fix Astro InvalidContentEntryDataError Schema Errors](../../src/content/blog/fix-astro-invalidcontententrydataerror/index.mdx)** (slug: `fix-astro-invalidcontententrydataerror`, status: written). Reproduced 4 distinct causes directly against this repo's own schema (invalid enum, missing required field, wrong type, custom `.refine()`/`.max()` message), plus confirmed the whole build aborts on first invalid entry and that `astro check` catches it too.
+
+This is **not an Astro 7 upgrade regression** (it's evergreen Zod/content-collection validation behavior), so per user decision it ships as a standalone `guides-fixes` post with no `series`/`seriesOrder` — it does not fill a slot in this pillar's 5-cluster count. The pillar currently has 2 written series entries (Clusters 1-2), Cluster 3 (weak, unconfirmed verbatim) and Cluster 4 (solid, sourced) still open, and no 5th slot filled.

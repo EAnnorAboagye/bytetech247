@@ -1,0 +1,82 @@
+---
+title: "Fix Astro InvalidContentEntryDataError Schema Errors"
+description: "InvalidContentEntryDataError means a post's frontmatter doesn't match its schema. Here's how to read the message and fix the four most common causes."
+date: 2026-08-04
+category: guides-fixes
+tags: ["astro", "content-collections", "zod", "bug-fix"]
+coverImage: "./cover.png"
+coverImageAlt: "A terminal window showing Astro's real InvalidContentEntryDataError output for an invalid category value, with the exact field and reason it prints"
+faq:
+  - question: "Does this error stop the whole build, or just skip the broken post?"
+    answer: "It stops the whole build before generating any pages at all. Confirmed by running astro build against each example in this post: the process fails at the content-sync step, which runs before Astro starts building any page, so even one broken post blocks every page on the site, not just its own."
+  - question: "Does astro check catch this before I run astro build?"
+    answer: "Yes. astro check runs the same content sync step as astro build and astro dev before it does any type checking, so it reports the identical InvalidContentEntryDataError, confirmed directly against this repo. It's a reasonable pre-commit or CI check if you want to catch a bad frontmatter edit before a full build runs."
+---
+
+## Quick Answer
+
+`InvalidContentEntryDataError` means a post's frontmatter does not match the Zod schema in `content.config.ts`, commonly an invalid category, a missing required field, or the wrong type. Astro prints the exact field and reason in the error message. Fix the named field and rebuild.
+
+## Reading the error message
+
+Astro reports a content schema mismatch through one error class: `InvalidContentEntryDataError`. In every case tested here, the message has the same shape: which collection and entry, then the specific field and why it failed. [Astro's own error reference](https://docs.astro.build/en/reference/errors/invalid-content-entry-data-error/) documents this as "a content entry does not match its collection schema."
+
+## Four real examples, confirmed against this site's own schema
+
+Each of these was reproduced directly against this repo's `src/content.config.ts`, not guessed at from the message format.
+
+### Invalid enum value
+
+```yaml title="frontmatter"
+category: guide-fixes
+```
+
+```text title="the real error"
+category: Invalid option: expected one of "dev-tools"|"data-automation"|"ai-productivity"|"guides-fixes"
+```
+
+Fix: match one of the listed options exactly. This is almost always a typo, not a category that genuinely needs adding.
+
+### Missing required field
+
+```yaml title="frontmatter"
+# coverImageAlt omitted entirely
+```
+
+```text title="the real error"
+coverImageAlt**: **coverImageAlt: Required
+```
+
+Fix: add the field. The field name shows up twice with stray asterisks around it. That's an Astro formatting quirk in how it bolds the field name for this particular message, not a second error to chase down; the meaning is just "coverImageAlt: Required."
+
+### Wrong type
+
+```yaml title="frontmatter"
+tags: "astro"
+```
+
+```text title="the real error"
+tags: Expected type "array", received "string"
+```
+
+Fix: wrap the value in the type the schema expects. Here, `tags: ["astro"]`.
+
+### A schema author's own validation message
+
+```yaml title="frontmatter"
+title: "This title is deliberately far too long to fit inside the sixty character limit the schema enforces"
+```
+
+```text title="the real error"
+title: Title must be 60 characters or fewer
+```
+
+Fix: whatever this message says, literally. Unlike the first three, this text comes from a custom `.max()`/`.refine()` call in the schema, not one of Zod's built-in defaults, so it's usually the most specific one to read.
+
+## Confirmed behavior
+
+- The build fails at the content-sync step, before Astro generates any page, not just the one with broken frontmatter. Confirmed by building each example above: the process never reached the page-build phase until that single entry validated.
+- `astro check` reports the same error before `astro build` runs, because it triggers the identical content sync step first. Confirmed directly against this repo.
+- Every example here was tested against this site's own `astro@7.1.3` install and its real schema in `content.config.ts`, not a synthetic example project.
+
+Read the field name and reason literally before assuming Astro found something more complicated. Most of the time it's a one-line frontmatter fix, not a real schema problem. Browse more posts like this in the [Guides & Fixes](/guides-fixes) archive.
