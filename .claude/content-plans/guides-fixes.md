@@ -47,14 +47,23 @@ Series wiring: every cluster written from this plan uses frontmatter `series: "A
 - Interlinks: none yet.
 - Note: an earlier draft of this cluster incorrectly attributed the verbatim string `"No valid renderer was found for this file extension."` (from [withastro/astro#14887](https://github.com/withastro/astro/issues/14887)) to this v7 change. Verified that issue is actually an unrelated Astro v5.15+ regression from November 2025, closed as a duplicate — not caused by the v7 entrypoint move. Corrected here; do not reuse that string for this cluster.
 
-### 4. Fix Astro Cloudflare Deploy: Env Vars & _worker.js
+### 4. RETIRED original premise — replaced, same slot, still part of the series
 
-- Status: pending
-- Slug: -
-- Search Intent / Signal: [confirmed, from issue titles] "`@astrojs/cloudflare` doesn't correctly forward wrangler `vars` to Astro" and deploy failing with a `_worker.js` error when using an Astro `base` path.
-- Structural Problem: The official Cloudflare adapter doesn't fully bridge `astro:env` with `wrangler.jsonc`'s `vars`, and a base-path build emits a `dist/_worker.js` layout wrangler can't resolve without a manual asset-copy step in the build script. Both failures surface only at deploy time — `astro build` succeeds locally, then production breaks.
-- Source: [withastro/astro#16790](https://github.com/withastro/astro/issues/16790); [withastro/astro#15134](https://github.com/withastro/astro/issues/15134).
-- Interlinks: **[automate-static-site-deploys-github-actions-cloudflare-workers](../../src/content/blog/automate-static-site-deploys-github-actions-cloudflare-workers/index.mdx)** (category: data-automation) — not a collision, a sequel. That post covers choosing a deploy method; this cluster covers the runtime errors after deploy is already wired up. Link forward from that post once this is written.
+The original plan (`@astrojs/cloudflare` not forwarding `wrangler` vars to `astro:env`, and a `_worker.js` base-path failure) did not survive verification:
+
+- [withastro/astro#16790](https://github.com/withastro/astro/issues/16790) (env vars): reported on Astro v6.3.5, **closed and fixed** via PR #17275. This site runs `astro@^7.1.3`, newer than where the fix landed, so any reader today is very likely already on a patched version.
+- [withastro/astro#15134](https://github.com/withastro/astro/issues/15134) (`_worker.js` base path): reported on Astro v5.16.7, closed with a workaround, status of the underlying behavior on current Astro unconfirmed.
+- Bigger problem: this site doesn't use `@astrojs/cloudflare` at all — no such dependency, no `adapter`/`output` config. It deploys as a static build via a hand-written `worker/index.ts` + Workers Static Assets, so neither issue was ever dogfoodable here in the first place.
+
+Replaced with a verified, dogfooded, platform-level (not Astro-version-dependent) issue: **Fix Cloudflare Workers Empty 404 Page on Static Sites** (slug: `fix-cloudflare-workers-empty-404-astro`, status: written). `assets.not_found_handling` defaults to NOT serving a custom `404.html` on Workers Static Assets — confirmed via Cloudflare's own docs, this repo's own `wrangler.toml` comment (a real gap hit and fixed in this project's own history), and a live check against `bytetech247.com` confirming the fix works in production right now (real 404 status + real page body, not empty).
+
+- Note: first draft of the article and cover image used `wrangler.jsonc` with JSON syntax throughout, assumed rather than checked. This repo's real config file is `wrangler.toml` (TOML syntax, `[assets]` section headers, unquoted keys) - caught by `ls wrangler*` after Prettier reformatted the (wrong) JSON code block and prompted a second look. Rewrote every code block, prose mention, and the cover image itself to match the real file. Lesson: verify the actual filename/format of anything referenced as "this site's own config," not just the setting name, before writing code examples around it.
+
+- Search Intent / Signal: [confirmed, from Cloudflare's own docs] `not_found_handling: "404-page"` "overrides the default serving behavior of Workers for static assets" — the exact quoted doc line, not a paraphrase.
+- Structural Problem: Cloudflare Workers Static Assets does not auto-detect and serve a `404.html` for unmatched routes by default; it takes a separate, generic fallback instead. The setting is required to opt into custom-404 behavior, independent of any Astro version or adapter choice.
+- Source: [Cloudflare Static Assets — Static Site Generation docs](https://developers.cloudflare.com/workers/static-assets/routing/static-site-generation/); this repo's own `wrangler.jsonc` (already configured with the fix, predates this session).
+- Interlinks: bidirectional with **[automate-static-site-deploys-github-actions-cloudflare-workers](../../src/content/blog/automate-static-site-deploys-github-actions-cloudflare-workers/index.mdx)** (data-automation) — done both ways, that post now links forward and lists this one in `relatedSlugs`, this one links back.
+- Note: could not locally reproduce the "before" broken state via `wrangler dev` in an isolated scratch project — the local workerd binary crashed (`std::terminate()`, unrelated to this bug, an environment issue on this machine). Relied on the live-production confirmation of the fixed state plus Cloudflare's own documented default instead, rather than forcing a local repro that wasn't cooperating.
 
 ### 5. RETIRED — replaced by a standalone post, not part of this series
 

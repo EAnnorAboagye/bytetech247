@@ -4,6 +4,7 @@ description: "Two ways to auto-deploy a static site to Cloudflare Workers: built
 date: 2026-07-27
 category: data-automation
 tags: ["automation", "ci-cd", "cloudflare", "github-actions"]
+relatedSlugs: ["fix-cloudflare-workers-empty-404-astro"]
 coverImage: "./cover.jpg"
 coverImageAlt: "Close-up of a data center server rack, representing automated cloud infrastructure"
 coverImageCredit:
@@ -72,3 +73,5 @@ The deploy step only runs if every step above it succeeds — a broken build or 
 A reasonable default: start with Workers Builds, since it costs nothing to set up and gets you automatic deploys immediately. Move to GitHub Actions once there's a build step you genuinely don't want to skip — tests, an accessibility check, a broken-link scan — and you want a bad result to block the deploy rather than just show up in a log after the fact.
 
 Both approaches deploy the exact same `wrangler deploy` command underneath; the difference is entirely about what runs before it.
+
+Once deploys are automated, check the actual runtime behavior too, not just that the build succeeded: see [fixing Cloudflare Workers' empty 404 page](/guides-fixes/fix-cloudflare-workers-empty-404-astro/) for a config gap that a passing build won't catch.
