@@ -80,6 +80,22 @@ Bug-fix posts are the category most likely to have genuinely distinct follow-ups
 
 `write-article`'s own cover-image guidance already says guides-fixes is the category _least_ likely to genuinely qualify for a Pexels stock photo. For this category specifically: default to a real screenshot of the actual error (terminal output, browser console, or the before/after diff itself) — a generic stock photo on a post about one specific error reads as filler and gives a reader nothing to visually confirm they've found the right fix. Follow `write-article`'s Pexels workflow (search, present candidates, wait for approval) only if the topic is genuinely conceptual enough that no real screenshot applies.
 
+**Do not use AI image generation for this category.** An AI-generated "screenshot" of a terminal or UI can look plausible while showing fabricated error text, version numbers, or code — actively misleading for a category whose whole premise is a verified, reproduced error. A reader who spots a fake-looking screenshot loses trust in the post's claims too, which is a worse outcome than a plain stock photo would ever cause.
+
+**Generate the cover deterministically from real captured data instead**, with `scripts/make-terminal-cover.mjs` (committed, reusable — not a one-off scratch script):
+
+```bash
+node scripts/make-terminal-cover.mjs <post-folder>/cover.png <config.json>
+```
+
+`config.json` is `{ titlebarLabel, lines: [{ text, tone }] }`, where `tone` is `prompt | error | dim | plain | accent`. `text` must be the actual captured output from reproducing the bug (or a deliberately trimmed excerpt, noted as such in the post body per step 8's Before/After rule) — never invented text, same discipline as every other claim in this skill. Delete the config file after generating; only the resulting PNG is committed.
+
+This fits when the error is genuinely console/terminal output. When the bug is a rendering/visual difference instead (like a spacing regression), hand-build an SVG with the same brand palette (below) showing the real before/after states — there's no single template for that shape since the comparison varies per bug, but the colors and general layout conventions (dark window chrome, monospace text, rounded panel) should still match so covers read as one system across posts.
+
+**Brand palette** (same values as `scripts/make-default-og-image.mjs` — keep them in sync): `INK #0B120F` (background), `SIGNAL #14957F` (accent/prompt), `TRACE #6B7D77` (dim/secondary text), `PAPER #F4F2ED` (primary text), `ERROR_RED #E5484D` (error text). 1600x900, rendered via `@resvg/resvg-js` (not `sharp` — see that script's own comment for why).
+
+**Check for a visual collision before finalizing.** Open the actual cover image of any sibling/interlinked post (not just its `coverImageAlt` text) and compare. Two posts with a similar-sounding symptom can end up with near-identical covers if you reuse the same example content and layout — this happened once already: the compressHTML cluster's first draft used the same "5posts"/"5 posts" framing as the pre-existing `astro-whitespace-collapse-expression-bug` post it interlinks with, and had to be redesigned around different example content before commit. If a real collision risk exists, change the example content and/or the framing (not just the colors) so the two don't read as duplicate thumbnails in the archive.
+
 ## 12. House style (this project's additions)
 
 - **Human dashes only.** No em dash (`—`) anywhere in article prose — use a hyphen (`-`), a comma, or split into two sentences instead. This tightens `write-article`'s existing "em dashes used as a default transition" ban into a hard rule for this category: never, not just "not as a lazy transition." Exception: if a real, verbatim error/log string genuinely contains an em dash, preserve it exactly — don't rewrite a quoted string to satisfy a style rule.
@@ -102,7 +118,8 @@ Run `write-article`'s full checklist first, then check these on top:
 - [ ] 1-3 external citations link the actual primary source inline.
 - [ ] 2-4 internal links include the category/tag index and any pillar-cluster interlink target, not just sibling posts.
 - [ ] FAQ was genuinely considered, not defaulted to skipped — added only if real distinct questions exist.
-- [ ] Cover image is a real screenshot of the error/fix, or an approved Pexels photo only if the topic is genuinely conceptual.
+- [ ] Cover image is generated from real captured data (via `scripts/make-terminal-cover.mjs` or a hand-built SVG using the documented palette), or an approved Pexels photo only if the topic is genuinely conceptual — never AI-generated, never text/data invented for the image.
+- [ ] Cover image was compared against sibling/interlinked posts' actual images, not just their alt text, to rule out a near-duplicate layout.
 - [ ] `.claude/content-plans/guides-fixes.md` (if it exists) has this entry flipped to `written` with the real slug filled in.
 - [ ] Zero em dashes in the prose (verbatim quoted strings are the only exception).
 - [ ] Tone reads as direct imperative, not hedged suggestion.
