@@ -58,9 +58,22 @@ const jsonLdBlocks = [
          consent gate (a deliberate decision made 2026-08-04, replacing the
          earlier consent-gated CookieConsent.astro component; see
          privacy.astro's analytics section, which must stay consistent
-         with this). -->
+         with this).
+
+         fetchpriority="low" is required, not decorative: confirmed via a
+         local Lighthouse run that placing this script in <head> without it
+         pushed LCP to 3158ms, over .lighthouserc.json's 3000ms error
+         threshold — the old consent-gated version never made this request
+         during an automated audit (nothing clicks Accept), so this
+         regression only appeared once loading went unconditional. `async`
+         alone stops it from blocking HTML parsing, but Chrome still gives
+         it default (High) fetch priority, letting it compete with the
+         page's actual LCP resources (fonts, hero image) for early
+         bandwidth. Lowering its priority fixed the measured regression
+         without moving the tag out of <head>. -->
     <script
       async
+      fetchpriority="low"
       src={`https://www.googletagmanager.com/gtag/js?id=${siteConfig.analyticsId}`}
     ></script>
     <script define:vars={{ analyticsId: siteConfig.analyticsId }}>
