@@ -88,15 +88,6 @@ const SOCIAL_LABELS: Record<string, string> = {
             >
           </li>
           <li><a href="/editorial-policy/">Editorial Policy</a></li>
-          <li>
-            <button
-              type="button"
-              class="site-footer__link-button"
-              data-reopen-consent
-            >
-              Cookie preferences
-            </button>
-          </li>
         </ul>
       </Stack>
 
@@ -164,22 +155,7 @@ const SOCIAL_LABELS: Record<string, string> = {
     font-size: var(--text-sm);
   }
 
-  .site-footer__link-button {
-    display: inline-flex;
-    align-items: center;
-    min-height: 24px;
-    padding-block: calc(var(--spacing) * 0.25);
-    padding-inline: 0;
-    background: none;
-    border: none;
-    color: var(--color-fg-muted);
-    font-size: var(--text-sm);
-    font-family: inherit;
-    cursor: pointer;
-  }
-
-  .site-footer__list a:hover,
-  .site-footer__link-button:hover {
+  .site-footer__list a:hover {
     color: var(--color-accent);
   }
 

@@ -33,8 +33,12 @@ export const siteConfig = {
   url: "https://bytetech247.com",
   // Locked verbatim in build-spec.md §11 — do not reword.
   title: "ByteTech247 | Dev Tools, Automation & AI Productivity",
+  // Updated 2026-08-01, superseding build-spec.md §11's original locked
+  // text (see that section's changelog note) — a deliberate user
+  // decision, not a drift like the earlier unauthorized reword this
+  // replaced.
   description:
-    "ByteTech247 delivers expert Dev Tools, Data & Automation, and AI Productivity insights. Get production-ready Guides & Fixes to optimize your technical workflows.",
+    "ByteTech247 delivers expert Dev Tools, automation, and AI productivity insights. Get production-ready guides and fixes to optimize your workflows.",
   author: {
     // Resolved in build-spec.md §11 (v3.2) — real author identity.
     name: "Aboagye Annor",
@@ -81,8 +85,9 @@ export const siteConfig = {
 
   // GA4 property "ByteTech247" (analytics.google.com) — not a secret;
   // a Measurement ID is inherently public, visible in every page's own
-  // source once loaded. CookieConsent.astro only loads gtag.js after a
-  // visitor accepts — see that component and privacy.astro's "What this
-  // site collects today" section, which this ID must stay consistent with.
+  // source once loaded. Loaded unconditionally in BaseLayout.astro's
+  // <head> for every visitor (no consent gate, as of 2026-08-04) — see
+  // privacy.astro's "What this site collects today" section, which this
+  // ID must stay consistent with.
   analyticsId: "G-QRNX9JBMX4",
 } as const;

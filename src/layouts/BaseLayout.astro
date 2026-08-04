@@ -6,7 +6,6 @@ import { siteWideJsonLd, absoluteUrl } from "../lib/json-ld";
 import Header from "../components/Header.astro";
 import Footer from "../components/Footer.astro";
 import CommandPalette from "../components/CommandPalette.astro";
-import CookieConsent from "../components/CookieConsent.astro";
 
 interface Props {
   title?: string;
@@ -55,6 +54,30 @@ const jsonLdBlocks = [
 <html lang="en">
   <head>
     <meta charset="utf-8" />
+    <!-- Google tag (gtag.js) — loads unconditionally for every visitor, no
+         consent gate (a deliberate decision made 2026-08-04, replacing the
+         earlier consent-gated CookieConsent.astro component; see
+         privacy.astro's analytics section, which must stay consistent
+         with this). -->
+    <script
+      async
+      src={`https://www.googletagmanager.com/gtag/js?id=${siteConfig.analyticsId}`}
+    ></script>
+    <script define:vars={{ analyticsId: siteConfig.analyticsId }}>
+      // A bare top-level `function gtag(){}` here stays scoped to this
+      // script's own wrapper (Astro implicitly treats a `define:vars`
+      // script as `is:inline`, which wraps it) — confirmed live: dataLayer
+      // populated correctly for calls made right here, but `window.gtag`
+      // itself came back undefined, meaning nothing else on the page could
+      // ever call gtag() again. Assigning to `window.gtag` explicitly
+      // avoids that trap.
+      window.dataLayer = window.dataLayer || [];
+      window.gtag = function gtag(...args) {
+        window.dataLayer.push(args);
+      };
+      window.gtag("js", new Date());
+      window.gtag("config", analyticsId);
+    </script>
     <!-- Backup ownership-verification method alongside the DNS TXT record
          already in place (Cloudflare DNS) — Google Search Console's
          "additional verification methods" page for
@@ -158,8 +181,6 @@ const jsonLdBlocks = [
     <Footer />
 
     <CommandPalette />
-
-    <CookieConsent />
 
     <script>
       // Astro's View Transitions swap content client-side, and can leave

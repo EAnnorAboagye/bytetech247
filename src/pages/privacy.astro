@@ -1,7 +1,7 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { siteConfig } from "../config";
-const lastUpdated = "August 1, 2026";
+const lastUpdated = "August 4, 2026";
 ---
 
 <BaseLayout
@@ -20,12 +20,9 @@ const lastUpdated = "August 1, 2026";
     <h2>What this site collects today</h2>
     <p>
       {siteConfig.name} uses Google Analytics to understand which posts are actually
-      useful — but only if you say yes. On your first visit, a banner asks for your
-      consent before anything loads; if you decline or don't respond, no analytics
-      script runs and no analytics cookie is set. You can change your answer any time
-      via "Cookie preferences" in the footer. If you accept, Google Analytics sets
-      cookies on your device and processes standard usage data (pages viewed, approximate
-      location from IP, device/browser type, referring site) under{" "}
+      useful. It loads on every visit and sets cookies on your device, processing
+      standard usage data (pages viewed, approximate location from IP, device/browser
+      type, referring site) under{" "}
       <a href="https://policies.google.com/privacy" rel="noopener">
         Google's own privacy policy
       </a>. Reading the site does not create an account or any stored profile of
@@ -42,9 +39,8 @@ const lastUpdated = "August 1, 2026";
       GitHub account), that exchange happens directly between you and GitHub; {
         siteConfig.name
       } does not see or store your GitHub credentials. If advertising, affiliate links,
-      or a newsletter are ever added, this page will be updated first, and any additional
-      tracking that requires consent will be gated behind an actual consent prompt,
-      not just a mention on this page. See the{" "}
+      or a newsletter are ever added, this page will be updated first, before any
+      of it goes live. See the{" "}
       <a href="/affiliate-disclosure/">Affiliate/Advertising Disclosure</a>{" "}
       page for the current status of monetization on this site.
     </p>
@@ -59,12 +55,13 @@ const lastUpdated = "August 1, 2026";
 
     <h2>Your rights</h2>
     <p>
-      You can decline Google Analytics entirely — see "What this site collects
-      today" above — and nothing described there will apply to you. If you
-      already accepted and want to withdraw, use "Cookie preferences" in the
-      footer to change your answer, or clear your browser's local storage and
-      cookies for this site directly. For anything else — a question about
-      what's collected, or a request related to it — reach out via the{" "}
+      You can block Google Analytics yourself — a browser extension like
+      Google's own{" "}
+      <a href="https://tools.google.com/dlpage/gaoptout" rel="noopener">
+        Analytics Opt-out Add-on
+      </a>, an ad/tracker blocker, or clearing this site's cookies and local
+      storage directly all work. For anything else — a question about what's
+      collected, or a request related to it — reach out via the{" "}
       <a href="/contact/">Contact</a> page.
     </p>
 

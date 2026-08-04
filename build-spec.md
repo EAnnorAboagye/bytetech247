@@ -366,7 +366,8 @@ Run unit + edge-function + accessibility + type checks on every PR; run Playwrig
 - **Site/brand name:** ByteTech247
 - **Canonical live URL:** `https://bytetech247.workers.dev` (native Cloudflare Worker, not Pages — see Phase 11)
 - **SEO meta title** (54 characters, user-supplied and locked as-is): `ByteTech247 | Dev Tools, Automation & AI Productivity`
-- **SEO meta description** (147 characters, user-supplied and locked as-is): `ByteTech247 delivers expert Dev Tools, Data & Automation, and AI Productivity insights. Get production-ready Guides & Fixes to optimize your technical workflows.`
+- **SEO meta description** (146 characters, user-supplied and locked as-is, superseding the original 147-char version below on 2026-08-01): `ByteTech247 delivers expert Dev Tools, automation, and AI productivity insights. Get production-ready guides and fixes to optimize your workflows.`
+  - Original locked text (2026-07-27 – 2026-08-01), kept here for history only, no longer current: `ByteTech247 delivers expert Dev Tools, Data & Automation, and AI Productivity insights. Get production-ready Guides & Fixes to optimize your technical workflows.`
 
 ### Assessment of the locked title/description
 Both are solid as given, no wording changes recommended:
