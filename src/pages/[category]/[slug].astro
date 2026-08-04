@@ -673,6 +673,16 @@ const nextInSeries =
     line-height: 1.6;
   }
 
+  /* Inline code (single-backtick markdown, e.g. `InvalidContentEntryDataError`)
+     had no styling anywhere in the codebase — not even overflow-wrap. A long
+     technical term with no natural break point overflows its line on a
+     narrow viewport the same way the h1 fix in global.css addresses for
+     headings; :not(pre code) keeps this off the block-level code inside
+     .astro-code, which already handles its own wrapping via overflow-x. */
+  .article-content :global(code:not(pre code)) {
+    overflow-wrap: break-word;
+  }
+
   .article-content :global(.astro-code code) {
     counter-reset: line;
   }

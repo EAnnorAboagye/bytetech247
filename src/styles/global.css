@@ -220,6 +220,14 @@
     font-weight: 700;
     letter-spacing: -0.02em;
     text-wrap: balance;
+    /* text-wrap: balance only redistributes line breaks at existing
+       break points (spaces) — it does nothing for a single long word
+       with no natural break, like a CamelCase error class name
+       ("InvalidContentEntryDataError"). Confirmed live: that exact
+       title's second line painted past the viewport edge on a narrow
+       screen instead of wrapping, because nothing here forced a break
+       inside the word itself. */
+    overflow-wrap: break-word;
   }
 
   h1 {
@@ -245,6 +253,7 @@
 
   p {
     text-wrap: pretty;
+    overflow-wrap: break-word;
   }
 
   /*
