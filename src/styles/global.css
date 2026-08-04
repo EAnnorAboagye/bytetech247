@@ -292,6 +292,77 @@
 
 @layer overrides {
   /*
+   * Shared prose treatment for the six standalone content pages (About,
+   * Contact, Privacy, Terms, Affiliate Disclosure, Editorial Policy) —
+   * every one of them wraps its content in <article class="legal">. This
+   * is the same "give plain text room to breathe" fix already applied to
+   * .article-content in the article template (fluid sizing, serif
+   * headings, real paragraph/list rhythm instead of Tailwind's reset
+   * zeroing every margin) — kept here once instead of copy-pasted into
+   * six separate <style> blocks, which is how it silently never happened
+   * on these pages the first time. A .legal h1 is read the same way an
+   * article headline is, not a UI label, so it gets the same Serif swap
+   * PostCard/homepage headings deliberately don't.
+   */
+  .legal {
+    max-width: 42rem;
+    font-size: clamp(1rem, 0.96rem + 0.2vw, 1.125rem);
+    line-height: 1.7;
+  }
+
+  .legal > :first-child {
+    margin-top: 0;
+  }
+
+  .legal h1 {
+    font-family: var(--font-serif);
+    letter-spacing: normal;
+    margin: 0 0 0.5em;
+  }
+
+  .legal h2,
+  .legal h3 {
+    font-family: var(--font-serif);
+    letter-spacing: normal;
+  }
+
+  .legal h2 {
+    margin: 2.5em 0 1em;
+  }
+
+  .legal h3 {
+    margin: 2em 0 0.75em;
+  }
+
+  .legal p {
+    margin: 0 0 1.25em;
+  }
+
+  .legal ul,
+  .legal ol {
+    margin: 0 0 1.25em;
+    padding-inline-start: 1.5em;
+  }
+
+  .legal li {
+    margin-top: 0.4em;
+  }
+
+  .legal__updated {
+    margin: 0 0 1.5em;
+    font-size: var(--text-sm);
+    color: var(--color-fg-muted);
+  }
+
+  .legal__disclaimer {
+    margin-top: calc(var(--spacing) * 8);
+    padding-top: calc(var(--spacing) * 4);
+    border-top: 1px solid var(--color-border);
+    font-size: var(--text-sm);
+    color: var(--color-fg-muted);
+  }
+
+  /*
    * Print stylesheet (build-spec.md Phase 9) — strips nav/sidebar/search
    * chrome, leaves article content and heading structure intact so a
    * printed post reads like a document, not a snapshot of the whole site.
