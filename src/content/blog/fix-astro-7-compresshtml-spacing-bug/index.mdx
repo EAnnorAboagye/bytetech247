@@ -26,8 +26,18 @@ Astro 7 changes `compressHTML`'s default value to `'jsx'`. The [official Astro v
 
 Verified directly on this site's own `astro@7.1.3` install, which doesn't override `compressHTML` in `astro.config.mjs` and so runs on the new default: two inline elements written on separate lines compile to `<strong>5</strong><span>posts</span>`, no space at all, while the same markup with a space typed on one line compiles to `<strong>5</strong> <span>posts</span>`.
 
-<Callout type="info" title="Two expressions merging instead? Same cause, different post">
-If your two pieces are `{expression}` blocks rather than real HTML tags, like `{count}` and `{label}`, you're hitting the same `compressHTML` default flip, just on a different pair of node types. Astro 6's `compressHTML: true` preserved that spacing too, confirmed by testing both cases against this repo's own `astro.config.mjs`. See [why Astro silently merges text like '5posts' into one word](/guides-fixes/astro-whitespace-collapse-expression-bug/) for the expression-specific fix.
+<Callout
+  type="info"
+  title="Two expressions merging instead? Same cause, different post"
+>
+  If your two pieces are `{expression}` blocks rather than real HTML tags, like
+  `{count}` and `{label}`, you're hitting the same `compressHTML` default flip,
+  just on a different pair of node types. Astro 6's `compressHTML: true`
+  preserved that spacing too, confirmed by testing both cases against this
+  repo's own `astro.config.mjs`. See [why Astro silently merges text like
+  '5posts' into one
+  word](/guides-fixes/astro-whitespace-collapse-expression-bug/) for the
+  expression-specific fix.
 </Callout>
 
 ## Fix it: add the explicit space back

@@ -15,7 +15,7 @@ If `.claude/content-plans/guides-fixes.md` exists, find this topic's entry there
 
 Same discipline as `write-article` step 1, made concrete for an error-fix post:
 
-- **Primary keyword/phrase** is the verbatim error string itself (or its distinctive fragment) — this is what makes guides-fixes different from other categories, the keyword *is* the search query almost verbatim.
+- **Primary keyword/phrase** is the verbatim error string itself (or its distinctive fragment) — this is what makes guides-fixes different from other categories, the keyword _is_ the search query almost verbatim.
 - **2-3 related terms**: the framework/library name + version, the API or method that throws, and the underlying cause in plain words (e.g. "undefined array", "missing env variable"). Write these down before drafting so the body naturally covers search variants of the same intent without repeating the exact string on every line.
 
 ## 3. Title
@@ -78,7 +78,7 @@ Bug-fix posts are the category most likely to have genuinely distinct follow-ups
 
 ## 11. Cover image
 
-`write-article`'s own cover-image guidance already says guides-fixes is the category *least* likely to genuinely qualify for a Pexels stock photo. For this category specifically: default to a real screenshot of the actual error (terminal output, browser console, or the before/after diff itself) — a generic stock photo on a post about one specific error reads as filler and gives a reader nothing to visually confirm they've found the right fix. Follow `write-article`'s Pexels workflow (search, present candidates, wait for approval) only if the topic is genuinely conceptual enough that no real screenshot applies.
+`write-article`'s own cover-image guidance already says guides-fixes is the category _least_ likely to genuinely qualify for a Pexels stock photo. For this category specifically: default to a real screenshot of the actual error (terminal output, browser console, or the before/after diff itself) — a generic stock photo on a post about one specific error reads as filler and gives a reader nothing to visually confirm they've found the right fix. Follow `write-article`'s Pexels workflow (search, present candidates, wait for approval) only if the topic is genuinely conceptual enough that no real screenshot applies.
 
 ## 12. House style (this project's additions)
 

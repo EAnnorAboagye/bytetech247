@@ -9,6 +9,7 @@ Series wiring: every cluster written from this plan uses frontmatter `series: "A
 ## Pillar
 
 **Astro 7 Upgrade: Breaking Changes and Migration Fixes**
+
 - Status: pending
 - Slug: -
 - Why pillar: Astro 7.0.0 went stable 2026-06-22, about six weeks before this plan — comfortably inside the active-research window. It bundles four structurally distinct breaking changes (Rust compiler strictness, Vite 8 bump, compressHTML default flip, container-renderer entrypoint move) that hit most teams upgrading from v6, and each one supports a genuinely separate cluster below without stretching.
@@ -16,6 +17,7 @@ Series wiring: every cluster written from this plan uses frontmatter `series: "A
 ## Clusters
 
 ### 1. Fix ERESOLVE Vite 8 Peer Dependency Errors in Astro 7
+
 - Status: written
 - Slug: fix-eresolve-vite-8-peer-dependency-astro-7
 - Search Intent / Signal: [confirmed, live-reproduced] `npm error code ERESOLVE` / `npm error ERESOLVE unable to resolve dependency tree`, captured directly via a real `npm install --dry-run` in this environment against `vite@^8.0.13` + `vite-plugin-pwa@1.2.0`. Refined during drafting from the original vaguer "integration reaches into Vite internals" framing to the more specific and verifiable peer-dependency mechanism.
@@ -24,6 +26,7 @@ Series wiring: every cluster written from this plan uses frontmatter `series: "A
 - Interlinks: links to the `/guides-fixes` category index. No sibling cluster posts exist yet — add cross-links to Clusters 2-5 once they're written.
 
 ### 2. Fix Astro 7 compressHTML Spacing Bug After Upgrade
+
 - Status: written
 - Slug: fix-astro-7-compresshtml-spacing-bug
 - Search Intent / Signal: [confirmed, live-reproduced] Verified directly on this site's own `astro@7.1.3` build: `<strong>5</strong>` and `<span>posts</span>` on separate lines compiled to `<strong>5</strong><span>posts</span>` (no space), and adding an explicit `{" "}` compiled to `<strong>5</strong> <span>posts</span>` (space restored). Confirmed by compiling a real test page through this repo's own Astro install, not just cited from docs.
@@ -35,6 +38,7 @@ Series wiring: every cluster written from this plan uses frontmatter `series: "A
 - Note (significant, caught on thorough review): the draft's original Callout claimed the sibling post's `{count}{label}` bug was "a different, version-independent bug," unrelated to `compressHTML`. Tested this directly by building both cases (the `{expr}{expr}` case and the `<strong>/<span>` case) under `compressHTML: true` vs the default `'jsx'` in this repo's own `astro.config.mjs` (temporarily, reverted after). Result: `compressHTML: true` fixes both cases; the default breaks both. They are the same root cause on two different node-pair types, not independent bugs. Corrected the Callout and FAQ here, and corrected the sibling post itself (it previously described the bug as an eternal "long-standing JSX" characteristic with no version caveat, published 2026-07-30 after Astro 7 was already stable, which was inaccurate) — added a `Callout` there citing the same test. If Clusters 3-5 touch whitespace/compression behavior again, verify against a live build before asserting version-scoped claims; don't trust a prior post's framing without re-checking it.
 
 ### 3. Fix Astro 7 getContainerRenderer Deprecation Warning
+
 - Status: pending
 - Slug: -
 - Search Intent / Signal: [paraphrased] Deprecation warning logged when importing `getContainerRenderer` from an integration's package root after upgrading to Astro 7. Exact console warning text not independently verified in research — treat as paraphrased, not verbatim, until confirmed by actually reproducing it.
@@ -44,6 +48,7 @@ Series wiring: every cluster written from this plan uses frontmatter `series: "A
 - Note: an earlier draft of this cluster incorrectly attributed the verbatim string `"No valid renderer was found for this file extension."` (from [withastro/astro#14887](https://github.com/withastro/astro/issues/14887)) to this v7 change. Verified that issue is actually an unrelated Astro v5.15+ regression from November 2025, closed as a duplicate — not caused by the v7 entrypoint move. Corrected here; do not reuse that string for this cluster.
 
 ### 4. Fix Astro Cloudflare Deploy: Env Vars & _worker.js
+
 - Status: pending
 - Slug: -
 - Search Intent / Signal: [confirmed, from issue titles] "`@astrojs/cloudflare` doesn't correctly forward wrangler `vars` to Astro" and deploy failing with a `_worker.js` error when using an Astro `base` path.

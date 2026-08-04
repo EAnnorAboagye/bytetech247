@@ -3,13 +3,13 @@ name: pillar-cluster
 description: Research and draft a Topic Cluster (1 Core Pillar + 5 Sub-Topic Clusters) for a ByteTech247 content category, grounded in live GitHub issues, changelogs, and search trends. Use whenever asked to plan a content cluster, topic map, or pillar/cluster strategy for dev-tools, data-automation, ai-productivity, or guides-fixes — this produces the plan only, not the articles (hand approved clusters to the write-article skill one at a time).
 ---
 
-This is the planning stage that runs *before* `write-article`. It answers "what should we write and why will it rank" — never the drafting itself. Output is a Pillar + 5 Clusters map the user reviews and approves before any article gets written.
+This is the planning stage that runs _before_ `write-article`. It answers "what should we write and why will it rank" — never the drafting itself. Output is a Pillar + 5 Clusters map the user reviews and approves before any article gets written.
 
 ## 1. Resolve inputs before researching
 
 - **Category** (required) — must be exactly one of the four slugs in `src/config.ts`: `dev-tools`, `data-automation`, `ai-productivity`, `guides-fixes`. If the user names a topic instead of a slug, map it yourself and say which slug you picked. A pillar/cluster plan that doesn't map cleanly to one of these four will fail `content.config.ts`'s `category: z.enum(CATEGORY_SLUGS)` build check the moment anyone drafts it — catch that here, not at build time.
-- **Target ecosystem** — default to the site's *own* stack, read live from `package.json` and `wrangler.jsonc`/deploy config, not a guessed or generic stack. Dogfooding gives first-person authority ("we hit this in our own build") that a generic pick can't, and it's why `guides-fixes` pillars should almost always trace back to Astro, Tailwind, TypeScript, or the Cloudflare Workers deploy path this repo actually runs. For categories where the site's own dependencies don't cover the ground (e.g. a `dev-tools` piece on a CLI ByteTech247 doesn't itself run), the user's stated target stands, but say so explicitly rather than silently substituting a generic pick.
-- **Window** — "active right now" means sourced from the last ~90 days of *real* calendar time (GitHub issues, release notes, changelogs, StackOverflow trends), not the sandbox's system date. Check the actual publish/commit date on anything you cite.
+- **Target ecosystem** — default to the site's _own_ stack, read live from `package.json` and `wrangler.jsonc`/deploy config, not a guessed or generic stack. Dogfooding gives first-person authority ("we hit this in our own build") that a generic pick can't, and it's why `guides-fixes` pillars should almost always trace back to Astro, Tailwind, TypeScript, or the Cloudflare Workers deploy path this repo actually runs. For categories where the site's own dependencies don't cover the ground (e.g. a `dev-tools` piece on a CLI ByteTech247 doesn't itself run), the user's stated target stands, but say so explicitly rather than silently substituting a generic pick.
+- **Window** — "active right now" means sourced from the last ~90 days of _real_ calendar time (GitHub issues, release notes, changelogs, StackOverflow trends), not the sandbox's system date. Check the actual publish/commit date on anything you cite.
 
 ## 2. Live research (do not skip — this is the whole point)
 

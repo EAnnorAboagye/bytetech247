@@ -60,7 +60,11 @@ npm install
 The first line is the actual fix. It moves `vite-plugin-pwa` to a version whose peer range includes `^8.0.0`, which satisfies the Vite version Astro 7 already installed. The second line is just a normal reinstall to confirm the tree now resolves cleanly.
 
 <Callout type="warning" title="--legacy-peer-deps is a workaround, not a fix">
-It tells npm to install the mismatched versions anyway instead of stopping. The plugin still runs against a major Vite version it was never tested against, so anything that touches Vite's plugin API internally can break in ways npm will no longer warn you about. Use it to keep working while you wait on an upstream update, then remove it once that update ships.
+  It tells npm to install the mismatched versions anyway instead of stopping.
+  The plugin still runs against a major Vite version it was never tested
+  against, so anything that touches Vite's plugin API internally can break in
+  ways npm will no longer warn you about. Use it to keep working while you wait
+  on an upstream update, then remove it once that update ships.
 </Callout>
 
 ## Confirmed version range
