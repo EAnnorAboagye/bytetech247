@@ -1,0 +1,52 @@
+---
+title: "Fix Astro 7 MISSING_EXPORT satteriCollectImagesPlugin"
+description: "Fix Astro 7's MISSING_EXPORT satteriCollectImagesPlugin error from @astrojs/mdx. The real cause, and the version that already fixes it."
+date: 2026-08-05
+category: guides-fixes
+tags: ["astro", "mdx", "vite", "bug-fix"]
+series: "Astro 7 Upgrade: Breaking Changes and Migration Fixes"
+seriesOrder: 5
+relatedSlugs: ["fix-astro-7-rollup-satteri-import-error"]
+coverImage: "./cover.png"
+coverImageAlt: "A terminal window showing the real Vite build error: MISSING_EXPORT satteriCollectImagesPlugin is not exported by the @astrojs/markdown-satteri optional peer dependency"
+faq:
+  - question: "Does downgrading @astrojs/mdx fix this error?"
+    answer: "No. Downgrading only moves you to a different affected beta, or back to Astro 6 entirely. Upgrading to @astrojs/mdx 7.0.0 or later is the actual fix, since that's the version where the missing export was added."
+  - question: "Is this the same bug as the Rollup failed to resolve import satteri error?"
+    answer: "Related, not the same. That error is a build warning that fires when a project keeps the legacy unified Markdown pipeline. This one is a hard build failure from a genuinely missing named export during an interrupted or partial upgrade. Both were fixed together by the same pull request, shipped in the same @astrojs/mdx 7.0.0 release."
+---
+
+## Quick Answer
+
+An Astro 7 beta build can fail with: `[MISSING_EXPORT] "satteriCollectImagesPlugin" is not exported by "__vite-optional-peer-dep:@astrojs/markdown-satteri:@astrojs/mdx"`. It means `@astrojs/mdx` and its Sätteri dependency landed at mismatched versions during the upgrade. Run `npm install @astrojs/mdx@latest` and rebuild.
+
+## Why the missing export happens
+
+Astro 7's MDX integration collects images referenced inside `.mdx` files using a helper called `satteriCollectImagesPlugin`, part of the new Sätteri Markdown pipeline. `@astrojs/mdx` imports that helper from `@astrojs/markdown-satteri`, an optional peer dependency Vite resolves separately at build time.
+
+An interrupted or partial upgrade, commonly through `@astrojs/upgrade` stopping mid-way or a lockfile only partially updating, can leave `@astrojs/mdx` newer than the installed `@astrojs/markdown-satteri`. If `@astrojs/mdx` expects `satteriCollectImagesPlugin` to exist and the installed `@astrojs/markdown-satteri` predates it, Vite's build fails resolving that named export instead of silently skipping it. [Issue #17068](https://github.com/withastro/astro/issues/17068), opened 2026-06-13 against an Astro 7 beta, documents this exact failure.
+
+<Callout type="warning" title="This one fails the build, not just a warning">
+  Unlike some other Sätteri-era errors, `MISSING_EXPORT` stops the build
+  outright. There's no silent runtime version of this one to miss, it shows up
+  the moment you try to build or run `astro dev`.
+</Callout>
+
+## Is this still a problem on Astro 7 today?
+
+No. The same [PR #17093](https://github.com/withastro/astro/pull/17093) that fixed the related Rollup `satteri` import error also fixed this one, merged 2026-06-17, five days before Astro 7.0.0 went stable on 2026-06-22. The fix shipped in `@astrojs/mdx@7.0.0`, which keeps its Sätteri dependency in sync automatically.
+
+```bash title="fix: reinstall @astrojs/mdx past the version skew"
+npm install @astrojs/mdx@latest
+npm run build
+```
+
+A plain reinstall is enough. There's no config option to set, since the bug was a version mismatch between two packages, not a setting either package exposes.
+
+## Confirmed version range
+
+This site's `astro.config.mjs` registers the `mdx()` integration and runs `@astrojs/mdx@^7.0.3`, already past the fix. A fresh `npm ci` in this repo installs matching, compatible versions of `@astrojs/mdx` and its Sätteri dependency, and the build completes without the `MISSING_EXPORT` error.
+
+If you hit this during Astro 7's beta cycle, before 2026-06-17, the fix is the same reinstall shown above. Avoid pinning `@astrojs/mdx` to an exact beta version in `package.json`; a caret range lets npm pull the matching Sätteri dependency automatically the next time you install.
+
+See the [Rollup failed to resolve import satteri](/guides-fixes/fix-astro-7-rollup-satteri-import-error) post for the related build warning this same PR fixed, or browse more fixes in the [Guides & Fixes](/guides-fixes) archive.

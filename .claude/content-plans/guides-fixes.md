@@ -71,8 +71,8 @@ Replaced with a verified, dogfooded, platform-level (not Astro-version-dependent
 
 ### 5. Fix Astro 7 MISSING_EXPORT satteriCollectImagesPlugin
 
-- Status: approved
-- Slug: -
+- Status: written
+- Slug: fix-astro-7-missing-export-satteri-images
 - Search Intent / Signal: [confirmed, verbatim] `[MISSING_EXPORT] "satteriCollectImagesPlugin" is not exported by "__vite-optional-peer-dep:@astrojs/markdown-satteri:@astrojs/mdx"`
 - Structural Problem: Upgrading from Astro 6 to a 7 beta (e.g. via `@astrojs/upgrade`) could leave `@astrojs/mdx` and `@astrojs/markdown-satteri` at mismatched versions. The image-collection helper Sätteri's MDX integration expects to import didn't exist yet in the installed `@astrojs/markdown-satteri` version, so Vite's build fails resolving that named export.
 - Source: [\[v7 beta\] `[MISSING_EXPORT] "satteriCollectImagesPlugin"` from `@astrojs/mdx` (#17068)](https://github.com/withastro/astro/issues/17068), opened 2026-06-13, closed via PR #17093.

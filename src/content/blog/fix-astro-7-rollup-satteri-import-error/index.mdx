@@ -6,6 +6,7 @@ category: guides-fixes
 tags: ["astro", "mdx", "rollup", "bug-fix"]
 series: "Astro 7 Upgrade: Breaking Changes and Migration Fixes"
 seriesOrder: 3
+relatedSlugs: ["fix-astro-7-missing-export-satteri-images"]
 coverImage: "./cover.png"
 coverImageAlt: "A terminal window showing the real Vite/Rollup warning: Rollup failed to resolve import satteri from the @astrojs/mdx dist folder, most likely unintended because it can break your application at runtime"
 faq:
@@ -58,4 +59,4 @@ This site runs `@astrojs/mdx@^7.0.3`, already past the fix, and its own RSS feed
 
 If your project only hit this during Astro 7's beta cycle, in the window between Sätteri becoming the default processor and 2026-06-17, a plain dependency bump to `@astrojs/mdx@^7.0.3` (or any current 7.x release) removes it. There's nothing left to configure once the version is current.
 
-Read more fixes for this same upgrade in the [Guides & Fixes](/guides-fixes) archive.
+The same PR also fixed a related error, [MISSING_EXPORT "satteriCollectImagesPlugin"](/guides-fixes/fix-astro-7-missing-export-satteri-images), a hard build failure rather than a warning. Read more fixes for this same upgrade in the [Guides & Fixes](/guides-fixes) archive.
