@@ -111,7 +111,13 @@ const csp = [
   `style-src 'self' 'unsafe-inline'`, // Shiki emits a `style=""` per syntax-highlighted token; hashing each is infeasible
   `img-src 'self'`,
   `font-src 'self'`,
-  `connect-src 'self' https://www.googletagmanager.com https://*.google-analytics.com https://*.analytics.google.com`,
+  // https://cloudflareinsights.com (bare, not static.cloudflareinsights.com
+  // which script-src already allows for the beacon script itself) is where
+  // that same beacon actually POSTs its RUM data — confirmed live:
+  // omitting it let the Web Analytics beacon load but silently blocked
+  // every one of its own report requests, so the "self-hosted, no
+  // duplicate" analytics setup was still collecting zero data.
+  `connect-src 'self' https://www.googletagmanager.com https://*.google-analytics.com https://*.analytics.google.com https://cloudflareinsights.com`,
   `frame-ancestors 'none'`,
   `base-uri 'self'`,
   `form-action 'self'`,
