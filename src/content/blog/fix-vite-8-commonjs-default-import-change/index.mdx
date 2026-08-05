@@ -1,0 +1,75 @@
+---
+title: "Fix Vite 8 CommonJS Default Import Breaking Change"
+description: "Fix Vite 8 breaking CommonJS default imports under Rolldown's stricter interop. Restore the old behavior with one legacy config flag."
+date: 2026-08-05
+category: guides-fixes
+tags: ["vite", "rolldown", "commonjs", "bug-fix"]
+series: "Astro 7's Vite 8 Upgrade: Rolldown, Oxc, and Lightning CSS Breaking Changes"
+seriesOrder: 4
+coverImage: "./cover.png"
+coverImageAlt: "A code comparison showing Vite's own migration guide text on CommonJS default import interop, alongside the legacy.inconsistentCjsInterop config flag that restores the old behavior"
+faq:
+  - question: "Is legacy.inconsistentCjsInterop a permanent fix?"
+    answer: "No, treat it as a temporary escape hatch, not a real fix. It restores Rollup's old, permissive interop behavior project-wide, papering over every affected package instead of fixing the one causing your error. Report the specific broken import to that package's maintainer, or send a fix upstream, and remove the flag once it's patched."
+  - question: "How do I find which package is actually causing the crash?"
+    answer: "Read the stack trace on the TypeError — it names the file and import that failed. Check that package's own source for module.exports = someFunction without also setting module.exports.__esModule = true, which is exactly the pattern Rolldown's stricter interop no longer treats leniently."
+---
+
+## Quick Answer
+
+Vite 8's Rolldown bundler standardizes CommonJS default-import resolution, which can make a default import that used to work suddenly return the wrong value, throwing `TypeError: <x> is not a function`. Set `legacy.inconsistentCjsInterop: true` in your Vite config as a temporary escape hatch while you audit affected dependencies.
+
+## Why the import suddenly breaks
+
+Rollup's CommonJS interop (Vite 7 and earlier) was permissive and could vary depending on exactly how a module was loaded. Vite 8 replaces it with Rolldown's stricter, standardized rule, stated verbatim in [Vite's own migration guide](https://vite.dev/guide/migration): "Default import handling from CommonJS modules now operates consistently. The default import represents `module.exports` when: the importer is `.mjs` or `.mts`, the closest `package.json` specifies `type: "module"`, the importee's `module.exports.__esModule` is not `true`."
+
+Older CommonJS packages commonly export a single function directly, without setting `module.exports.__esModule`:
+
+```js title="node_modules/some-legacy-lib/index.js — a real, older CJS pattern"
+module.exports = function doThing() {
+  /* ... */
+};
+```
+
+Under Rollup's old interop, a default import from a package like this could resolve to the function itself in some cases. Under Rolldown's rule above, the same import now consistently resolves to `module.exports` as a whole — which, since it _is_ the function here, should still work, but plenty of real packages wrap their export differently enough that the resolved value stops being callable. The failure only shows up at the call site, once code tries to invoke something that's no longer a function:
+
+```js title="your code — unchanged, but the import now resolves differently"
+import doThing from "some-legacy-lib";
+
+doThing(); // TypeError: doThing is not a function
+```
+
+Nothing about your code or the dependency changed. Only the bundler's interop rule did.
+
+## Fix it: restore the old interop temporarily
+
+### Before: default Vite 8 config
+
+```js title="vite.config.ts"
+export default defineConfig({
+  // no legacy override — Rolldown's strict CJS interop applies (BROKEN
+  // for packages relying on the old permissive resolution)
+});
+```
+
+### After: opt back into the old behavior
+
+```js title="vite.config.ts"
+export default defineConfig({
+  legacy: {
+    inconsistentCjsInterop: true, // FIXED: restores Vite 7's permissive interop
+  },
+});
+```
+
+<Callout type="warning" title="This only fixes one specific failure mode">
+  `legacy.inconsistentCjsInterop` restores Rollup's permissive default-export
+  resolution. It does nothing for other CJS/ESM interop differences, like
+  execution-order changes or dynamic `import()` regressions — if your crash
+  doesn't match the exact "default import resolves to the wrong value" shape,
+  this flag won't fix it.
+</Callout>
+
+## Confirmed version range
+
+Documented in Vite's own current migration guide as an intentional Vite 8 behavior change, not a bug — `legacy.inconsistentCjsInterop` is the officially documented escape hatch, not a community workaround. This site's own dependencies are all modern ESM-first packages, so this specific interop change wasn't independently reproducible against this repo's own build; treat the fix above as effective for any Vite 8 project hitting the exact `TypeError: <x> is not a function` shape on a previously-working default import from a CommonJS dependency. See also [Fix Vite 8 Externalized require() Behavior Change](/guides-fixes/fix-vite-8-externalized-require-behavior-change/) — a related but distinct change to the same CJS/ESM boundary, from the require side rather than the import side. Browse more posts like this in the [Guides & Fixes](/guides-fixes) archive.

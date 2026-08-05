@@ -1,0 +1,87 @@
+---
+title: "Fix Vite 8 manualChunks Object Form Removed"
+description: "Fix Vite 8 rejecting object-form manualChunks. Rolldown only supports the function form — here's the real error and the fix."
+date: 2026-08-05
+category: guides-fixes
+tags: ["vite", "rolldown", "config", "bug-fix"]
+series: "Astro 7's Vite 8 Upgrade: Rolldown, Oxc, and Lightning CSS Breaking Changes"
+seriesOrder: 9
+coverImage: "./cover.png"
+coverImageAlt: "A terminal window showing the real error: Invalid output options for manualChunks, Expected Function but received Object, from a Vite 8 build using the old object-form vendor chunk config"
+faq:
+  - question: "Is there a simpler replacement than hand-writing a manualChunks function?"
+    answer: "Rolldown's own codeSplitting option is the intended replacement for the common cases object-form manualChunks used to cover, not a like-for-like function rewrite. It's worth checking before porting a complex object map line by line."
+  - question: "Can I just delete manualChunks entirely instead of converting it?"
+    answer: "For many projects, yes. Removing manual chunk config and letting Rolldown handle splitting automatically is a viable approach, especially if your original object form was a simple vendor/app split rather than something tuned for a specific loading strategy."
+---
+
+## Quick Answer
+
+Vite 8's Rolldown bundler rejects the object form of `output.manualChunks` outright: "the object form ... is not supported anymore." A real migration tool hit this directly: `Invalid type: Expected Function but received Object`. Rewrite `manualChunks` as a function — the same chunk-splitting logic, just called per module instead of declared as a static map.
+
+## Why the object form stopped working
+
+Rollup's `output.manualChunks` accepted two shapes: a function that gets called once per module and returns the chunk name it belongs to, or a plain object mapping chunk names to arrays of module IDs — a common shorthand for a simple vendor/app split. [Vite's migration guide](https://vite.dev/guide/migration) is direct about what changed: "The object form `output.manualChunks` option is not supported anymore. The function form `output.manualChunks` is deprecated."
+
+Rolldown only implements the function form. The object-map shorthand — arguably the more commonly used of the two, since it's the one most copy-pasted vendor-chunk snippets use — is rejected at build time, not silently ignored:
+
+```
+Warning: Invalid output options (1 issue found) - For the 'manualChunks'. Invalid type: Expected Function but received Object.
+```
+
+That exact error comes from a real migration tool's own config validator ([voidzero-dev/vite-plus#900](https://github.com/voidzero-dev/vite-plus/issues/900), opened 2026-03-15), hit while trying to convert a project's Rollup-era config to Rolldown. The same shape of error appears in a plain Vite 8 build with an object-form `manualChunks`, not just inside that specific tool.
+
+## Fix it: rewrite as a function
+
+### Before: the object form
+
+```js title="vite.config.ts — Vite 7 pattern"
+export default defineConfig({
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ["react", "react-dom"], // BROKEN in Vite 8: object form rejected
+        },
+      },
+    },
+  },
+});
+```
+
+### After: the same split, as a function
+
+```js title="vite.config.ts — Vite 8 pattern"
+export default defineConfig({
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          // FIXED: same vendor-chunk logic, called per module
+          if (
+            id.includes("node_modules/react") ||
+            id.includes("node_modules/react-dom")
+          ) {
+            return "vendor";
+          }
+        },
+      },
+    },
+  },
+});
+```
+
+The function receives each module's resolved ID and runs once per module during the build. Returning a string assigns that module to a named chunk; returning nothing leaves Rolldown's default chunking in place for it — the same contract the function form already had under Rollup.
+
+<Callout type="tip" title="Consider skipping manualChunks entirely">
+  If your object form was a simple vendor/app split rather than something tuned
+  for a specific loading strategy, removing `manualChunks` and letting
+  Rolldown's own chunking handle it automatically is a real option, not just a
+  fallback. Rolldown also exposes a `codeSplitting` option built for this exact
+  case, which is worth checking before porting a complex object map line by line
+  into a function.
+</Callout>
+
+## Confirmed version range
+
+Confirmed via Rolldown's real-world error output, cited above, against `rolldown@1.0.0-rc.9` and `vite@8.0.0`. Documented as an intentional, permanent removal in Vite's own current migration guide, not a temporary regression. This site's own `astro.config.mjs` doesn't customize `manualChunks` at all, so this specific error wasn't independently reproducible against this repo's own build. Same key rename to check while you're here: [Fix Vite 8's build.rollupOptions Deprecation](/guides-fixes/fix-vite-8-build-rollupoptions-deprecation/) — `manualChunks` is the single most common thing people configure inside that renamed key. Browse more posts like this in the [Guides & Fixes](/guides-fixes) archive.

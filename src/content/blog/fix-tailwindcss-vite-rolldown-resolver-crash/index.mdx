@@ -1,0 +1,69 @@
+---
+title: "Fix @tailwindcss/vite Rolldown Resolver Crash"
+description: "Fix @tailwindcss/vite crashing with 'Missing field tsconfigPaths' under Vite 8's Rolldown resolver. Upgrade Vite and Rolldown to clear it."
+date: 2026-08-05
+category: guides-fixes
+tags: ["vite", "tailwindcss", "rolldown", "bug-fix"]
+series: "Astro 7's Vite 8 Upgrade: Rolldown, Oxc, and Lightning CSS Breaking Changes"
+seriesOrder: 2
+coverImage: "./cover.png"
+coverImageAlt: "A terminal window showing the real error: Missing field tsconfigPaths on BindingViteResolvePluginConfig.resolveOptions, thrown by @tailwindcss/vite under Vite 8's Rolldown resolver"
+faq:
+  - question: "Is this the same bug as the ERESOLVE peer dependency error after upgrading to Astro 7?"
+    answer: "No, they're different failure classes. The ERESOLVE error blocks npm install itself, before any code runs, because a plugin's peer dependency range doesn't include Vite 8 yet. This crash happens after a successful install, during a real build, because Vite's own resolver API returned an incomplete config object to @tailwindcss/vite."
+  - question: "Does switching to the PostCSS-based @tailwindcss/postcss avoid this?"
+    answer: "Yes, since the crash is specific to @tailwindcss/vite calling Vite's resolver API directly. The PostCSS plugin doesn't touch that code path, so it isn't exposed to this particular resolver gap. That's a real workaround if you can't upgrade Vite/Rolldown immediately, though it means giving up the Vite plugin's faster Tailwind-aware HMR."
+---
+
+## Quick Answer
+
+`@tailwindcss/vite` can crash with ``Missing field `tsconfigPaths` on BindingViteResolvePluginConfig.resolveOptions`` on Vite 8.0.10 with `rolldown@1.0.0-rc.17`, because Vite's resolver API stopped populating every field the native Rolldown binding expects. Upgrade both `vite` and `rolldown` to a current release — the gap doesn't reproduce on newer patches.
+
+## Why the resolver crashes
+
+Vite 8's dependency resolver runs on Rolldown, a native (Rust) binding exposed to JavaScript through a public resolver API. Vite's own code is supposed to fully populate that binding's config object before handing it to consuming plugins. In Vite 8.0.10, paired with `rolldown@1.0.0-rc.17`, that public API stopped populating every field the native binding expects.
+
+`@tailwindcss/vite` calls Vite's resolver directly during its own build-time CSS-generation step, to locate the `tailwindcss` package itself on disk. With the config object incomplete, that lookup throws instead of resolving:
+
+```
+[@tailwindcss/vite:generate:build] Missing field `tsconfigPaths` on BindingViteResolvePluginConfig.resolveOptions
+```
+
+The same underlying resolver gap was reported twice within a week: once directly against Vite ([vitejs/vite#22322](https://github.com/vitejs/vite/issues/22322), opened 2026-04-24) and once against Astro's own `astro add tailwind` flow, which installs `@tailwindcss/vite` by default ([withastro/astro#16542](https://github.com/withastro/astro/issues/16542), opened 2026-04-30, "astro add tailwind installs incompatible @tailwindcss/vite"). Both point at the same root cause: an incomplete Rolldown resolver config, not a Tailwind bug.
+
+## Fix it: upgrade Vite and Rolldown
+
+### Before: the crash
+
+```bash title="npm run build on the affected versions"
+vite v8.0.10 building for production...
+[@tailwindcss/vite:generate:build] Missing field `tsconfigPaths` on BindingViteResolvePluginConfig.resolveOptions
+```
+
+### After: bump both packages
+
+```bash title="fix: upgrade vite and rolldown together"
+npm install vite@latest rolldown@latest
+npm run build
+```
+
+Upgrading just `vite` isn't always enough on its own, since `rolldown` is a separate package in your lockfile and npm won't necessarily pull a newer one unless something forces it. Check both versions directly if the crash persists after a plain `vite` bump:
+
+```bash title="confirm the resolved versions"
+npm ls vite rolldown
+```
+
+<Callout
+  type="warning"
+  title="No PostCSS fallback needed if you're already past this range"
+>
+  If your lockfile already resolves `vite` and `rolldown` newer than the
+  versions above, you were never exposed to this crash — there's nothing to fix.
+  Check your resolved versions before changing anything.
+</Callout>
+
+## Confirmed version range
+
+Confirmed **not reproducible** against this site's own dependencies: `vite@8.1.5` and `rolldown@1.1.5` (both resolved via `astro@7.1.3`'s `"vite": "^8.0.13"` dependency), with `@tailwindcss/vite` actively wired into `astro.config.mjs`'s `vite.plugins` array on this exact site. `npm run build` completes cleanly. The resolver gap appears to have been closed somewhere between `rolldown@1.0.0-rc.17` and `1.1.5`, even though neither GitHub issue was closed with a linked fix PR — both were closed as "not planned," which usually means later dependency updates made the original report stale rather than a deliberate patch.
+
+If you're hitting this today, you're very likely on an intermediate Vite 8.0.x patch. Upgrading is the fix, not a workaround. Browse more posts like this in the [Guides & Fixes](/guides-fixes) archive.
