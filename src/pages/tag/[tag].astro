@@ -60,8 +60,8 @@ const { display, posts } = Astro.props as Props;
         <p>No posts yet with this tag.</p>
       ) : (
         <Grid minItemWidth="18rem" space="4" class="tag-grid">
-          {posts.map((post) => (
-            <PostCard post={post} />
+          {posts.map((post, index) => (
+            <PostCard post={post} eager={index < 4} />
           ))}
         </Grid>
       )
