@@ -1,6 +1,13 @@
 {
   "compilerOptions": {
     "target": "ES2022",
+    // No "DOM" — TypeScript includes it by default for an ES2022 target,
+    // and @cloudflare/workers-types declares its own Request/Response/
+    // Headers/etc. globals that collide with lib.dom.d.ts's (confirmed:
+    // omitting this produced hundreds of TS2403/TS2687/TS2717 "subsequent
+    // declaration" errors). Workers types are meant to replace the DOM
+    // lib for this runtime, not merge with it.
+    "lib": ["ES2022"],
     "module": "ES2022",
     "moduleResolution": "Bundler",
     "strict": true,

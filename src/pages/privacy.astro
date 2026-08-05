@@ -1,7 +1,7 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { siteConfig } from "../config";
-const lastUpdated = "August 4, 2026";
+const lastUpdated = "August 5, 2026";
 ---
 
 <BaseLayout
@@ -26,9 +26,14 @@ const lastUpdated = "August 4, 2026";
       <a href="https://policies.google.com/privacy" rel="noopener">
         Google's own privacy policy
       </a>. Reading the site does not create an account or any stored profile of
-      you beyond that. Server logs at the hosting layer (Cloudflare) may record
-      standard technical data — IP address, user agent, requested URL, timestamp
-      — the same way any web server does;{" "}
+      you beyond that. This site also uses{" "}
+      <a href="https://www.cloudflare.com/web-analytics/" rel="noopener">
+        Cloudflare Web Analytics
+      </a>, a separate, cookieless analytics tool that does not track you across
+      sites or store a persistent identifier tied to your device. Server logs at
+      the hosting layer (Cloudflare) may record standard technical data — IP
+      address, user agent, requested URL, timestamp — the same way any web server
+      does;{" "}
       {siteConfig.name} does not access or process these logs beyond normal operational
       troubleshooting.
     </p>

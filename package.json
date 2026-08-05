@@ -11,7 +11,7 @@
     "build": "astro build && pagefind --site dist && node scripts/generate-security-headers.mjs",
     "preview": "astro preview",
     "astro": "astro",
-    "check": "astro check",
+    "check": "astro check && tsc -p worker/tsconfig.json --noEmit",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",

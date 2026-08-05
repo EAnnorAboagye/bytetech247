@@ -11,8 +11,15 @@
 import { readFileSync, readdirSync, appendFileSync } from "node:fs";
 import { join, extname } from "node:path";
 import { createHash } from "node:crypto";
+import { fileURLToPath } from "node:url";
 
-const DIST_DIR = new URL("../dist/", import.meta.url).pathname;
+// fileURLToPath, not .pathname — a file:// URL's .pathname keeps a leading
+// "/" (e.g. "/C:/Users/.../dist/" on Windows), which readdirSync doesn't
+// treat as the drive-rooted path it looks like: Windows resolves a
+// leading-slash path against the *current* drive, so "/C:/Users/..." became
+// a literal "C:\C:\Users\..." lookup and crashed every local Windows build.
+// fileURLToPath does the platform-correct file://-to-OS-path conversion.
+const DIST_DIR = fileURLToPath(new URL("../dist/", import.meta.url));
 const HEADERS_FILE = join(DIST_DIR, "_headers");
 
 function walkHtmlFiles(dir) {
@@ -104,7 +111,13 @@ const csp = [
   `style-src 'self' 'unsafe-inline'`, // Shiki emits a `style=""` per syntax-highlighted token; hashing each is infeasible
   `img-src 'self'`,
   `font-src 'self'`,
-  `connect-src 'self' https://www.googletagmanager.com https://*.google-analytics.com https://*.analytics.google.com`,
+  // https://cloudflareinsights.com (bare, not static.cloudflareinsights.com
+  // which script-src already allows for the beacon script itself) is where
+  // that same beacon actually POSTs its RUM data — confirmed live:
+  // omitting it let the Web Analytics beacon load but silently blocked
+  // every one of its own report requests, so the "self-hosted, no
+  // duplicate" analytics setup was still collecting zero data.
+  `connect-src 'self' https://www.googletagmanager.com https://*.google-analytics.com https://*.analytics.google.com https://cloudflareinsights.com`,
   `frame-ancestors 'none'`,
   `base-uri 'self'`,
   `form-action 'self'`,
