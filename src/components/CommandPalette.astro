@@ -26,6 +26,18 @@ const categoryPages = CATEGORIES.map((category) => ({
 const destinations = [...staticPages, ...categoryPages];
 ---
 
+{
+  /* is:inline — ships exactly as written, with no Astro/Vite processing
+     or bundling, so the literal import() below is invisible to Vite's
+     static analysis (see the long comment on loadPagefind() in the
+     module script further down for why that matters). Defining the
+     function here doesn't fetch pagefind.js eagerly; only *calling*
+     __loadPagefind() later triggers the import. */
+}
+<script is:inline>
+  window.__loadPagefind = () => import("/pagefind/pagefind.js");
+</script>
+
 <dialog
   class="command-palette"
   aria-label={`Jump to a page on ${siteConfig.name}`}
@@ -167,27 +179,32 @@ const destinations = [...staticPages, ...categoryPages];
   // (e.g. local `astro dev` without the postbuild step) degrades silently
   // instead of breaking the palette.
   //
-  // The import is done via `new Function` rather than a literal
-  // `import("/pagefind/pagefind.js")` — Vite wraps a literal dynamic
-  // import in its own modulepreload helper and bakes in a
-  // `__VITE_PRELOAD__` placeholder for the chunk list, but pagefind.js
-  // doesn't exist until the separate `pagefind --site dist` step runs
-  // *after* the Vite/Astro build. Vite can't resolve the placeholder for
-  // a file it never saw, so it ships unreplaced — a bare, undeclared
-  // identifier — and every call throws `ReferenceError: __VITE_PRELOAD__
-  // is not defined` instead of loading the module (confirmed live: this
-  // silently broke every search query in production). Constructing the
-  // import inside `new Function` hides it from Vite's static import
-  // analysis entirely, so nothing gets wrapped. This is Pagefind's own
-  // documented workaround for Vite-based sites.
+  // `window.__loadPagefind` is defined by a separate `is:inline` script
+  // below rather than imported here directly — Vite wraps a literal
+  // `import("/pagefind/pagefind.js")` in *this* script (which Astro does
+  // bundle/analyze, since it has no is:inline) in its own modulepreload
+  // helper and bakes in a `__VITE_PRELOAD__` placeholder for the chunk
+  // list, but pagefind.js doesn't exist until the separate
+  // `pagefind --site dist` step runs *after* the Vite/Astro build. Vite
+  // can't resolve the placeholder for a file it never saw, so it ships
+  // unreplaced — a bare, undeclared identifier — and every call throws
+  // `ReferenceError: __VITE_PRELOAD__ is not defined` instead of loading
+  // the module (confirmed live: this silently broke every search query in
+  // production). `is:inline` opts that other script out of Astro/Vite's
+  // processing entirely, so its `import()` call ships untouched and never
+  // gets wrapped — Pagefind's own documented workaround for Vite-based
+  // sites. This also avoids the `new Function("return import(...)")` trick
+  // the workaround usually takes, which needs 'unsafe-eval' in
+  // script-src; a real dynamic `import()` doesn't.
   let pagefindPromise: Promise<PagefindModule | null> | null = null;
-  const dynamicImport = new Function(
-    "specifier",
-    "return import(specifier)",
-  ) as (specifier: string) => Promise<PagefindModule>;
   function loadPagefind(): Promise<PagefindModule | null> {
     if (!pagefindPromise) {
-      pagefindPromise = dynamicImport("/pagefind/pagefind.js")
+      pagefindPromise = (
+        window as unknown as {
+          __loadPagefind: () => Promise<PagefindModule>;
+        }
+      )
+        .__loadPagefind()
         .then(async (mod) => {
           await mod.init();
           return mod;
@@ -254,7 +271,11 @@ const destinations = [...staticPages, ...categoryPages];
       const a = document.createElement("a");
       a.href = item.url;
       a.className = "command-palette__item";
-      a.innerHTML = `${item.meta.title ?? item.url}<span class="command-palette__excerpt">${item.excerpt}</span>`;
+      a.append(item.meta.title ?? item.url);
+      const excerpt = document.createElement("span");
+      excerpt.className = "command-palette__excerpt";
+      renderExcerpt(excerpt, item.excerpt);
+      a.appendChild(excerpt);
       li.appendChild(a);
       resultsList.appendChild(li);
     }
@@ -267,6 +288,33 @@ const destinations = [...staticPages, ...categoryPages];
       !items_.some((el) => el.classList.contains("is-active"))
     ) {
       setActive(items_, 0);
+    }
+  }
+
+  // Pagefind's excerpt string wraps matched terms in <mark>...</mark> and
+  // is meant to be inserted via innerHTML — but everything else in it is
+  // the page's own indexed text verbatim, un-escaped (build-spec.md code
+  // samples routinely contain literal `<`/`>`, e.g. `Array<string>`), so a
+  // raw innerHTML assignment risks that text being parsed as markup
+  // instead of displayed. Walking just the <mark> spans and treating
+  // everything else as a text node keeps the highlighting without ever
+  // interpreting excerpt content as HTML — and is what lets the CSP below
+  // enforce Trusted Types without an explicit sanitizer policy.
+  const MARK_TAG = /<mark>(.*?)<\/mark>/gs;
+  function renderExcerpt(container: HTMLElement, excerpt: string) {
+    let lastIndex = 0;
+    for (const match of excerpt.matchAll(MARK_TAG)) {
+      const index = match.index ?? 0;
+      if (index > lastIndex) {
+        container.append(excerpt.slice(lastIndex, index));
+      }
+      const mark = document.createElement("mark");
+      mark.textContent = match[1];
+      container.append(mark);
+      lastIndex = index + match[0].length;
+    }
+    if (lastIndex < excerpt.length) {
+      container.append(excerpt.slice(lastIndex));
     }
   }
 
