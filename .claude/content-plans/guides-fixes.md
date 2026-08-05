@@ -89,8 +89,8 @@ Replaced with a verified, dogfooded, platform-level (not Astro-version-dependent
 
 ### 7. Fix Astro 7's False markdown.gfm Deprecation Warning
 
-- Status: approved
-- Slug: -
+- Status: written
+- Slug: fix-astro-7-false-markdown-gfm-deprecation-warning
 - Search Intent / Signal: [confirmed, verbatim] `"markdown.gfm" and "markdown.smartypants" are deprecated. Move them onto your processor instead...`
 - Structural Problem: Astro's deprecated-config-key check for `markdown.gfm`/`markdown.smartypants` fires whenever the Container API renders MDX content — even in a project that never set either option. It's a false positive triggered by the Container-API-plus-MDX render path itself, not by anything in the reader's actual config, which is what makes it confusing to debug.
 - Source: [Deprecation warning with Sätteri + Container API + MDX (#17206)](https://github.com/withastro/astro/issues/17206), opened 2026-06-26, closed via PR #17261.
