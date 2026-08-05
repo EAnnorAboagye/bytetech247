@@ -1,0 +1,57 @@
+---
+title: "Fix Astro 7 Duplicate Heading IDs From Sätteri Bug"
+description: "Fix Astro 7 Satteri duplicate heading entries when Starlight assigns its own IDs first. Confirmed fixed in this site's own installed version."
+date: 2026-08-05
+category: guides-fixes
+tags: ["astro", "starlight", "mdx", "bug-fix"]
+series: "Astro 7 Upgrade: Breaking Changes and Migration Fixes"
+seriesOrder: 10
+coverImage: "./cover.png"
+coverImageAlt: "A code diff showing the fix for Astro 7's Satteri heading-ids plugin: collecting headings into a local array and assigning it once, instead of pushing directly onto the shared astro.headings array"
+faq:
+  - question: "Does this show up as a console error or warning?"
+    answer: "No. There's no error and no warning. The only symptom is a page's headings metadata, the list Astro and integrations like Starlight use to build a table of contents or sidebar anchors, containing the same heading twice instead of once."
+  - question: "Does this affect every Astro 7 site, or only specific setups?"
+    answer: "Only setups where something else assigns heading IDs before Satteri's own anchor-link pass runs, the changeset names Starlight specifically. A default Astro 7 blog with no other heading-processing integration was never exposed to this."
+---
+
+## Quick Answer
+
+Astro 7's Sätteri heading-ids plugin could list the same heading twice in a page's `headings` metadata, the array used for tables of contents and sidebar anchors, when another integration like Starlight assigned its own heading IDs first. It's already fixed, merged 2026-06-23 in `@astrojs/markdown-satteri`. No config change is needed, just running a current version.
+
+## Why headings got listed twice
+
+Sätteri's heading-ids plugin originally pushed each heading straight onto the page's shared `astro.headings` array as it walked the document: `astro?.headings.push({ depth, slug, text })`. That's safe the first time the plugin runs. It's not safe the second time, because pushing again appends to whatever the array already contains instead of replacing it.
+
+Starlight, Astro's own documentation theme, runs its own heading pass to assign IDs before adding anchor links. On a Starlight site, that pass and Sätteri's own heading-ids plugin could both touch the same page, and the second pass appended duplicate entries instead of producing one clean list. The official changeset for the fix states this directly: "Fixes headings being listed twice in a page's `headings` metadata when an integration (such as Starlight) assigns heading IDs with its own heading pass before adding anchor links."
+
+<Callout type="info" title="A default blog was never exposed to this">
+  Nothing about a normal Astro 7 blog build triggers this on its own. It only
+  shows up when a second integration also processes headings before Sätteri's
+  pass runs, which is a Starlight-shaped setup, not the common case.
+</Callout>
+
+## The fix
+
+[PR #17165](https://github.com/withastro/astro/pull/17165), "fix(satteri): Make heading-ids plugin idempotent," merged 2026-06-23, changes the plugin to collect headings into a local array first, then assign that whole array to `astro.headings` once, instead of pushing onto the shared array directly.
+
+```js title="packages/markdown/satteri/src/satteri-processor.ts - before"
+// BROKEN, appends to whatever astro.headings already contains
+astro?.headings.push({ depth, slug, text });
+```
+
+```js title="packages/markdown/satteri/src/satteri-processor.ts - after"
+// FIXED, local array is built fully, then assigned once
+headings.push({ depth, slug, text });
+if (astro) astro.headings = headings;
+```
+
+Running a version of `@astrojs/markdown-satteri` that includes this fix is the entire fix. There's nothing to configure.
+
+## Confirmed against this repo's own installed version
+
+This site's own `node_modules/@astrojs/markdown-satteri@0.3.4` already has the fixed code. Checking the real installed file directly shows the exact after-state from the PR: a local `headings` array collected first, then assigned once. This site doesn't use Starlight, so it was never exposed to the duplication itself, but its dependency tree confirms the fix is present in the version this site (and any current Astro 7 install) actually runs.
+
+If you maintain a Starlight site or any integration that assigns heading IDs of its own, confirm `@astrojs/markdown-satteri` resolves to a version at or after this fix, the same way any other transitive dependency gets checked after a dependency bump.
+
+Browse more fixes from this same upgrade in the [Guides & Fixes](/guides-fixes) archive.
