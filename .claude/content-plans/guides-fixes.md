@@ -41,14 +41,15 @@ Series wiring: every cluster written from this plan uses frontmatter `series: "A
 
 ### 3. Fix Astro 7 Rollup Failed to Resolve Import satteri
 
-- Status: pending
-- Slug: -
+- Status: written
+- Slug: fix-astro-7-rollup-satteri-import-error
 - **REPLACES the original premise for this slot** (see prior note below, kept for history): the old "getContainerRenderer deprecation warning" framing was never independently verified — no verbatim string, and the cited commit (#14715) is unrelated to Sätteri. This slot is now filled with a real, verbatim-confirmed bug that also involves `getContainerRenderer`, found during the 2026-08-05 research pass.
 - Search Intent / Signal: [confirmed, verbatim] `Rollup failed to resolve import "satteri" from "/…/node_modules/@astrojs/mdx/dist/satteri/index.js". This is most likely unintended because it can break your application at runtime.`
 - Structural Problem: Calling `getContainerRenderer()` (e.g. to render MDX content for an RSS feed) makes `@astrojs/mdx` eagerly import its Sätteri module path even when `markdown.processor` is still configured to the legacy `@astrojs/markdown-remark` unified pipeline. Rollup then tries to bundle an optional peer dependency (`satteri`) that isn't installed in that configuration, since it's only expected to be present when Sätteri is the active processor.
 - Source: [Calling MDX renderer causes Satteri import to be resolved even if original Unified processor is being used (#16954)](https://github.com/withastro/astro/issues/16954), opened 2026-06-02, closed via PR #17093.
 - Interlinks: series sibling of Clusters 1, 2, 4; shares its fix PR (#17093) with Cluster 5 below — same beta-period version-skew window, different symptom (Rollup unresolved import here vs. a Vite missing-export error there). Keep as separate posts, same precedent as the Cluster 1/2 compressHTML pair (same root cause, different code shape) — cross-link and disambiguate when both are written.
 - Note (prior, kept for history): an earlier draft of the original premise incorrectly attributed the verbatim string `"No valid renderer was found for this file extension."` (from [withastro/astro#14887](https://github.com/withastro/astro/issues/14887)) to a v7 change. That issue is an unrelated Astro v5.15+ regression from November 2025, closed as a duplicate. Do not reuse that string for this cluster.
+- Note (found while drafting, 2026-08-05): PR #17093 ("fix(integrations): Export container renderers from a dedicated export path to fix bundling issues") merged 2026-06-17, five days before Astro 7.0.0 GA, and fixes **both** #16954 and #17068 together, shipped in `@astrojs/mdx@7.0.0`. So this bug never affected any Astro 7 stable release, only the beta cycle. Framed the post honestly around that: fixed already, verify your `@astrojs/mdx` version rather than treating it as a live threat. Also confirmed this site's own `src/lib/rss.ts` never calls `getContainerRenderer()` (it only serializes frontmatter `description`, never renders MDX bodies), so this repo was never exposed to the bug at all - a real, checked (not assumed) dogfooding note. Reuse this same fix-PR/version/date info when drafting Cluster 5, it applies identically there.
 
 ### 4. RETIRED original premise — replaced, same slot, still part of the series
 
@@ -70,7 +71,7 @@ Replaced with a verified, dogfooded, platform-level (not Astro-version-dependent
 
 ### 5. Fix Astro 7 MISSING_EXPORT satteriCollectImagesPlugin
 
-- Status: pending
+- Status: approved
 - Slug: -
 - Search Intent / Signal: [confirmed, verbatim] `[MISSING_EXPORT] "satteriCollectImagesPlugin" is not exported by "__vite-optional-peer-dep:@astrojs/markdown-satteri:@astrojs/mdx"`
 - Structural Problem: Upgrading from Astro 6 to a 7 beta (e.g. via `@astrojs/upgrade`) could leave `@astrojs/mdx` and `@astrojs/markdown-satteri` at mismatched versions. The image-collection helper Sätteri's MDX integration expects to import didn't exist yet in the installed `@astrojs/markdown-satteri` version, so Vite's build fails resolving that named export.
@@ -79,7 +80,7 @@ Replaced with a verified, dogfooded, platform-level (not Astro-version-dependent
 
 ### 6. Fix Astro 7 markdown.rehypePlugins Deprecation Warning
 
-- Status: pending
+- Status: approved
 - Slug: -
 - Search Intent / Signal: [confirmed, live-reproduced] `[astro] \`markdown.remarkPlugins\`, \`markdown.rehypePlugins\`, and \`markdown.remarkRehype\` are deprecated. Pass them to \`unified({...})\` from \`@astrojs/markdown-remark\` directly instead.`— captured directly from running`npx astro build`against this repo's own`astro@7.1.3`, which has real `markdown.rehypePlugins: [rehypeTableHeaderScope, rehypeCodeBlockChrome]`configured in`astro.config.mjs` (confirmed by reading the file: a comment there already flags "astro logs a deprecation warning ... but the current API is still functional"). This is the **strongest-evidenced cluster in the whole pillar** — dogfooded on this exact site, not just cited from an external issue.
 - Structural Problem: Setting any of the top-level `markdown.remarkPlugins`, `markdown.rehypePlugins`, or `markdown.remarkRehype` config keys makes Astro fall back to the legacy `@astrojs/markdown-remark` unified pipeline instead of the new Sätteri default (confirmed: this repo's own `node_modules/@astrojs/mdx` declares `@astrojs/markdown-remark@7.2.1` as a real dependency, and the build still emits all pages using those plugins). The plugins keep working, but the top-level keys themselves are deprecated in favor of passing them to `unified({...})` directly, so every build using the old shape prints this warning.
@@ -88,7 +89,7 @@ Replaced with a verified, dogfooded, platform-level (not Astro-version-dependent
 
 ### 7. Fix Astro 7's False markdown.gfm Deprecation Warning
 
-- Status: pending
+- Status: approved
 - Slug: -
 - Search Intent / Signal: [confirmed, verbatim] `"markdown.gfm" and "markdown.smartypants" are deprecated. Move them onto your processor instead...`
 - Structural Problem: Astro's deprecated-config-key check for `markdown.gfm`/`markdown.smartypants` fires whenever the Container API renders MDX content — even in a project that never set either option. It's a false positive triggered by the Container-API-plus-MDX render path itself, not by anything in the reader's actual config, which is what makes it confusing to debug.
@@ -97,7 +98,7 @@ Replaced with a verified, dogfooded, platform-level (not Astro-version-dependent
 
 ### 8. Fix Astro 7 Cannot Find Package satteri Error (pnpm)
 
-- Status: pending
+- Status: approved
 - Slug: -
 - Search Intent / Signal: [confirmed, verbatim] `Cannot find package 'satteri' imported from .../node_modules/@astrojs/mdx/dist/satteri/index.js`
 - Structural Problem: `@astrojs/mdx` statically imports the `satteri` package without declaring it as a direct dependency in its own `package.json` (historically kept only in devDependencies). Under pnpm's strict, isolated `node_modules` layout, the bare import can only resolve by accident via pnpm's internal `.pnpm/node_modules` fallback link; when that link is missing, the build fails outright.
