@@ -1,0 +1,77 @@
+---
+title: "Fix Vite 8 resolve.alias customResolver Removal"
+description: "Fix Vite 8 removing resolve.alias customResolver, which breaks CSS/JS path-alias plugins. Astro's own core fix shows the replacement."
+date: 2026-08-05
+category: guides-fixes
+tags: ["vite", "rolldown", "config", "bug-fix"]
+series: "Astro 7's Vite 8 Upgrade: Rolldown, Oxc, and Lightning CSS Breaking Changes"
+seriesOrder: 5
+coverImage: "./cover.png"
+coverImageAlt: "A code comparison showing resolve.alias customResolver, removed in Vite 8, replaced by a plugin using a resolveId hook with enforce: 'pre'"
+faq:
+  - question: "Does this affect me if I don't use resolve.alias at all?"
+    answer: "No. The plain string or RegExp form of resolve.alias (find and replacement, with no customResolver function) is unaffected and works the same in Vite 8. Only an alias entry that supplies its own customResolver function hits this removal."
+  - question: "Is this already fixed if I'm on Astro 7?"
+    answer: "Yes, if you're on Astro 7.0.0 or later. Astro's own core used to rely on customResolver for its tsconfig path-alias-in-CSS-imports logic and already migrated to the resolveId-based pattern shown in this post, shipped in 7.0.0 stable. This post is for your own config or a third-party plugin still using the old hook."
+---
+
+## Quick Answer
+
+Vite 8 removes the `resolve.alias[].customResolver` hook entirely: "use a custom plugin with `resolveId` hook and `enforce: 'pre'` instead." Any alias-resolution plugin relying on the old hook needs rewriting as a real Vite plugin. Astro's own core hit this and already shipped the fix in 7.0.0 stable — see its `resolveId`-based replacement below.
+
+## Why customResolver stopped working
+
+Vite's `resolve.alias` option has always supported two shapes: a plain string/RegExp `find` and `replacement` pair (still fully supported in Vite 8), and a version that supplies its own `customResolver` function to override how Vite resolved that specific aliased path. [Vite's migration guide](https://vite.dev/guide/migration) lists the second form under "Deprecated Options," removed outright: "`resolve.alias[].customResolver`: use a custom plugin with `resolveId` hook and `enforce: 'pre'` instead."
+
+Alias resolution is no longer an extension point in Vite 8. Any config or plugin that supplied a `customResolver` function silently stops taking effect — Vite doesn't error on the unrecognized option, it just never calls it, so the alias quietly resolves to nothing or falls through to a different resolution path.
+
+Astro's own core hit this directly. Its tsconfig path-alias logic for CSS `@import` statements used `customResolver` internally. [PR #17090, "Fix Vite and Rolldown build warnings in Astro 7"](https://github.com/withastro/astro/pull/17090), merged 2026-06-18, replaced it with two separate plugins using `resolveId`/transform hooks instead, and shipped already-fixed in Astro 7.0.0 stable.
+
+## Fix it: replace customResolver with a resolveId plugin
+
+### Before: the removed pattern
+
+```js title="vite.config.ts — Vite 7 pattern"
+export default defineConfig({
+  resolve: {
+    alias: [
+      {
+        find: /^~(.+)/,
+        replacement: "$1",
+        customResolver(source) {
+          // BROKEN in Vite 8: customResolver is no longer called
+          return resolveTsconfigPath(source);
+        },
+      },
+    ],
+  },
+});
+```
+
+### After: the same resolution logic, as a real plugin
+
+```js title="vite.config.ts — Vite 8 pattern"
+export default defineConfig({
+  plugins: [
+    {
+      name: "tsconfig-alias",
+      enforce: "pre",
+      resolveId(source) {
+        // FIXED: resolveId + enforce: 'pre' replaces the removed
+        // resolve.alias[].customResolver hook, running before
+        // Vite's own default resolution
+        if (source.startsWith("~")) {
+          return resolveTsconfigPath(source.slice(1));
+        }
+        return null;
+      },
+    },
+  ],
+});
+```
+
+`enforce: "pre"` matters here. Without it, your plugin's `resolveId` runs after Vite's built-in resolvers, by which point the aliased path may have already resolved (or failed to resolve) the wrong way — the same ordering guarantee `customResolver` used to provide implicitly.
+
+## Confirmed version range
+
+Verified against Astro's own real fix: [PR #17090](https://github.com/withastro/astro/pull/17090) merged 2026-06-18, shipped in Astro 7.0.0 stable, replacing the exact `customResolver` pattern shown above with a `resolveId`-based plugin for the same tsconfig-path-alias logic. If you're on Astro 7.0.0 or later, Astro's own core already handles this — this fix applies to your own project's Vite config or any third-party Vite plugin that still supplies a `customResolver` function. Browse more posts like this in the [Guides & Fixes](/guides-fixes) archive.
