@@ -1,5 +1,13 @@
 {
   "extends": "astro/tsconfigs/strict",
   "include": [".astro/types.d.ts", "**/*"],
-  "exclude": ["dist", "worker"]
+  // "worker" has its own tsconfig (worker/tsconfig.json) with Cloudflare
+  // Workers-specific globals that conflict with this project's DOM lib —
+  // checked separately via `npm run check`, not by this config. The other
+  // two are gitignored Claude Code isolated-session worktrees that live
+  // inside this working copy on disk but were still being picked up by
+  // astro check's project-wide file walk (which doesn't consult
+  // .gitignore), surfacing phantom errors from abandoned/stale worktree
+  // copies of this same repo.
+  "exclude": ["dist", "worker", "bytetech247", ".claude/worktrees"]
 }

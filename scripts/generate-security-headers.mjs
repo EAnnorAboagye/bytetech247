@@ -11,8 +11,15 @@
 import { readFileSync, readdirSync, appendFileSync } from "node:fs";
 import { join, extname } from "node:path";
 import { createHash } from "node:crypto";
+import { fileURLToPath } from "node:url";
 
-const DIST_DIR = new URL("../dist/", import.meta.url).pathname;
+// fileURLToPath, not .pathname — a file:// URL's .pathname keeps a leading
+// "/" (e.g. "/C:/Users/.../dist/" on Windows), which readdirSync doesn't
+// treat as the drive-rooted path it looks like: Windows resolves a
+// leading-slash path against the *current* drive, so "/C:/Users/..." became
+// a literal "C:\C:\Users\..." lookup and crashed every local Windows build.
+// fileURLToPath does the platform-correct file://-to-OS-path conversion.
+const DIST_DIR = fileURLToPath(new URL("../dist/", import.meta.url));
 const HEADERS_FILE = join(DIST_DIR, "_headers");
 
 function walkHtmlFiles(dir) {
