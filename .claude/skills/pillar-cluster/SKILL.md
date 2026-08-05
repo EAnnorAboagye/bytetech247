@@ -17,6 +17,8 @@ Use real web search against GitHub issue trackers, official changelogs, and rele
 
 - The exact source (issue number, changelog entry, discussion thread) and its real date.
 - Whether the reported symptom includes a **literal, copy-pasteable string** (an error message, a console warning) — this is a confirmed-verbatim signal. If you only have a described symptom ("spacing disappears after upgrading") with no literal string in the source, that's a paraphrased signal, not verbatim — label it as such in the output. Never invent a fake "verbatim" error string; half the AEO value is matching the exact text a developer pastes into a search bar, and a fabricated one matches nothing.
+- A dated source (issue/changelog/thread) must fall inside the freshness window to prove a cluster is "active right now" — but a framework's own living, official docs page (e.g. its current migration guide) is a different citation class: it has no publish date to check because it's continuously maintained. Citing one as the mechanism source is fine as long as at least one dated, in-window source (even a beta-era issue) corroborates that real people are hitting it now — don't let the doc page be the *only* evidence of timeliness.
+- If a docs site 403s a direct fetch (common with framework doc sites), try the raw source file on GitHub before ruling it out as a primary source — confirmed working today: `vite.dev/guide/migration` 403'd, but `raw.githubusercontent.com/<org>/<repo>/main/docs/guide/migration.md` returned the same content cleanly. Most open-source framework docs are markdown files in the project's own repo.
 
 ## 3. Existing-content collision check
 
@@ -95,6 +97,7 @@ Status values: pending (researched, not yet approved) -> approved (user greenlit
 - When the user approves specific clusters in chat, flip those to `approved` before writing starts — don't leave the file out of sync with what was actually greenlit.
 - Leave `written`/`Slug` updates to `guides-fixes-article` (or the equivalent category skill) once the MDX file actually exists — this skill's job ends at a reviewed, persisted plan.
 - If a file for this category already exists, update it in place rather than overwriting — a second research run should merge in new clusters, not erase progress on ones already `approved` or `written`.
+- If that existing pillar is already **complete** (every cluster `written`), a new research run is a second, independent pillar for the same category, not more slots on the first — don't stretch to find an 11th cluster for an already-full pillar. Append a new `# Pillar 2` / `## Clusters (Pillar 2)` section below the first pillar's content, numbering clusters 11-20 (continuing the sequence, not restarting at 1, so slugs/status/interlinks stay unambiguous within one file), and leave the first pillar's own content untouched. Confirmed live (2026-08-05): guides-fixes needed exactly this after its first pillar (Sätteri/Markdown pipeline) finished — the second pillar (Vite 8/Rolldown, a genuinely distinct structural layer) used this same-file, numbered-continuation structure.
 
 ## 8. Adapting the engine per category
 
