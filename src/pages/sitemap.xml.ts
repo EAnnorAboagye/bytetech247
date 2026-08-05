@@ -2,31 +2,64 @@ import type { APIRoute } from "astro";
 import { getCollection } from "astro:content";
 import { siteConfig, CATEGORIES } from "../config";
 import { postUrl } from "../lib/rss";
+import { getLastVerifiedDate } from "../lib/last-verified";
 
 // Dynamic, build-time-generated sitemap (build-spec.md Phase 9) — every
 // static route plus every post, with accurate per-post lastmod. No
 // separate sitemap package: this is a handful of URLs, hand-building the
 // XML keeps it dependency-free like the RSS feeds.
-const STATIC_PATHS = [
-  "/",
-  "/archive/",
-  "/about/",
-  "/contact/",
-  "/privacy/",
-  "/terms/",
-  "/affiliate-disclosure/",
-  "/editorial-policy/",
-  ...CATEGORIES.map((category) => `/${category.slug}/`),
+//
+// Each static path maps to the real source file whose git history gives
+// its lastmod (same getLastVerifiedDate git-log mechanism the post pages
+// already use), not a manually-bumped date. Category pages and the
+// homepage don't have a single meaningful source file the way a static
+// page does — their real content is whichever posts they list — so their
+// lastmod is the most recent post date among what they show instead.
+const STATIC_PATHS: { path: string; file: string }[] = [
+  { path: "/", file: "src/pages/index.astro" },
+  { path: "/archive/", file: "src/pages/archive.astro" },
+  { path: "/about/", file: "src/pages/about.astro" },
+  { path: "/contact/", file: "src/pages/contact.astro" },
+  { path: "/privacy/", file: "src/pages/privacy.astro" },
+  { path: "/terms/", file: "src/pages/terms.astro" },
+  {
+    path: "/affiliate-disclosure/",
+    file: "src/pages/affiliate-disclosure.astro",
+  },
+  { path: "/editorial-policy/", file: "src/pages/editorial-policy.astro" },
 ];
 
 export const GET: APIRoute = async () => {
   const posts = await getCollection("blog");
 
+  const maxDate = (candidates: Date[]): Date | null =>
+    candidates.length === 0
+      ? null
+      : new Date(Math.max(...candidates.map((d) => d.getTime())));
+
+  const allPostDates = posts.map((post) => post.data.date);
+  const homepageLastmod = maxDate(allPostDates);
+
   const entries = [
-    ...STATIC_PATHS.map((path) => ({
-      loc: `${siteConfig.url}${path}`,
-      lastmod: undefined as string | undefined,
-    })),
+    ...STATIC_PATHS.map(({ path, file }) => {
+      const lastmod =
+        path === "/" ? homepageLastmod : getLastVerifiedDate(file);
+      return {
+        loc: `${siteConfig.url}${path}`,
+        lastmod: lastmod?.toISOString(),
+      };
+    }),
+    ...CATEGORIES.map((category) => {
+      const lastmod = maxDate(
+        posts
+          .filter((post) => post.data.category === category.slug)
+          .map((post) => post.data.date),
+      );
+      return {
+        loc: `${siteConfig.url}/${category.slug}/`,
+        lastmod: lastmod?.toISOString(),
+      };
+    }),
     ...posts.map((post) => ({
       loc: postUrl(post),
       lastmod: post.data.date.toISOString(),
