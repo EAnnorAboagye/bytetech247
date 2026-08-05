@@ -141,3 +141,118 @@ This is **not an Astro 7 upgrade regression** (it's evergreen Zod/content-collec
 ### Pillar status summary (2026-08-05, updated)
 
 10/10 cluster slots filled and **all 10 written**. Clusters 1, 2, 4 were already published before this pillar-cluster pass; Clusters 3, 5, 6, 7, 8 were drafted and published in the first work session; Clusters 9 and 10 were drafted and published in a follow-up session after user approval. Cluster 8 (`#17371`, pnpm) remains the only sub-issue still open upstream as of this research. Cluster 10's original premise was corrected during drafting after opening the real PR diff (see its entry above) - the mechanism is a Starlight/Sätteri heading-metadata interaction, not a "call the plugin twice" scenario as first guessed. This pillar is now complete; a future `pillar-cluster` run for `guides-fixes` should research a **new** pillar rather than add more slots here. Two ruled-out research leads are worth a future targeted pass rather than reuse: Expressive Code's Sätteri HAST-plugin requirement (couldn't get past a 403 on `expressive-code.com` today) and a possible `smartPunctuation` default-behavior cluster (only pre-Sätteri, out-of-window issues turned up; no in-window verbatim source found).
+
+---
+
+# Pillar 2 — researched 2026-08-05, second pillar-cluster pass
+
+Pillar 1 above is complete (10/10 written) and covers Astro 7's Markdown/MDX content-processing layer (Sätteri). This second pillar covers a structurally distinct layer of the same Astro 7 upgrade: the **bundler underneath it**. Confirmed via this repo's own `package-lock.json`: `astro@7.1.3` (this site's exact pinned version) declares `"vite": "^8.0.13"` as a direct dependency, resolving here to `vite@8.1.5` / `rolldown@1.1.5`. Vite 8 didn't just bump a version number — it replaced Vite 7's dual esbuild+Rollup toolchain with a single Rust-based stack: **Rolldown** (bundling + dependency optimization, replacing both esbuild-for-deps and Rollup-for-build), **Oxc** (JS transform, replacing esbuild's transform step), and **Lightning CSS** (CSS minification by default, replacing esbuild's CSS handling). That's a new bundler architecture, not an incremental bump — genuinely rich, structurally non-overlapping ground from Pillar 1, and actively breaking real projects across the research window.
+
+Existing-content collision check (2026-08-05): grepped every published post under `src/content/blog/*/index.mdx` for "rolldown", "lightning css", and "oxc" — zero matches. The only existing post touching "Vite 8" at all is `fix-eresolve-vite-8-peer-dependency-astro-7`, which is narrowly about npm's install-time peer-dependency resolution failure — a different failure class (install-time, package-manager-level) from every cluster below (all build-time/runtime, after a successful install). Named as a related interlink where relevant rather than folded in, per the skill's "genuinely distinct angle" rule.
+
+Research window note: most sources below fall inside the strict last-90-days window (~2026-05-07 through today); a few (Clusters 12, 15) are dated April 2026, ~100-130 days out — kept because the _mechanism_ is evergreen (sourced from Vite's own current, living migration guide, not a dated blog post) and readers hit it now via Astro 7 adoption regardless of Vite 8's original beta/early-patch dates — the same timeliness framing this plan's own published Cluster 1 (`fix-eresolve-vite-8-peer-dependency-astro-7`) already uses successfully.
+
+## Pillar 2
+
+**Astro 7's Vite 8 Upgrade: Rolldown, Oxc, and Lightning CSS Breaking Changes**
+
+- Status: pending
+- Slug: -
+- Why pillar: Astro 7.1.3 (this repo's own pinned version) requires `vite@^8.0.13` — confirmed directly in `package-lock.json`, not assumed. Vite 8 is Vite's biggest architectural change in years: a full swap from esbuild+Rollup to a unified Rust toolchain (Rolldown/Oxc/Lightning CSS), with real, dated breaking changes hitting real Astro/Tailwind/Vite projects throughout the research window — structurally broad enough for 10 distinct, non-overlapping sub-issues without stretching.
+
+## Clusters (Pillar 2)
+
+### 11. Fix Vite 8 Lightning CSS Dropping backdrop-filter
+
+- Status: pending
+- Slug: -
+- Search Intent / Signal: [confirmed, verbatim] issue title: "Vite 8 default `cssMinify: 'lightningcss'` drops unprefixed `backdrop-filter`, breaking glass/blur effects (regression vs Vite 7)"
+- Structural Problem: Vite 8 flips `build.cssMinify`'s default from esbuild to Lightning CSS. When a stylesheet declares both the standard `backdrop-filter` and a vendor-prefixed `-webkit-backdrop-filter` (the normal cross-browser-safe authoring pattern), Lightning CSS's minifier treats the prefixed rule as sufficient and strips the unprefixed one as redundant — but browsers that don't need the prefix still require the standard property to be present, so glass/blur effects silently vanish in the minified production build while looking correct in `astro dev`.
+- Source: [vitejs/vite#22649](https://github.com/vitejs/vite/issues/22649), opened 2026-06-09, closed as duplicate of #21954 (same underlying minifier behavior).
+- Interlinks: sibling Cluster 18 (format-sniffing removal) — "what else changed by default in Vite 8's build step." No existing post covers CSS minification.
+
+### 12. Fix @tailwindcss/vite Rolldown Resolver Crash
+
+- Status: pending
+- Slug: -
+- Search Intent / Signal: [confirmed, verbatim] `Missing field \`tsconfigPaths\` on BindingViteResolvePluginConfig.resolveOptions`
+- Structural Problem: Vite 8's Rolldown-based resolver exposes a native (Rust) plugin-config binding that Vite's public resolver API is supposed to populate before handing it to consuming plugins. In Vite 8.0.10 (`rolldown@1.0.0-rc.17`), that public API stopped populating every field the native binding expects. `@tailwindcss/vite` calls Vite's resolver directly during its build-time CSS-generation step to locate the `tailwindcss` package itself — with the config object incomplete, that lookup crashes instead of resolving.
+- Source: [vitejs/vite#22322](https://github.com/vitejs/vite/issues/22322) (opened 2026-04-24) and [withastro/astro#16542](https://github.com/withastro/astro/issues/16542) (opened 2026-04-30, "astro add tailwind installs incompatible @tailwindcss/vite").
+- Dogfood note: confirmed **not reproducible** against this repo's own resolved `vite@8.1.5` / `rolldown@1.1.5` / `@tailwindcss/vite@^4.3.3` — `npm run build` completes cleanly with `@tailwindcss/vite` actively wired in `astro.config.mjs`. The resolver gap appears fixed in later Rolldown patches; still worth writing since it's a real, confusing failure mode for anyone on an intermediate Vite 8.0.x patch, and the fix (upgrade Vite/Rolldown) is exactly the kind of actionable, verifiable advice this category is for.
+- Interlinks: **fix-eresolve-vite-8-peer-dependency-astro-7** — related but distinct: that post is an npm install-time peer-dependency failure; this is a build-time crash _after_ a successful install.
+
+### 13. Fix Astro Dev Toolbar 'Not Implemented' Crash
+
+- Status: pending
+- Slug: -
+- Search Intent / Signal: [confirmed, verbatim] `"Not implemented"` thrown from `PluginContextImpl.generateBundle` (`vite/dist/node/chunks/node.js`)
+- Structural Problem: Vite 8 switched its dependency optimizer from esbuild to Rolldown, shipping an esbuild-plugin compatibility shim so existing `optimizeDeps.esbuildOptions.plugins` keep working. Astro's own built-in dev-toolbar integration registers an esbuild plugin with an `onEnd` callback that reads `result.metafile` — a field the compatibility shim doesn't implement, since Rolldown doesn't produce an esbuild-style metafile. Invoking that callback throws instead of silently no-op-ing.
+- Source: [withastro/astro#16636](https://github.com/withastro/astro/issues/16636), opened 2026-05-07, closed as not planned (workaround only: stripping `optimizeDeps.esbuildOptions.plugins` via a `configResolved` hook — the root cause in Astro's dev-toolbar plugin itself was never patched upstream as of this research).
+- Interlinks: sibling cluster; mention the official mechanism (`optimizeDeps.esbuildOptions` → `optimizeDeps.rolldownOptions`) documented in Vite's migration guide as the general explanation behind this specific crash.
+
+### 14. Fix Vite 8 CommonJS Default Import Breaking Change
+
+- Status: pending
+- Slug: -
+- Search Intent / Signal: [confirmed, verbatim doc text; paraphrased runtime symptom] Vite's own migration guide, verbatim: "Default import handling from CommonJS modules now operates consistently. The default import represents `module.exports` when: the importer is `.mjs` or `.mts`, the closest `package.json` specifies `type: "module"`, the importee's `module.exports.__esModule` is not `true`." Runtime symptom (paraphrased — varies per affected package): a default import that previously resolved to the whole CJS exports object now resolves to something else, producing `TypeError: <x> is not a function` at the call site.
+- Structural Problem: Rollup's old CJS interop was permissive and could vary depending on how a module was loaded. Rolldown standardizes it under the strict rule quoted above. Any CJS dependency exporting a single function via `module.exports = fn` without setting `__esModule` — a common older-package pattern — can silently resolve to the wrong value once a project bumps to Vite 8, since nothing about the dependency itself changed.
+- Source: [Migration from v7 | Vite](https://vite.dev/guide/migration), "CommonJS Interop" section — documents `legacy.inconsistentCjsInterop: true` as the temporary escape hatch.
+- Interlinks: none yet.
+
+### 15. Fix Vite 8 resolve.alias customResolver Removal
+
+- Status: pending
+- Slug: -
+- Search Intent / Signal: [confirmed] Vite migration guide, verbatim: "`resolve.alias[].customResolver`: use a custom plugin with `resolveId` hook and `enforce: 'pre'` instead."
+- Structural Problem: `resolve.alias` entries could previously supply a `customResolver` function to override how Vite resolved that one aliased path. Vite 8 removes that hook entirely — alias resolution is no longer an extension point, so any plugin or config relying on it must become a real Vite plugin registering its own `resolveId` hook with `enforce: 'pre'`.
+- Source: [Migration from v7 | Vite](https://vite.dev/guide/migration), "Deprecated Options"; worked, dogfooded-adjacent example: [withastro/astro#17090](https://github.com/withastro/astro/pull/17090), "Fix Vite and Rolldown build warnings in Astro 7," merged 2026-06-18 — Astro's own core hit this directly (its tsconfig-path-alias-in-CSS-`@import`s logic used `customResolver`) and replaced it with two separate `resolveId`/transform-hook plugins, shipped already-fixed in Astro 7.0.0 stable.
+- Interlinks: none yet. Frame honestly as "already fixed in Astro 7 core as of 7.0.0 stable" — useful for a reader who saw this warning on an Astro 7 beta, or hits it via a _different_ Vite plugin still using the old API.
+
+### 16. Fix Vite 8's build.rollupOptions Deprecation
+
+- Status: pending
+- Slug: -
+- Search Intent / Signal: [confirmed] Vite migration guide, verbatim, listed under "Deprecated Options": "`build.rollupOptions` → `build.rolldownOptions`" (and `worker.rollupOptions` → `worker.rolldownOptions`).
+- Structural Problem: Rolldown replaces Rollup as Vite's production bundler, so the config key shaping the underlying bundler's own options is renamed to match. The old key still works today (deprecated, auto-mapped), but any project with a customized `manualChunks`, `external`, or `output` block under `build.rollupOptions` — an extremely common customization — now gets a deprecation warning on every single build.
+- Source: [Migration from v7 | Vite](https://vite.dev/guide/migration), "Deprecated Options" section.
+- Interlinks: sibling Cluster 19 (manualChunks) — the single most common thing people configure inside this renamed key.
+
+### 17. Fix Vite 8 Oxc Not Lowering Native Decorators
+
+- Status: pending
+- Slug: -
+- Search Intent / Signal: [confirmed, verbatim] Vite migration guide: "The Oxc transformer does not support lowering native decorators."
+- Structural Problem: Vite 8 replaces esbuild with Oxc for JavaScript transformation (`esbuild.jsx`-style options move to a new `oxc` option). esbuild could "lower" (downlevel-compile) TC39 native decorator syntax to older, broadly-supported JS for build targets that don't natively support decorators; Oxc's transformer doesn't implement that lowering step at all. A project using native class decorators (a pattern some state-management or DI-style libraries use) that previously built fine can fail or ship unsupported syntax after the Vite 8 bump, with no direct substitute beyond reverting to esbuild for that step.
+- Source: [Migration from v7 | Vite](https://vite.dev/guide/migration), "Rolldown Integration Changes" / Oxc section.
+- Interlinks: none yet.
+
+### 18. Fix Vite 8 Browser/Module Field Resolution Change
+
+- Status: pending
+- Slug: -
+- Search Intent / Signal: [confirmed, verbatim] Vite migration guide: "Module resolution using format sniffing (selecting between `browser` and `module` fields based on content) has been removed." The `resolve.mainFields` option ordering is now always respected instead.
+- Structural Problem: Some dual-published npm packages ship both a `browser` and a `module` field in `package.json`, pointing at differently-shaped code (e.g. a CJS-flavored `browser` build vs. an ESM `module` build). Vite 7 and earlier could "sniff" the actual file content to pick whichever field's target actually looked like the right format, papering over packages with an inconsistent or misconfigured `package.json`. Vite 8 removes that inference and always follows `resolve.mainFields`'s literal declared order — a package that only worked before because of the sniffing fallback can now resolve to the wrong (or broken) entry point.
+- Source: [Migration from v7 | Vite](https://vite.dev/guide/migration), "Module Resolution Updates" section.
+- Interlinks: sibling Cluster 11 (Lightning CSS defaults) — paired as "two different default-behavior changes in Vite 8's resolution/build step."
+
+### 19. Fix Vite 8 manualChunks Object Form Removed
+
+- Status: pending
+- Slug: -
+- Search Intent / Signal: [confirmed, verbatim doc text; real-world example verbatim] Vite migration guide: "The object form `output.manualChunks` option is not supported anymore. The function form `output.manualChunks` is deprecated." Real-world failure example: [voidzero-dev/vite-plus#900](https://github.com/voidzero-dev/vite-plus/issues/900), verbatim: "Warning: Invalid output options (1 issue found) - For the 'manualChunks'. Invalid type: Expected Function but received Object." (opened 2026-03-15, closed via PR #1046).
+- Structural Problem: Rollup's `output.manualChunks` accepted either a function (chunk-name-per-module callback) or a plain object mapping chunk names to arrays of module IDs. Rolldown only implements the function form — the object-map shorthand, a very common way projects hand-split vendor chunks, is rejected outright. Rolldown's own `codeSplitting` option is the intended replacement, not a like-for-like function-form rewrite.
+- Source: [Migration from v7 | Vite](https://vite.dev/guide/migration), "Manual Code Splitting" section; real-world confirmation via a migration tool's own validator in the issue above.
+- Interlinks: sibling Cluster 16 (`build.rollupOptions` rename) — this is the single most common thing people had configured under that renamed key.
+
+### 20. Fix Vite 8 Externalized require() Behavior Change
+
+- Status: pending
+- Slug: -
+- Search Intent / Signal: [confirmed, verbatim] Vite migration guide: "Require calls for externalized modules are now preserved as require calls and not converted to import statements." Rolldown's `esmExternalRequirePlugin` is documented as the opt-in conversion path back to the old behavior.
+- Structural Problem: When a dependency is marked external (not bundled — common for SSR/Node-target builds, and for libraries expecting the consumer to provide certain packages), Vite 7 and earlier rewrote any `require('external-pkg')` call inside bundled code into an ESM `import` statement targeting that external. Vite 8 stops doing that rewrite: a `require()` call now stays a literal `require()` call in the output. Output that's meant to run as ESM (e.g. an `.mjs` build, or any Node context without CJS interop) can throw at runtime if it still contains a bare `require()` that nothing defines, since there's no bundler-level `import`-to-fill-in-`require` shim happening anymore.
+- Source: [Migration from v7 | Vite](https://vite.dev/guide/migration), "External Module Requires" section.
+- Interlinks: sibling Cluster 14 (CJS interop change) — both concern how Vite 8 handles the CJS/ESM boundary differently from Vite 7, from two different angles (import-side vs. require-side).
+
+### Pillar 2 status summary (2026-08-05)
+
+10/10 cluster slots filled, all `pending` — none written yet. This plan is ready for review; nothing gets drafted until specific clusters are approved. Strongest, most immediately actionable candidates to lead with if approving a subset rather than all 10: Cluster 12 (directly dogfooded against this site's own `@tailwindcss/vite` setup, with a clear "confirm your version" resolution), Cluster 13 (verbatim, in-window, still-open upstream), and Cluster 11 (verbatim, in-window, visually obvious symptom — strong AEO match for "backdrop-filter not working" style searches). Clusters 14/15/16/17/18/19/20 all trace back to Vite's own official, evergreen migration guide as primary source, several corroborated by a real dated GitHub issue or (Cluster 15) Astro's own upstream fix commit.
