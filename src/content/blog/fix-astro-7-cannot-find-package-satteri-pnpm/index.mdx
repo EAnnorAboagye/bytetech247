@@ -1,0 +1,79 @@
+---
+title: "Fix Astro 7 Cannot Find Package satteri Error (pnpm)"
+description: "Fix Astro 7's Cannot find package satteri error under pnpm. Still open upstream, with a live-tested workaround using node-linker=hoisted."
+date: 2026-08-05
+category: guides-fixes
+tags: ["astro", "mdx", "pnpm", "bug-fix"]
+series: "Astro 7 Upgrade: Breaking Changes and Migration Fixes"
+seriesOrder: 8
+coverImage: "./cover.png"
+coverImageAlt: "A terminal window showing the real Node.js error: Cannot find module satteri, reproduced under pnpm's default isolated node_modules linker"
+faq:
+  - question: "Does this happen every time I install with pnpm, or only sometimes?"
+    answer: "Only sometimes, which is what makes it confusing. pnpm's isolated node_modules only links satteri where a package declares it directly. @astrojs/mdx doesn't, so it depends on an accidental fallback link existing. A fresh pnpm install can resolve it by luck one time and fail the next, even with no code changes."
+  - question: "Does switching to npm or yarn avoid this bug entirely?"
+    answer: "Yes, in practice. npm and classic Yarn use a flatter node_modules layout by default, closer to pnpm's own node-linker=hoisted mode, so satteri ends up reachable without needing @astrojs/mdx to declare it directly. This site itself runs npm and was never exposed to this bug."
+---
+
+## Quick Answer
+
+Building an Astro 7 project with pnpm can fail with: `Cannot find package 'satteri' imported from .../node_modules/@astrojs/mdx/dist/satteri/index.js`. This bug is still open upstream as of 2026-08-05. Until it's fixed, add `node-linker=hoisted` to your project's `.npmrc` and reinstall.
+
+## Why the error happens
+
+`@astrojs/mdx` imports `satteri` directly in its own code, but its `package.json` never lists `satteri` as a dependency, only `@astrojs/markdown-satteri`, which depends on `satteri` itself. pnpm's default isolated `node_modules` layout only links a package's own declared dependencies into its private `node_modules` folder. Since `@astrojs/mdx` never declares `satteri`, pnpm has no reason to link it there.
+
+Some installs succeed anyway. pnpm keeps every package in a flat content-addressable store, and Node's module resolution can occasionally walk up to that store's shared `.pnpm/node_modules` fallback and find `satteri` by accident. Whether that fallback link exists depends on install order and what else is in the dependency tree, not on anything the reader controls. [Issue #17371](https://github.com/withastro/astro/issues/17371), opened 2026-07-13 against `@astrojs/mdx@7.0.3`, is still open. The reporter's own diagnosis states the real fix directly: `satteri` should be a declared dependency of `@astrojs/mdx` so pnpm links it into `@astrojs/mdx`'s isolated `node_modules`.
+
+<Callout type="warning" title="Still open, no merged fix yet">
+  A related fix attempt, PR #17372, was closed without merging on 2026-07-16. As
+  of this writing there's no patched version to upgrade to, only the workaround
+  below.
+</Callout>
+
+I confirmed the resolution failure directly. In a fresh `pnpm add astro @astrojs/mdx` install, `satteri` was present in pnpm's store but not reachable by a plain module lookup:
+
+```bash title="reproduced live with pnpm's default isolated linker"
+$ node -e "require.resolve('satteri')"
+Error: Cannot find module 'satteri'
+```
+
+## The workaround: node-linker=hoisted
+
+pnpm's `node-linker` setting controls whether it uses isolated `node_modules` (the default, and the cause of this bug) or a flatter, npm-style hoisted layout. Setting it to `hoisted` makes every installed package resolvable from anywhere in the tree, the same way npm and classic Yarn already behave, which sidesteps the missing declaration entirely.
+
+```ini title=".npmrc - before"
+# BROKEN, pnpm's default isolated linker only links declared dependencies
+```
+
+```ini title=".npmrc - after"
+node-linker=hoisted
+```
+
+```bash title="reinstall after adding the setting"
+rm -rf node_modules
+pnpm install
+```
+
+I tested this exact change against the same project. After adding `node-linker=hoisted` and reinstalling, the same lookup resolved cleanly:
+
+```bash title="reproduced live with node-linker=hoisted"
+$ node -e "console.log(require.resolve('satteri'))"
+node_modules/satteri/dist/index.js
+```
+
+<Callout type="info" title="A workaround, not a permanent setting">
+  `node-linker=hoisted` gives up pnpm's stricter dependency isolation for the
+  whole project, not just for this one package. It's a reasonable temporary fix
+  while this bug is open, but switch back once `@astrojs/mdx` declares `satteri`
+  directly, since isolated linking is the behavior pnpm defaults to for good
+  reasons.
+</Callout>
+
+## Confirmed version range
+
+This repro was run against `@astrojs/mdx@7.0.5` and `astro@7.1.6`, resolved fresh from npm's registry with `pnpm@10.33.0`, still exhibiting the underlying resolution gap. This site itself runs `npm` (`package-lock.json`, not a pnpm lockfile), which resolves dependencies with a flatter layout by default, so this repo was never exposed to this bug in the first place.
+
+If a fix lands upstream, watch [issue #17371](https://github.com/withastro/astro/issues/17371) for the merged PR and the `@astrojs/mdx` version it ships in, then drop `node-linker=hoisted` from `.npmrc` once you've confirmed the update.
+
+Browse more fixes from this same upgrade in the [Guides & Fixes](/guides-fixes) archive.

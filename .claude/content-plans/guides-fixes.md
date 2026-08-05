@@ -98,12 +98,13 @@ Replaced with a verified, dogfooded, platform-level (not Astro-version-dependent
 
 ### 8. Fix Astro 7 Cannot Find Package satteri Error (pnpm)
 
-- Status: approved
-- Slug: -
+- Status: written
+- Slug: fix-astro-7-cannot-find-package-satteri-pnpm
 - Search Intent / Signal: [confirmed, verbatim] `Cannot find package 'satteri' imported from .../node_modules/@astrojs/mdx/dist/satteri/index.js`
 - Structural Problem: `@astrojs/mdx` statically imports the `satteri` package without declaring it as a direct dependency in its own `package.json` (historically kept only in devDependencies). Under pnpm's strict, isolated `node_modules` layout, the bare import can only resolve by accident via pnpm's internal `.pnpm/node_modules` fallback link; when that link is missing, the build fails outright.
 - Source: [`@astrojs/mdx` imports satteri but does not declare it (pnpm ERR_MODULE_NOT_FOUND) (#17371)](https://github.com/withastro/astro/issues/17371), opened 2026-07-13, **still open** as of this research (2026-08-05) — directly affects `@astrojs/mdx@7.0.3`, this repo's exact pinned version. A related fix attempt, PR #17372, was closed without merging on 2026-07-16.
 - Interlinks: series sibling; write this one first if timeliness matters — it's the only cluster in this pillar still unresolved upstream. This site itself uses npm (`package-lock.json`), not pnpm, so it isn't directly exposed, but the underlying missing-dependency-declaration bug is real and version-pinned regardless of package manager.
+- Note (found while drafting, 2026-08-05): re-checked #17371 immediately before drafting, still open, no merged fix, PR #17372 closed unmerged 2026-07-16. Built a real scratch pnpm project (`pnpm add astro@^7.1.3 @astrojs/mdx@^7.0.3`, resolved to `@astrojs/mdx@7.0.5`/`astro@7.1.6`) to try reproducing the exact build failure. A plain `npx astro build` succeeded cleanly both with and without an actual `.mdx` page, so the full crash didn't reproduce this time, consistent with the issue's own description of it being intermittent (depends on whether pnpm's accidental `.pnpm/node_modules` fallback link happens to exist). Did directly reproduce the underlying resolution gap though: `node -e "require.resolve('satteri')"` failed under pnpm's default isolated linker, then succeeded after adding `node-linker=hoisted` to `.npmrc` and reinstalling. Wrote the post around that live-tested workaround rather than the full crash, since the crash itself wasn't reliably forceable. If a future pass finds the crash reproduces more reliably (e.g. a specific lockfile state), that's worth folding in as an update, not a rewrite.
 
 ### 9. Fix astro-mermaid Diagrams Breaking Under Astro 7
 
