@@ -124,8 +124,9 @@ const jsonLdBlocks = [
     <script
       type="module"
       src="https://static.cloudflareinsights.com/beacon.min.js"
-      data-cf-beacon={JSON.stringify({ token: siteConfig.cloudflareBeaconToken })}
-    ></script>
+      data-cf-beacon={JSON.stringify({
+        token: siteConfig.cloudflareBeaconToken,
+      })}></script>
     <!-- Backup ownership-verification method alongside the DNS TXT record
          already in place (Cloudflare DNS) — Google Search Console's
          "additional verification methods" page for
