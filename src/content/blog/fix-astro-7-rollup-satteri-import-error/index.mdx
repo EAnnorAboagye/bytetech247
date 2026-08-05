@@ -1,0 +1,62 @@
+---
+title: "Fix Astro 7 Rollup Failed to Resolve Import satteri"
+description: "Fix Astro 7's Rollup failed to resolve import satteri error from getContainerRenderer. Real cause, and the exact @astrojs/mdx version already fixing it."
+date: 2026-08-05
+category: guides-fixes
+tags: ["astro", "mdx", "rollup", "bug-fix"]
+series: "Astro 7 Upgrade: Breaking Changes and Migration Fixes"
+seriesOrder: 3
+relatedSlugs: ["fix-astro-7-missing-export-satteri-images"]
+coverImage: "./cover.png"
+coverImageAlt: "A terminal window showing the real Vite/Rollup warning: Rollup failed to resolve import satteri from the @astrojs/mdx dist folder, most likely unintended because it can break your application at runtime"
+faq:
+  - question: "Do I need to change anything in my own code to fix this?"
+    answer: "No, not if you're already on @astrojs/mdx 7.0.0 or later. The crash itself was fixed inside the package. Switching your own getContainerRenderer import to the new /container-renderer path only removes a separate deprecation warning, it isn't required to stop the Rollup error."
+  - question: "Does this happen during a normal astro build or astro dev?"
+    answer: "No. It only happens in code that calls getContainerRenderer() directly, such as a custom script that renders MDX content into an RSS feed or a preview email. A default astro build or astro dev never calls that function, so most projects never hit this at all."
+---
+
+## Quick Answer
+
+Calling `getContainerRenderer()` on an Astro 7 beta build could throw: `Rollup failed to resolve import "satteri" from ".../node_modules/@astrojs/mdx/dist/satteri/index.js". This is most likely unintended because it can break your application at runtime.` It's already fixed. Update to `@astrojs/mdx@^7.0.0` or later and the error is gone for good.
+
+## Why the Rollup error happens
+
+Astro 7 replaced its Markdown pipeline with Sätteri, a new Rust processor. A project can still opt out and keep the older `@astrojs/markdown-remark` unified pipeline instead, by setting `markdown.processor` to `unified()`. That choice is what triggers this bug.
+
+Calling `getContainerRenderer()`, the function integrations use to render content outside the normal page build (an RSS feed script is the most common case), makes `@astrojs/mdx` eagerly import its Sätteri module path from its package root. It does this even when the project's `markdown.processor` is still set to the legacy unified pipeline. Rollup then tries to bundle `satteri` as an optional peer dependency, and fails, because that package is only installed when Sätteri is the active processor. [Issue #16954](https://github.com/withastro/astro/issues/16954), opened 2026-06-02 against an Astro 7 beta, documents the exact warning.
+
+<Callout type="info" title="A warning, not always a hard crash">
+  Vite reports this as a build warning, not a failure that stops the build
+  outright. The issue's own title calls it out directly: it "can break your
+  application at runtime" rather than at build time, which makes it easy to miss
+  until the affected code path actually runs.
+</Callout>
+
+## Is this still a problem on Astro 7 today?
+
+No. [PR #17093](https://github.com/withastro/astro/pull/17093) fixed this issue, along with the related [#17068](https://github.com/withastro/astro/issues/17068), on 2026-06-17, five days before Astro 7.0.0 went stable on 2026-06-22. The fix shipped in `@astrojs/mdx@7.0.0`.
+
+The fix moves `getContainerRenderer()` out of each integration's package root and into a dedicated `/container-renderer` entrypoint. Importing from the old root path still works, but now only logs a deprecation warning instead of trying to eagerly resolve `satteri`.
+
+```js title="scripts/render-feed.mjs - before"
+// BROKEN on @astrojs/mdx versions before 7.0.0, eagerly resolves
+// the satteri module even when markdown.processor stays on unified()
+import { getContainerRenderer } from "@astrojs/mdx";
+```
+
+```js title="scripts/render-feed.mjs - after"
+// FIXED, imports from the dedicated entrypoint added in PR #17093,
+// available on @astrojs/mdx 7.0.0 and later
+import { getContainerRenderer } from "@astrojs/mdx/container-renderer";
+```
+
+The first block still runs on a patched `@astrojs/mdx`, it just prints a deprecation notice. The second block is the version [Astro's own upgrade guide](https://docs.astro.build/en/guides/upgrade-to/v7/) recommends going forward.
+
+## Confirmed version range
+
+This site runs `@astrojs/mdx@^7.0.3`, already past the fix, and its own RSS feed (`src/lib/rss.ts`) never renders post bodies at all. It only serializes each post's frontmatter `description` into the feed XML, so it never calls `getContainerRenderer()` and was never exposed to this bug in the first place.
+
+If your project only hit this during Astro 7's beta cycle, in the window between Sätteri becoming the default processor and 2026-06-17, a plain dependency bump to `@astrojs/mdx@^7.0.3` (or any current 7.x release) removes it. There's nothing left to configure once the version is current.
+
+The same PR also fixed a related error, [MISSING_EXPORT "satteriCollectImagesPlugin"](/guides-fixes/fix-astro-7-missing-export-satteri-images), a hard build failure rather than a warning. Read more fixes for this same upgrade in the [Guides & Fixes](/guides-fixes) archive.

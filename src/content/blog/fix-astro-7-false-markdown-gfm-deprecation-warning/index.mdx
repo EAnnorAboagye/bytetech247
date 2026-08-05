@@ -1,0 +1,57 @@
+---
+title: "Fix Astro 7's False markdown.gfm Deprecation Warning"
+description: "Fix Astro 7's false markdown.gfm and markdown.smartypants deprecation warning from the Container API, and the version that fixes it."
+date: 2026-08-05
+category: guides-fixes
+tags: ["astro", "mdx", "container-api", "bug-fix"]
+series: "Astro 7 Upgrade: Breaking Changes and Migration Fixes"
+seriesOrder: 7
+relatedSlugs: ["fix-astro-7-rehypeplugins-deprecation-warning"]
+coverImage: "./cover.png"
+coverImageAlt: "A terminal window showing the real Astro warning: markdown.gfm and markdown.smartypants are deprecated, printed by the Container API even though the project never set either option"
+faq:
+  - question: "Does setting markdown.gfm: false or smartypants: false in my config stop this warning?"
+    answer: "No, and that's the confusing part. This version of the warning fires from Container API rendering even when your config never mentions gfm or smartypants at all. There's nothing to remove from your own config, since the false positive comes from Astro's own default values, not yours."
+  - question: "Is this the same warning as the markdown.rehypePlugins deprecation warning?"
+    answer: "Same general deprecation system, different keys and a different trigger. The rehypePlugins warning fires because a project genuinely sets that option, and the plugins keep working. This one fires on gfm and smartypants even when a project sets neither, and it was a real Astro bug, not a signal to change anything."
+---
+
+## Quick Answer
+
+Rendering MDX content through Astro 7's Container API could print: `[astro] markdown.gfm and markdown.smartypants are deprecated. Move them onto your processor instead...` even in a project that never set either option. It was a false positive, fixed in `astro@7.0.6`. Upgrade past that version and the warning stops on its own.
+
+## Why the warning fires with no matching config
+
+Astro validates `markdown.gfm` and `markdown.smartypants` against a project's config to print this deprecation warning only when a reader actually set one of them. The Container API's `AstroContainer.create()` and `createFromManifest()` methods broke that check. They passed Astro's internal `ASTRO_CONFIG_DEFAULTS`, which already sets `gfm: true` and `smartypants: true` as baseline defaults, straight into the same validation function normal builds use.
+
+The validator can't tell a default value from a value a reader actually typed into `astro.config.mjs`. Every Container API render saw `gfm: true` and treated it as user-set, so the warning fired unconditionally. [Issue #17206](https://github.com/withastro/astro/issues/17206), opened 2026-06-26 against `astro@7.0.3`, reproduces this with the Container API rendering MDX content.
+
+<Callout type="info" title="A real bug, not a hint to change your config">
+  Nothing about this warning pointed at an actual problem. It fired identically
+  whether a project set `gfm`/`smartypants` or left them untouched, which is
+  exactly what made it confusing to debug: there was no config change that made
+  it stop.
+</Callout>
+
+## Is this still a problem on Astro 7 today?
+
+No. [PR #17261](https://github.com/withastro/astro/pull/17261) fixed it, merged 2026-07-01, shipped in `astro@7.0.6`. The fix strips `gfm` and `smartypants` out of the defaults object before it reaches the validator, so the Container API now validates a reader's raw config the same way a normal build already did.
+
+```bash title="Container API render on astro@7.0.3 - 7.0.5"
+[astro] `markdown.gfm` and `markdown.smartypants` are deprecated. Move them
+onto your processor instead (e.g. `satteri({ features: { gfm: false,
+smartPunctuation: false } })`, or `unified({ gfm: false, smartypants: false })`
+from `@astrojs/markdown-remark`). Will be removed in a future major.
+```
+
+There's no config change to make on your end. Updating `astro` to `7.0.6` or later removes the false positive completely.
+
+```bash title="fix: update past the patched version"
+npm install astro@latest
+```
+
+## Confirmed version range
+
+This site runs `astro@^7.1.3`, well past the `7.0.6` fix, and doesn't use the Container API anywhere in its own source, so it never hit this specific warning. If you're rendering MDX through `AstroContainer` and see this exact message on `astro@7.0.3` through `7.0.5`, it's this bug, not a real deprecation to act on. Anyone genuinely migrating `markdown.gfm`/`markdown.smartypants` off deprecated top-level keys should follow the [markdown.rehypePlugins deprecation fix](/guides-fixes/fix-astro-7-rehypeplugins-deprecation-warning) instead, which covers the real version of this migration.
+
+Browse more fixes from this same upgrade in the [Guides & Fixes](/guides-fixes) archive.
