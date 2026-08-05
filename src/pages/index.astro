@@ -59,7 +59,7 @@ const recentItemListJsonLd = itemListJsonLd(
                 class="homepage-secondary-grid"
               >
                 {secondaryPosts.slice(0, 4).map((post) => (
-                  <PostCard post={post} />
+                  <PostCard post={post} eager />
                 ))}
               </Grid>
             )}

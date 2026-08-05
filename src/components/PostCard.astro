@@ -3,10 +3,17 @@
 // was written — this renders it as the card's 16:9 image (build-spec.md
 // Phase 10 grid-card placement), the exact same asset used as the article's
 // own hero image (src/pages/[category]/[slug].astro) — never a different,
-// homepage-only thumbnail. Every card image is offscreen/below the fold
-// somewhere on every page that uses PostCard, so lazy-loading here is
-// correct; the one LCP-critical cover (article hero) is handled separately
-// in [category]/[slug].astro with loading="eager" + preload.
+// homepage-only thumbnail.
+//
+// `eager` defaults to false (lazy) because most PostCard instances really
+// are below the fold (Recent, per-category sections, category/tag/archive
+// pages). It is NOT true for every usage though — real Cloudflare Web
+// Analytics RUM data (2026-08-05) showed a homepage post-card image as the
+// actual LCP element for real visitors, at up to 4,932ms, because the
+// homepage's secondary grid (the row of cards directly under the hero) sits
+// close enough to the fold on real viewports that lazy-loading delayed the
+// fetch past when it was needed. index.astro passes eager={true} for that
+// grid specifically; every other PostCard usage keeps the lazy default.
 //
 // Title and description are clamped to a fixed number of lines (not left to
 // grow with content) so cards in the same row stay level regardless of how
@@ -19,9 +26,10 @@ import { getCategoryName } from "../config";
 
 interface Props {
   post: CollectionEntry<"blog">;
+  eager?: boolean;
 }
 
-const { post } = Astro.props;
+const { post, eager = false } = Astro.props;
 const categoryName = getCategoryName(post.data.category);
 const href = `/${post.data.category}/${post.id}/`;
 ---
@@ -34,7 +42,7 @@ const href = `/${post.data.category}/${post.id}/`;
         alt={post.data.coverImageAlt}
         widths={[640]}
         formats={["avif", "webp"]}
-        loading="lazy"
+        loading={eager ? "eager" : "lazy"}
         class="post-card__cover"
       />
       <div class="post-card__body">

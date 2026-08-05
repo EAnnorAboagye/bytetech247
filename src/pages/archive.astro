@@ -39,34 +39,39 @@ const categorySections = CATEGORIES.map((category) => {
       <p>No posts yet.</p>
     ) : (
       <div class="archive-categories">
-        {categorySections.map(({ category, count, recentPosts }) => (
-          <section aria-labelledby={`archive-${category.slug}`}>
-            <div class="archive-category__header">
-              <h2 id={`archive-${category.slug}`}>{category.name}</h2>
-              <span class="archive-category__count">
-                {count} {count === 1 ? "post" : "posts"}
-              </span>
-            </div>
+        {categorySections.map(
+          ({ category, count, recentPosts }, sectionIndex) => (
+            <section aria-labelledby={`archive-${category.slug}`}>
+              <div class="archive-category__header">
+                <h2 id={`archive-${category.slug}`}>{category.name}</h2>
+                <span class="archive-category__count">
+                  {count} {count === 1 ? "post" : "posts"}
+                </span>
+              </div>
 
-            {recentPosts.length > 0 ? (
-              <Grid minItemWidth="18rem" space="4">
-                {recentPosts.map((post) => (
-                  <PostCard post={post} />
-                ))}
-              </Grid>
-            ) : (
-              <p class="archive-category__empty">
-                No posts yet in {category.name}.
-              </p>
-            )}
+              {recentPosts.length > 0 ? (
+                <Grid minItemWidth="18rem" space="4">
+                  {recentPosts.map((post) => (
+                    <PostCard post={post} eager={sectionIndex === 0} />
+                  ))}
+                </Grid>
+              ) : (
+                <p class="archive-category__empty">
+                  No posts yet in {category.name}.
+                </p>
+              )}
 
-            {count > RECENT_PER_CATEGORY && (
-              <a href={`/${category.slug}/`} class="archive-category__view-all">
-                View all {category.name} posts →
-              </a>
-            )}
-          </section>
-        ))}
+              {count > RECENT_PER_CATEGORY && (
+                <a
+                  href={`/${category.slug}/`}
+                  class="archive-category__view-all"
+                >
+                  View all {category.name} posts →
+                </a>
+              )}
+            </section>
+          ),
+        )}
       </div>
     )
   }
