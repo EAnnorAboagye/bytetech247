@@ -150,7 +150,7 @@ Pillar 1 above is complete (10/10 written) and covers Astro 7's Markdown/MDX con
 
 Existing-content collision check (2026-08-05): grepped every published post under `src/content/blog/*/index.mdx` for "rolldown", "lightning css", and "oxc" — zero matches. The only existing post touching "Vite 8" at all is `fix-eresolve-vite-8-peer-dependency-astro-7`, which is narrowly about npm's install-time peer-dependency resolution failure — a different failure class (install-time, package-manager-level) from every cluster below (all build-time/runtime, after a successful install). Named as a related interlink where relevant rather than folded in, per the skill's "genuinely distinct angle" rule.
 
-Research window note: most sources below fall inside the strict last-90-days window (~2026-05-07 through today); a few (Clusters 12, 15) are dated April 2026, ~100-130 days out — kept because the *mechanism* is evergreen (sourced from Vite's own current, living migration guide, not a dated blog post) and readers hit it now via Astro 7 adoption regardless of Vite 8's original beta/early-patch dates — the same timeliness framing this plan's own published Cluster 1 (`fix-eresolve-vite-8-peer-dependency-astro-7`) already uses successfully.
+Research window note: most sources below fall inside the strict last-90-days window (~2026-05-07 through today); a few (Clusters 12, 15) are dated April 2026, ~100-130 days out — kept because the _mechanism_ is evergreen (sourced from Vite's own current, living migration guide, not a dated blog post) and readers hit it now via Astro 7 adoption regardless of Vite 8's original beta/early-patch dates — the same timeliness framing this plan's own published Cluster 1 (`fix-eresolve-vite-8-peer-dependency-astro-7`) already uses successfully.
 
 ## Pillar 2
 
@@ -179,7 +179,7 @@ Research window note: most sources below fall inside the strict last-90-days win
 - Structural Problem: Vite 8's Rolldown-based resolver exposes a native (Rust) plugin-config binding that Vite's public resolver API is supposed to populate before handing it to consuming plugins. In Vite 8.0.10 (`rolldown@1.0.0-rc.17`), that public API stopped populating every field the native binding expects. `@tailwindcss/vite` calls Vite's resolver directly during its build-time CSS-generation step to locate the `tailwindcss` package itself — with the config object incomplete, that lookup crashes instead of resolving.
 - Source: [vitejs/vite#22322](https://github.com/vitejs/vite/issues/22322) (opened 2026-04-24) and [withastro/astro#16542](https://github.com/withastro/astro/issues/16542) (opened 2026-04-30, "astro add tailwind installs incompatible @tailwindcss/vite").
 - Dogfood note: confirmed **not reproducible** against this repo's own resolved `vite@8.1.5` / `rolldown@1.1.5` / `@tailwindcss/vite@^4.3.3` — `npm run build` completes cleanly with `@tailwindcss/vite` actively wired in `astro.config.mjs`. The resolver gap appears fixed in later Rolldown patches; still worth writing since it's a real, confusing failure mode for anyone on an intermediate Vite 8.0.x patch, and the fix (upgrade Vite/Rolldown) is exactly the kind of actionable, verifiable advice this category is for.
-- Interlinks: **fix-eresolve-vite-8-peer-dependency-astro-7** — related but distinct: that post is an npm install-time peer-dependency failure; this is a build-time crash *after* a successful install.
+- Interlinks: **fix-eresolve-vite-8-peer-dependency-astro-7** — related but distinct: that post is an npm install-time peer-dependency failure; this is a build-time crash _after_ a successful install.
 
 ### 13. Fix Astro Dev Toolbar 'Not Implemented' Crash
 
@@ -206,7 +206,7 @@ Research window note: most sources below fall inside the strict last-90-days win
 - Search Intent / Signal: [confirmed] Vite migration guide, verbatim: "`resolve.alias[].customResolver`: use a custom plugin with `resolveId` hook and `enforce: 'pre'` instead."
 - Structural Problem: `resolve.alias` entries could previously supply a `customResolver` function to override how Vite resolved that one aliased path. Vite 8 removes that hook entirely — alias resolution is no longer an extension point, so any plugin or config relying on it must become a real Vite plugin registering its own `resolveId` hook with `enforce: 'pre'`.
 - Source: [Migration from v7 | Vite](https://vite.dev/guide/migration), "Deprecated Options"; worked, dogfooded-adjacent example: [withastro/astro#17090](https://github.com/withastro/astro/pull/17090), "Fix Vite and Rolldown build warnings in Astro 7," merged 2026-06-18 — Astro's own core hit this directly (its tsconfig-path-alias-in-CSS-`@import`s logic used `customResolver`) and replaced it with two separate `resolveId`/transform-hook plugins, shipped already-fixed in Astro 7.0.0 stable.
-- Interlinks: none yet. Frame honestly as "already fixed in Astro 7 core as of 7.0.0 stable" — useful for a reader who saw this warning on an Astro 7 beta, or hits it via a *different* Vite plugin still using the old API.
+- Interlinks: none yet. Frame honestly as "already fixed in Astro 7 core as of 7.0.0 stable" — useful for a reader who saw this warning on an Astro 7 beta, or hits it via a _different_ Vite plugin still using the old API.
 
 ### 16. Fix Vite 8's build.rollupOptions Deprecation
 
