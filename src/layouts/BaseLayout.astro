@@ -90,10 +90,28 @@ const jsonLdBlocks = [
       window.gtag("config", analyticsId);
 
       window.addEventListener("load", () => {
+        const gtagSrc = `https://www.googletagmanager.com/gtag/js?id=${analyticsId}`;
+        // Trusted Types (enforced via the Content-Security-Policy header,
+        // see scripts/generate-security-headers.mjs) rejects a plain
+        // string assigned to script.src — this policy only ever returns
+        // the one hardcoded gtag.js URL built above, never an
+        // attacker-influenced value, which is what makes it a real
+        // sanitizer rather than a pass-through that defeats the point of
+        // Trusted Types. Firefox/Safari don't implement
+        // window.trustedTypes yet, so this falls back to the plain string
+        // there — nothing to satisfy without the enforcement header.
+        const scriptUrl = window.trustedTypes
+          ? window.trustedTypes
+              .createPolicy("gtag-loader", {
+                createScriptURL: (url) =>
+                  url === gtagSrc ? url : "about:blank",
+              })
+              .createScriptURL(gtagSrc)
+          : gtagSrc;
         const script = document.createElement("script");
         script.async = true;
         script.fetchPriority = "low";
-        script.src = `https://www.googletagmanager.com/gtag/js?id=${analyticsId}`;
+        script.src = scriptUrl;
         document.head.appendChild(script);
       });
     </script>

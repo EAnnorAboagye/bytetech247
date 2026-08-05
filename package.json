@@ -8,7 +8,7 @@
   },
   "scripts": {
     "dev": "astro dev",
-    "build": "astro build && pagefind --site dist",
+    "build": "astro build && pagefind --site dist && node scripts/generate-security-headers.mjs",
     "preview": "astro preview",
     "astro": "astro",
     "check": "astro check",
