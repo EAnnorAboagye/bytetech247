@@ -18,12 +18,15 @@ export interface Env {
 }
 
 // Sitewide preference declaration (contentsignals.org / draft-romm-aipref-
-// contentsignals): same three values as the Content-Signal line in
-// public/robots.txt, kept in sync by hand — that file is the primary
-// declaration, this header just repeats it for agents that check response
-// headers instead of fetching /robots.txt separately (this is exactly how
-// Cloudflare's own "Markdown for Agents" feature echoes it, confirmed
-// against a live example response from their docs).
+// contentsignals), delivered only as a response header now — it used to be
+// echoed in public/robots.txt too, but Google added `content-signal` to its
+// documented list of unsupported robots.txt directives in April 2026, which
+// made Search Console's robots.txt report flag that line as an error, so it
+// was removed from robots.txt (2026-08-05). This header is unaffected:
+// Search Console's robots.txt report only parses the robots.txt file, not
+// response headers on other pages, and this is exactly how Cloudflare's own
+// "Markdown for Agents" feature echoes it (confirmed against a live example
+// response from their docs).
 const CONTENT_SIGNAL = "search=yes, ai-input=yes, ai-train=yes";
 
 const ARTICLE_PATH = /^\/([a-z-]+)\/([a-z0-9-]+)\/?$/;
