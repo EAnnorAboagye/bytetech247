@@ -54,6 +54,33 @@ const jsonLdBlocks = [
 <html lang="en">
   <head>
     <meta charset="utf-8" />
+    <!-- Trusted Types default policy — required for Astro's own ClientRouter
+         (astro:transitions) to function under this page's
+         require-trusted-types-for 'script' CSP directive (see
+         scripts/generate-security-headers.mjs). ClientRouter isn't
+         Trusted-Types-aware: every client-side navigation calls
+         `new DOMParser().parseFromString(html, ...)` on the fetched page
+         internally, and a raw string into that sink throws
+         "This document requires 'TrustedHTML' assignment" with no default
+         policy registered — confirmed live: with the CSP header actually
+         enforced (astro dev/preview never apply dist/_headers, so this
+         never surfaced in local testing or e2e), every single link click
+         site-wide silently failed to navigate. Registering the identity
+         'default' policy here is safe specifically because its only
+         caller in practice is ClientRouter fetching *our own* same-origin
+         page HTML from this build — never attacker-controlled data. Must
+         run before <ClientRouter /> attaches its navigation listeners
+         (i.e., before anything below can trigger a client-side nav), so
+         it's the very first script in <head>. -->
+    <script is:inline>
+      if (window.trustedTypes?.createPolicy) {
+        window.trustedTypes.createPolicy("default", {
+          createHTML: (html) => html,
+          createScript: (script) => script,
+          createScriptURL: (url) => url,
+        });
+      }
+    </script>
     <!-- Google tag (gtag.js) — loads unconditionally for every visitor, no
          consent gate (a deliberate decision made 2026-08-04, replacing the
          earlier consent-gated CookieConsent.astro component; see
