@@ -66,6 +66,28 @@ if (scriptHashes.size === 0) {
   );
 }
 
+// Cloudflare's dashboard-level Web Analytics is on Automatic Setup for this
+// zone — confirmed live (2026-08-05): the console showed a beacon.min.js
+// load *and two inline bootstrap scripts* being CSP-blocked on production,
+// none of which exist anywhere in this repo or in dist/. Cloudflare's edge
+// rewrites every HTML response to inject them after our build already ran,
+// so no build-time scan can ever see or hash them — the two hashes below
+// are hardcoded from that live violation report instead (Chrome's CSP
+// error conveniently reports the exact hash it needed). This is inherently
+// coupled to Cloudflare's current injected snippet: if Cloudflare ever
+// changes it, these two go stale and Web Analytics silently stops loading
+// (CSP-blocked) without breaking anything else. If that happens, the fix
+// is the same as this one — read the new expected hash(es) straight out of
+// the browser console's CSP violation message and swap them in here. The
+// robust alternative (self-host the beacon tag instead of Automatic Setup,
+// so it's an ordinary same-repo inline script this file can hash normally)
+// requires the zone's beacon token from the Cloudflare dashboard, which
+// isn't available from inside this build.
+const CLOUDFLARE_BEACON_INLINE_HASHES = [
+  `'sha256-sWBR1cu1LmFs85q0DMGYfiesZEzA7oTOPNOvWSXlHpU='`,
+  `'sha256-y67cZoAbI8wNKXC4i8Hl9+xyDj013fPXFMzRcQaSF7E='`,
+];
+
 // gtag.js is fetched by our own inline bootstrap script (BaseLayout.astro)
 // only after the window "load" event, then reports to Google's collection
 // endpoints — both need an explicit allowlist entry since neither is
@@ -78,7 +100,7 @@ const csp = [
   // WASM, not general script eval — 'unsafe-eval' would additionally allow
   // eval()/Function()/string-arg setTimeout, which nothing on this site
   // needs or should have.
-  `script-src 'self' 'wasm-unsafe-eval' https://www.googletagmanager.com ${[...scriptHashes].sort().join(" ")}`,
+  `script-src 'self' 'wasm-unsafe-eval' https://www.googletagmanager.com https://static.cloudflareinsights.com ${CLOUDFLARE_BEACON_INLINE_HASHES.join(" ")} ${[...scriptHashes].sort().join(" ")}`,
   `style-src 'self' 'unsafe-inline'`, // Shiki emits a `style=""` per syntax-highlighted token; hashing each is infeasible
   `img-src 'self'`,
   `font-src 'self'`,
