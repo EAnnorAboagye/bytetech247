@@ -16,16 +16,17 @@ Allow: /
 User-agent: PerplexityBot
 Allow: /
 
-# Content Signals (contentsignals.org, draft-romm-aipref-contentsignals):
-# a crawler-agnostic usage declaration layered on top of the per-bot Allow
-# rules above, not a replacement for them. Values are deliberately
-# consistent with those rules rather than contradicting them — GPTBot,
-# ClaudeBot, and Google-Extended (all AI-training crawlers) are already
-# explicitly allowed above, so ai-train=no here would just send a mixed
-# signal. Flip ai-train to "no" if that stance ever changes; also update
-# the matching per-bot rules above so the two don't disagree again.
+# Content Signals (contentsignals.org, draft-romm-aipref-contentsignals) were
+# tried here as a crawler-agnostic layer on top of the per-bot Allow rules
+# above, but Google added `content-signal` to its documented list of
+# unsupported robots.txt directives in April 2026 (Search Off the Record),
+# which Search Console's robots.txt report flags as an error rather than
+# silently ignoring. Removed rather than left in place to keep that report
+# clean. The per-bot Allow rules below already state the same search/AI
+# stance (GPTBot, ClaudeBot, Google-Extended, PerplexityBot all explicitly
+# allowed) without relying on a directive Google's parser rejects. Revisit
+# if Content-Signal is ever added to Google's supported list.
 User-agent: *
-Content-Signal: search=yes, ai-input=yes, ai-train=yes
 Allow: /
 
 Sitemap: https://bytetech247.com/sitemap.xml
