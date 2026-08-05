@@ -90,4 +90,20 @@ export const siteConfig = {
   // privacy.astro's "What this site collects today" section, which this
   // ID must stay consistent with.
   analyticsId: "G-QRNX9JBMX4",
+
+  // Cloudflare Web Analytics beacon token (dash.cloudflare.com > Web
+  // Analytics > this site > Manage Site) — not a secret, same reasoning
+  // as analyticsId above. Self-hosted here (Manual Setup) instead of
+  // relying on the zone's Automatic Setup, which edge-injects its own
+  // copy of this same script *after* our build already ran — that
+  // injected version isn't visible to generate-security-headers.mjs at
+  // build time, so its inline bootstrap script only stayed CSP-allowed
+  // via hardcoded hashes read off a live violation, and broke again the
+  // next time Cloudflare changed what it injects (confirmed live,
+  // 2026-08-05, twice). Loading it ourselves as a same-repo external
+  // <script src>, exactly like gtag.js below, makes it just another
+  // host-allowlisted script — nothing to hash, nothing to go stale.
+  // Automatic Setup should be turned off in the dashboard once this
+  // ships, so the beacon doesn't fire twice per pageview.
+  cloudflareBeaconToken: "90df95ac9f614fe1833024011e9e4b03",
 } as const;
