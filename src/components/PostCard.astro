@@ -15,8 +15,7 @@
 import { Picture } from "astro:assets";
 import type { CollectionEntry } from "astro:content";
 import Card from "./Card.astro";
-import ShareButtons from "./ShareButtons.astro";
-import { getCategoryName, siteConfig } from "../config";
+import { getCategoryName } from "../config";
 
 interface Props {
   post: CollectionEntry<"blog">;
@@ -25,7 +24,6 @@ interface Props {
 const { post } = Astro.props;
 const categoryName = getCategoryName(post.data.category);
 const href = `/${post.data.category}/${post.id}/`;
-const absoluteUrl = new URL(href, siteConfig.url).href;
 ---
 
 <div class="post-card-wrapper">
@@ -59,48 +57,11 @@ const absoluteUrl = new URL(href, siteConfig.url).href;
       </div>
     </a>
   </Card>
-  <ShareButtons
-    url={absoluteUrl}
-    title={post.data.title}
-    class="post-card__share"
-  />
 </div>
 
 <style>
   .post-card-wrapper {
-    position: relative;
     height: 100%;
-  }
-
-  /*
-   * A sibling of <Card>, not a child of it — Card.astro sets
-   * overflow-hidden for its rounded corners, which would clip the share
-   * dropdown's menu (it opens below the trigger and can extend past the
-   * card's own bounds). Positioning it here, relative to this wrapper
-   * instead of the card, keeps the menu unclipped while still visually
-   * sitting in the cover image's corner.
-   */
-  :global(.post-card__share) {
-    position: absolute;
-    top: calc(var(--spacing) * 1.5);
-    right: calc(var(--spacing) * 1.5);
-    z-index: 10;
-  }
-
-  :global(.post-card__share .share-buttons__trigger) {
-    background-color: rgba(11, 15, 13, 0.55);
-    color: #f4f2ed;
-    border-radius: 999px;
-    backdrop-filter: blur(2px);
-  }
-
-  :global(.post-card__share .share-buttons__trigger:hover) {
-    background-color: rgba(11, 15, 13, 0.75);
-    color: #f4f2ed;
-  }
-
-  :global(.post-card__share .share-buttons__label) {
-    display: none;
   }
 
   .post-card {

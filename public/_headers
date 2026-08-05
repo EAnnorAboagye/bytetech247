@@ -29,3 +29,27 @@
 
 /guides-fixes/*.md
   Content-Type: text/markdown; charset=utf-8
+
+# Cloudflare Workers Static Assets' own default is `Cache-Control: public,
+# max-age=0, must-revalidate` for every file — confirmed against Cloudflare's
+# own docs, and against this repo's real output (astro build hashes every
+# filename under /_astro/ from its content, e.g. cover.DgWOchFO_2cbwvi.avif,
+# BaseLayout.DiB1IdQ3.css), which means the browser was forced to revalidate
+# genuinely immutable, content-addressed assets on every single visit. A
+# content change always produces a new filename, so a one-year immutable
+# cache is safe here specifically because of that hashing, not just because
+# the files are "usually" static (2026-08-05, GTmetrix "efficient cache
+# policy" finding).
+/_astro/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Self-hosted fonts aren't filename-hashed (plex-sans-400.woff2, not a
+# content hash), so this is a weaker guarantee than /_astro/* above — a
+# font file changing without a filename change would serve stale until the
+# cache expires. Accepted deliberately: self-hosted webfonts essentially
+# never change post-launch, and this is standard practice for the same
+# reason (same tradeoff makes, e.g., Google Fonts' own CDN cache for a
+# year). If a font is ever swapped, rename the file to bust this cache
+# rather than relying on it expiring on its own.
+/fonts/*
+  Cache-Control: public, max-age=31536000, immutable
