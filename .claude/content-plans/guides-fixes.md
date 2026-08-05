@@ -108,8 +108,8 @@ Replaced with a verified, dogfooded, platform-level (not Astro-version-dependent
 
 ### 9. Fix astro-mermaid Diagrams Breaking Under Astro 7
 
-- Status: pending
-- Slug: -
+- Status: written
+- Slug: fix-astro-mermaid-diagrams-breaking-astro-7
 - Search Intent / Signal: [confirmed, verbatim] `markdown.remarkPlugins/rehypePlugins/remarkRehype are set, but your satteri processor doesn't run them.`
 - Structural Problem: astro-mermaid's remark transform only registers itself when `markdown.processor` resolves to the legacy `unified()` processor. Under Astro 7's Sätteri default that check never passes, so the plugin never runs — with no error or warning of its own — and ` ```mermaid ` code fences render as plain, unstyled code blocks instead of diagrams.
 - Source: [Feature request: Support Astro 7 Sätteri markdown processor (#71)](https://github.com/joesaby/astro-mermaid/issues/71), opened 2026-06-24, closed via PR #72.
@@ -117,12 +117,13 @@ Replaced with a verified, dogfooded, platform-level (not Astro-version-dependent
 
 ### 10. Fix Astro 7 Duplicate Heading IDs From Sätteri Bug
 
-- Status: pending
-- Slug: -
-- Search Intent / Signal: [paraphrased] No verbatim error string — this is a silent-corruption bug (duplicate or incorrect `id` attributes on rendered headings), not a thrown exception or console warning.
-- Structural Problem: `satteriHeadingIdsPlugin()` runs automatically as part of Astro 7's default pipeline, but wasn't written to be idempotent. A project that also invokes it manually — for example, to feed a custom table-of-contents component — runs it twice on the same tree, producing duplicate or incorrect heading `id` values instead of one clean pass.
-- Source: commit [`3b5e994`](https://github.com/withastro/astro) ("fix(satteri): Make heading-ids plugin idempotent"), part of PR #17165, dated 2026-06-23. Confirmed the commit and its title/intent via search; did not independently open the full diff, so the mechanism above is inferred from the commit message rather than fully verified — re-check the diff before drafting.
-- Interlinks: series sibling; relevant to anyone building a custom TOC/heading-anchor component on top of Astro 7's default Markdown output.
+- Status: written
+- Slug: fix-astro-7-satteri-duplicate-heading-ids
+- Search Intent / Signal: [paraphrased] No verbatim error string, still true after verification — this is a silent-corruption bug (duplicate entries in a page's `headings` metadata array), not a thrown exception or console warning.
+- Structural Problem (corrected while drafting, 2026-08-05): the original guess above was wrong and has been replaced. Opened the real diff this time via direct fetch of `withastro/astro` commit `3b5e994`. The actual bug: Sätteri's heading-ids plugin pushed each heading directly onto the shared `astro.headings` array (`astro?.headings.push({ depth, slug, text })`). When another integration - the changeset names **Starlight** specifically - runs its own heading-ID pass before Sätteri's anchor-link pass touches the same page, the second pass appends onto whatever the first pass already put there instead of replacing it, producing duplicate entries in the page's heading metadata (used for tables of contents / sidebar anchors). Not a "calling the plugin manually" scenario as originally guessed - it's a two-integration interaction.
+- Source: [PR #17165](https://github.com/withastro/astro/pull/17165), "fix(satteri): Make heading-ids plugin idempotent," merged 2026-06-23. Verbatim changeset quote (fetched directly): "Fixes headings being listed twice in a page's `headings` metadata when an integration (such as Starlight) assigns heading IDs with its own heading pass before adding anchor links." Diff confirmed: `packages/markdown/satteri/src/satteri-processor.ts`, before/after both fetched directly.
+- Interlinks: series sibling; relevant to anyone running Starlight or another heading-ID-assigning integration alongside Sätteri.
+- Note (dogfooded, found while drafting): this repo's own `node_modules/@astrojs/markdown-satteri@0.3.4` was grepped directly and already contains the fixed code (`const headings = []` collected locally, then `astro.headings = headings` assigned once) - live confirmation this repo runs a patched version, not just a claim from the changelog.
 
 ---
 
@@ -137,6 +138,6 @@ Replaced with a verified, real, reproducible error: **[Fix Astro InvalidContentE
 
 This is **not an Astro 7 upgrade regression** (it's evergreen Zod/content-collection validation behavior), so per user decision it ships as a standalone `guides-fixes` post with no `series`/`seriesOrder` — it never filled a numbered slot in this pillar and isn't counted in the 10 clusters above.
 
-### Pillar status summary (2026-08-05)
+### Pillar status summary (2026-08-05, updated)
 
-10/10 cluster slots filled: Clusters 1, 2, 4 written; Clusters 3, 5-10 pending (well-sourced, ready to hand to `write-article` one at a time). Cluster 8 (`#17371`, pnpm) is the only sub-issue still open upstream as of this research — highest timeliness value if writing order matters. Two ruled-out research leads are worth a future targeted pass rather than reuse now: Expressive Code's Sätteri HAST-plugin requirement (couldn't get past a 403 on `expressive-code.com` today) and a possible `smartPunctuation` default-behavior cluster (only pre-Sätteri, out-of-window issues turned up; no in-window verbatim source found).
+10/10 cluster slots filled and **all 10 written**. Clusters 1, 2, 4 were already published before this pillar-cluster pass; Clusters 3, 5, 6, 7, 8 were drafted and published in the first work session; Clusters 9 and 10 were drafted and published in a follow-up session after user approval. Cluster 8 (`#17371`, pnpm) remains the only sub-issue still open upstream as of this research. Cluster 10's original premise was corrected during drafting after opening the real PR diff (see its entry above) - the mechanism is a Starlight/Sätteri heading-metadata interaction, not a "call the plugin twice" scenario as first guessed. This pillar is now complete; a future `pillar-cluster` run for `guides-fixes` should research a **new** pillar rather than add more slots here. Two ruled-out research leads are worth a future targeted pass rather than reuse: Expressive Code's Sätteri HAST-plugin requirement (couldn't get past a 403 on `expressive-code.com` today) and a possible `smartPunctuation` default-behavior cluster (only pre-Sätteri, out-of-window issues turned up; no in-window verbatim source found).
