@@ -156,7 +156,7 @@ Research window note: most sources below fall inside the strict last-90-days win
 
 **Astro 7's Vite 8 Upgrade: Rolldown, Oxc, and Lightning CSS Breaking Changes**
 
-- Status: approved
+- Status: written
 - Slug: -
 - Why pillar: Astro 7.1.3 (this repo's own pinned version) requires `vite@^8.0.13` — confirmed directly in `package-lock.json`, not assumed. Vite 8 is Vite's biggest architectural change in years: a full swap from esbuild+Rollup to a unified Rust toolchain (Rolldown/Oxc/Lightning CSS), with real, dated breaking changes hitting real Astro/Tailwind/Vite projects throughout the research window — structurally broad enough for 10 distinct, non-overlapping sub-issues without stretching.
 
