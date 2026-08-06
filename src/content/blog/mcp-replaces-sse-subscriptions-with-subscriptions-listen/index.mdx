@@ -1,0 +1,64 @@
+---
+title: "MCP Replaces SSE Subscriptions With subscriptions/listen"
+description: "The 2026-07-28 MCP spec replaces the SSE GET endpoint with an opt-in subscriptions/listen stream. Clients now request each notification type explicitly."
+date: 2026-08-06
+category: ai-productivity
+tags: ["mcp", "model-context-protocol", "agents", "streaming"]
+relatedSlugs: ["mcp-removes-sse-resumability"]
+coverImage: "./cover.png"
+coverImageAlt: "A terminal window showing a real MCP notification sent over a subscriptions/listen stream: notifications/tools/list_changed"
+faq:
+  - question: "Do I still get notified about every change automatically?"
+    answer: "No, and that is the actual change here. The old SSE GET connection delivered every server-to-client notification by default. subscriptions/listen requires explicit opt-in per notification type (toolsListChanged, promptsListChanged, resourcesListChanged, resourceSubscriptions); a client that opens the stream without opting into a type won't receive notifications of that type."
+  - question: "Does the subscription persist if the stream disconnects?"
+    answer: "No. Subscriptions last only while the subscriptions/listen stream stays open. A dropped connection means the subscription is gone, not paused; the client needs to reopen the stream and re-declare its opted-in types."
+---
+
+## Quick Answer
+
+The MCP 2026-07-28 specification replaces the old SSE GET endpoint for server-to-client notifications with `subscriptions/listen`, a single long-lived POST-response stream. Unlike the old model, notifications aren't delivered by default: clients must opt into specific types (`toolsListChanged`, `promptsListChanged`, `resourcesListChanged`, `resourceSubscriptions`) when opening the stream, or they simply don't arrive.
+
+## What's actually changing
+
+The specification changelog states it directly:
+
+> "Introduced `subscriptions/listen` as a single long-lived POST-response stream for opted-in server-to-client change notifications; clients opt into specific types (`toolsListChanged`, `promptsListChanged`, `resourcesListChanged`, `resourceSubscriptions`)"
+
+The mechanics of a delivered notification are unchanged in shape, still a standard JSON-RPC notification, sent over the stream once a server's list actually changes:
+
+```json title="a real notification delivered over subscriptions/listen"
+{
+  "jsonrpc": "2.0",
+  "method": "notifications/tools/list_changed"
+}
+```
+
+What changed is delivery, not payload shape: this notification only arrives if the client opened a `subscriptions/listen` stream and explicitly opted into `toolsListChanged`. A client that assumed every notification type arrived automatically, the old SSE behavior, silently stops receiving the types it never opted into.
+
+## Structural Comparison Matrix
+
+| Operational Aspect                 | Before (SSE GET endpoint)          | After (subscriptions/listen)                     |
+| :--------------------------------- | :--------------------------------- | :----------------------------------------------- |
+| **Delivery default**               | All notification types, implicitly | Opt-in per type, explicitly                      |
+| **Persistence across disconnects** | N/A                                | Subscription lasts only while the stream is open |
+| **Connection model**               | Persistent SSE GET                 | Single long-lived POST-response stream           |
+
+## Fix it: opt into every type the client actually needs
+
+<Callout type="warning" title="A silently missing notification is easy to miss">
+  If a client used to react to `tools/list_changed` without ever explicitly
+  requesting it, migrating to `subscriptions/listen` without opting into
+  `toolsListChanged` means that handler simply stops firing, with no error to
+  explain why. Audit every notification type the client logic depends on before
+  migrating, not just the connection mechanism.
+</Callout>
+
+```bash title="find notification handlers to cross-check against opt-in types"
+grep -rn "list_changed\|resourceSubscriptions" --include="*.ts" --include="*.py" .
+```
+
+For each handler found, confirm the client explicitly opts into the corresponding type (`toolsListChanged`, `promptsListChanged`, `resourcesListChanged`, or `resourceSubscriptions`) when opening the `subscriptions/listen` stream, and reopen the stream on disconnect rather than assuming the subscription survives a dropped connection.
+
+## Confirmed version
+
+Sourced from the official Model Context Protocol specification changelog, 2026-07-28 revision, published 2026-07-28, including a real notification payload example from the current specification's tools documentation. Browse more posts like this in the [AI Productivity](/ai-productivity) archive.

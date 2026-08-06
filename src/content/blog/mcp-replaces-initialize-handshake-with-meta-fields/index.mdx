@@ -1,0 +1,78 @@
+---
+title: "MCP Replaces initialize Handshake With _meta Fields"
+description: "The 2026-07-28 MCP spec removes the initialize handshake. Every request now carries protocol version and capabilities in _meta fields instead."
+date: 2026-08-06
+category: ai-productivity
+tags: ["mcp", "model-context-protocol", "agents", "api"]
+relatedSlugs: ["mcp-removes-protocol-level-sessions"]
+coverImage: "./cover.png"
+coverImageAlt: "A terminal window showing a real MCP 2026-07-28 request with protocol version and client capabilities carried in the _meta field instead of an initialize handshake"
+faq:
+  - question: "Does every single request need the full _meta block, or just the first one?"
+    answer: "Every request, per the 2026-07-28 spec, since there's no longer a persistent handshake to negotiate once and trust for the rest of a session. Protocol version and capabilities are evaluated per-request, which is the direct consequence of the protocol becoming stateless."
+  - question: "What happens if a client sends a protocol version the server doesn't support?"
+    answer: "The server returns UnsupportedProtocolVersionError (tracked under SEP-2575), including the protocol revisions it does support, so the client can retry a mutually supported version in place rather than failing without a path forward."
+---
+
+## Quick Answer
+
+The MCP 2026-07-28 specification removes the `initialize`/`notifications/initialized` handshake entirely. Protocol version and client capabilities now travel in every request's `_meta` field (`io.modelcontextprotocol/protocolVersion`, `io.modelcontextprotocol/clientCapabilities`), not negotiated once at connection start. A client or server built around "negotiate once, trust it for the session" needs to move that negotiation into per-request `_meta` handling instead.
+
+## What's actually changing
+
+The specification changelog states it directly:
+
+> "Removed `initialize`/`notifications/initialized` handshake; requests now carry protocol version and capabilities in `_meta` (`io.modelcontextprotocol/protocolVersion`, `io.modelcontextprotocol/clientCapabilities`); version mismatches return `UnsupportedProtocolVersionError`"
+
+This follows directly from [the removal of protocol-level sessions](/ai-productivity/mcp-removes-protocol-level-sessions/): if there's no persistent session, there's no connection-scoped handshake result to hold onto either. Every request has to be self-describing.
+
+A real request under the new shape:
+
+```json title="tools/call request with protocol version and capabilities in _meta"
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/call",
+  "params": {
+    "name": "search",
+    "arguments": { "query": "stateless MCP" },
+    "_meta": {
+      "io.modelcontextprotocol/protocolVersion": "2026-07-28",
+      "io.modelcontextprotocol/clientInfo": {
+        "name": "example-client",
+        "version": "1.0.0"
+      },
+      "io.modelcontextprotocol/clientCapabilities": {
+        "extensions": {}
+      }
+    }
+  }
+}
+```
+
+## Structural Comparison Matrix
+
+| Operational Aspect                  | Before (initialize handshake)            | After (2026-07-28+)                                                                   |
+| :---------------------------------- | :--------------------------------------- | :------------------------------------------------------------------------------------ |
+| **When negotiation happens**        | Once, at connection start                | Every request                                                                         |
+| **Where version/capabilities live** | Handshake response, held for the session | `_meta.io.modelcontextprotocol/protocolVersion` and `clientCapabilities` on each call |
+| **Version mismatch behavior**       | Handshake failure                        | `UnsupportedProtocolVersionError`, listing supported revisions                        |
+
+## Fix it: move negotiation into per-request \_meta
+
+<Callout
+  type="warning"
+  title="Handle UnsupportedProtocolVersionError explicitly"
+>
+  Since the server's error response lists the revisions it actually supports, a
+  client should retry with a mutually supported version rather than treating any
+  mismatch as a hard failure. Skipping that retry logic means a client that only
+  speaks an older revision fails outright against a server that could have
+  served it a compatible version.
+</Callout>
+
+Any code that previously stored a "session established" flag after a successful `initialize` call, then skipped re-sending capabilities on later calls, needs that flag and the associated shortcut removed. Every outgoing request needs the `_meta` block populated fresh, not conditionally based on connection state that no longer exists.
+
+## Confirmed version
+
+Sourced from the official Model Context Protocol specification changelog, 2026-07-28 revision, published 2026-07-28, including the real example request shape from the spec's own migration documentation. Browse more posts like this in the [AI Productivity](/ai-productivity) archive.

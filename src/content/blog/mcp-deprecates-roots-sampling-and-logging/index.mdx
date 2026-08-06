@@ -1,0 +1,65 @@
+---
+title: "MCP Deprecates Roots, Sampling, and Logging"
+description: "The 2026-07-28 MCP spec deprecates Roots, Sampling, and Logging with a 12-month runway. Each has a real migration path: config, MRTR, and stderr/OTel."
+date: 2026-08-06
+category: ai-productivity
+tags: ["mcp", "model-context-protocol", "agents", "deprecation"]
+relatedSlugs:
+  [
+    "mcp-removes-ping-and-logging-setlevel-methods",
+    "mcp-requires-resulttype-on-every-result",
+  ]
+coverImage: "./cover.png"
+coverImageAlt: "A terminal window showing the verbatim MCP 2026-07-28 changelog entry: Roots, Sampling, and Logging features deprecated, suggested migrations provided"
+faq:
+  - question: "Do I need to migrate off these three features immediately?"
+    answer: "No. The spec's own governance policy guarantees a minimum twelve-month deprecation window, measured from the 2026-07-28 release, before removal is even eligible. There's a real runway; this is a planning notice, not an urgent break."
+  - question: "Is this the same as the ping/logging/setLevel method removal?"
+    answer: "Related but distinct. The setLevel removal is a Major Change, already effective, that eliminates one specific RPC. This deprecation is a broader, feature-level notice covering Roots and Sampling too, on the longer twelve-month clock. Logging as a feature area is touched by both, from different angles."
+---
+
+## Quick Answer
+
+The MCP 2026-07-28 specification deprecates three feature areas: Roots, Sampling, and Logging. All three keep working for at least twelve months from this release, per the spec's own deprecation policy, so there's no forced break yet. Each has a real suggested migration: Roots to tool parameters, resource URIs, or config; Sampling to the new Multi Round-Trip Requests pattern; Logging to stderr and OpenTelemetry.
+
+## What's actually changing, and the real migration path for each
+
+The specification changelog states the deprecation plainly:
+
+> "Roots, Sampling, and Logging features deprecated; suggested migrations provided"
+
+Each deprecated feature has a distinct, real replacement, not a vague "figure it out later":
+
+- **Roots**: move to tool parameters, resource URIs, or plain configuration instead of the dedicated Roots mechanism.
+- **Sampling**: replaced by [the Multi Round-Trip Requests pattern](/ai-productivity/mcp-requires-resulttype-on-every-result/) (tracked under SEP-2322). A server that used to initiate a sampling call back to the client now returns an `InputRequiredResult` carrying `inputRequests`, and the client gathers answers and re-issues the original call with `inputResponses`, the same mechanism this pillar's `resultType` post covers in depth.
+- **Logging**: move to stderr and OpenTelemetry instead of the protocol-level logging feature, which connects to [the removal of the `logging/setLevel` method](/ai-productivity/mcp-removes-ping-and-logging-setlevel-methods/) already covered in this pillar.
+
+## Structural Comparison Matrix
+
+| Feature      | Deprecated Mechanism             | Suggested Migration                               |
+| :----------- | :------------------------------- | :------------------------------------------------ |
+| **Roots**    | Dedicated Roots protocol feature | Tool parameters, resource URIs, or config         |
+| **Sampling** | Server-initiated sampling calls  | Multi Round-Trip Requests (`InputRequiredResult`) |
+| **Logging**  | Protocol-level logging feature   | stderr and OpenTelemetry                          |
+
+## Fix it: audit which of the three an implementation actually uses
+
+<Callout
+  type="tip"
+  title="Twelve months is a planning window, not a reason to wait"
+>
+  There's no forced deadline yet, but the migrations here are real architectural
+  changes, especially Sampling's move to Multi Round-Trip Requests. Auditing
+  now, while there's no time pressure, is a better use of the runway than
+  starting the migration in month eleven.
+</Callout>
+
+```bash title="find usage of the three deprecated features"
+grep -rln "\"method\": \"roots/\|\"method\": \"sampling/\|logging/" --include="*.py" --include="*.ts" --include="*.mjs" .
+```
+
+For each match, confirm which of the three features is actually in use and start planning against its specific suggested migration rather than treating all three as one generic "logging and stuff" cleanup task; the three replacements are genuinely different in shape.
+
+## Confirmed version
+
+Sourced from the official Model Context Protocol specification changelog, 2026-07-28 revision, published 2026-07-28, and the specification's governance policy defining the minimum twelve-month deprecation window. Browse more posts like this in the [AI Productivity](/ai-productivity) archive.

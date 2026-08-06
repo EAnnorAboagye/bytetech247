@@ -1,0 +1,73 @@
+---
+title: "MCP Removes Protocol-Level Sessions (Mcp-Session-Id)"
+description: "The 2026-07-28 MCP spec eliminates the Mcp-Session-Id header. Cross-call state now needs explicit, server-minted handles passed as tool arguments."
+date: 2026-08-06
+category: ai-productivity
+tags: ["mcp", "model-context-protocol", "agents", "api"]
+coverImage: "./cover.png"
+coverImageAlt: "A terminal window showing the verbatim MCP 2026-07-28 changelog entry: eliminated Mcp-Session-Id header from Streamable HTTP transport, servers use explicit handles for cross-call state"
+faq:
+  - question: "Do I need to remove the Mcp-Session-Id header manually from my server?"
+    answer: "Yes, if your server implementation reads or sets that header for routing or state lookup. The 2026-07-28 spec eliminates it from the Streamable HTTP transport entirely, so code that depends on it needs the explicit-handle pattern instead, not a header rename."
+  - question: "Is a handle the same thing as an API key or auth token?"
+    answer: "No. A handle from this pattern (SEP-2567) identifies a piece of server-side state across calls, like a shopping cart or a browser session, not an identity or credential. It should be opaque and unguessable, but it isn't a security boundary the way an auth token is."
+---
+
+## Quick Answer
+
+The MCP 2026-07-28 specification eliminates the `Mcp-Session-Id` header and protocol-level sessions from the Streamable HTTP transport. Servers that held state across tool calls using that header need to switch to explicit, server-minted handles instead: mint an opaque identifier from one tool call, return it in the result, and have the client pass it back as an ordinary argument on later calls.
+
+## What's actually changing
+
+The MCP specification changelog for the 2026-07-28 revision states it directly:
+
+> "Eliminated `Mcp-Session-Id` header from Streamable HTTP transport; list endpoints no longer vary per-connection; servers use explicit handles for cross-call state"
+
+This is tracked as SEP-2567, "Sessionless MCP via Explicit State Handles." The reasoning: implicit, transport-level session state is invisible to the model and to anyone debugging a multi-step interaction. Making state explicit, an ordinary string the model actually sees and passes around, is the same pattern HTTP APIs have used for years: a `basket_id`, a `browser_id`, minted once and referenced afterward.
+
+## Structural Comparison Matrix
+
+| Operational Aspect               | Before (protocol-level sessions)    | After (2026-07-28+)                                     |
+| :------------------------------- | :---------------------------------- | :------------------------------------------------------ |
+| **Where cross-call state lives** | Implicit, keyed by `Mcp-Session-Id` | Explicit, an ordinary handle string                     |
+| **Visibility to the model**      | Hidden in transport metadata        | Visible, passed as a normal tool argument               |
+| **List endpoint behavior**       | Could vary per connection           | No longer varies per connection                         |
+| **Handle shape (recommended)**   | N/A                                 | Opaque, e.g. `bsk_a1b2c3`, not `cart_user42_2026-03-11` |
+
+## Fix it: mint and pass an explicit handle
+
+<Callout type="warning" title="Keep handles opaque, not descriptive">
+  A handle that encodes internal structure invites clients to parse it or models
+  to guess adjacent ones. Use an opaque token, not something human-readable like
+  a username or a date embedded in the string.
+</Callout>
+
+```json title="before: implicit session state (removed 2026-07-28)"
+// Client relied on the Mcp-Session-Id header to keep cart state
+// scoped to this connection across multiple tool calls.
+```
+
+```json title="after: explicit handle, minted once"
+{
+  "content": [{ "type": "text", "text": "Cart created." }],
+  "structuredContent": {
+    "basket_id": "bsk_a1b2c3"
+  }
+}
+```
+
+```json title="after: the model passes the handle back on later calls"
+{
+  "name": "add_item_to_cart",
+  "arguments": {
+    "basket_id": "bsk_a1b2c3",
+    "item": "widget-42"
+  }
+}
+```
+
+The server mints `basket_id` once, from whatever tool call first needs a piece of persistent state, and returns it in `structuredContent`. Every subsequent tool call that touches the same state passes it back as an ordinary string argument, no different from any other parameter. A server implementation with connection-scoped in-memory state needs to move that state into whatever store the handle actually looks up, not just stop reading the removed header.
+
+## Confirmed version
+
+Sourced from the official Model Context Protocol specification changelog, 2026-07-28 revision, published 2026-07-28, and SEP-2567's own specification text for the explicit-handle pattern's recommended shape. Browse more posts like this in the [AI Productivity](/ai-productivity) archive.

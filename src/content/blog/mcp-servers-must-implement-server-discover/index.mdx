@@ -1,0 +1,56 @@
+---
+title: "MCP Servers Must Now Implement server/discover"
+description: "The 2026-07-28 MCP spec adds a required server/discover RPC. Existing servers need a handler for it before a compliant client can negotiate at all."
+date: 2026-08-06
+category: ai-productivity
+tags: ["mcp", "model-context-protocol", "agents", "api"]
+relatedSlugs: ["mcp-replaces-initialize-handshake-with-meta-fields"]
+coverImage: "./cover.png"
+coverImageAlt: "A terminal window showing the verbatim MCP 2026-07-28 changelog entry: servers must implement server/discover to advertise supported protocol versions, capabilities, and identity"
+faq:
+  - question: "Is server/discover optional for backward compatibility?"
+    answer: "No. The changelog states servers must implement it, not should. A server that predates the 2026-07-28 revision and never added this RPC has no fallback discovery path once initialize is gone, which is exactly why this is listed as a required capability, not an optional extension."
+  - question: "Does a client have to call server/discover before every other request?"
+    answer: "Clients may call it before other requests, per the spec's own wording, which reads as a recommendation rather than a hard requirement on every single call. Confirm the exact calling convention your SDK expects against the current spec text rather than assuming a fixed rule from this summary."
+---
+
+## Quick Answer
+
+The MCP 2026-07-28 specification adds a mandatory `server/discover` RPC that every compliant server must implement, advertising its supported protocol versions, capabilities, and identity. This is the replacement discovery path for [the removed `initialize` handshake](/ai-productivity/mcp-replaces-initialize-handshake-with-meta-fields/): any existing server implementation needs a new handler added for this method before a 2026-07-28-compliant client can safely negotiate with it.
+
+## What's actually changing
+
+The specification changelog states it directly:
+
+> "Added `server/discover` RPC: Servers must implement this to advertise their supported protocol versions, capabilities, and identity; clients may call before other requests"
+
+This closes the gap left by removing `initialize`. Previously, a client learned a server's supported version and capabilities as part of the connection handshake. With that handshake gone, `server/discover` is the explicit, callable replacement, a request a client can make at any point (typically first) to learn what it's talking to.
+
+<Callout type="warning" title="No fallback path if this handler is missing">
+  A server built before the 2026-07-28 revision, with no `initialize`
+  replacement added, has no discovery mechanism at all under the new spec. This
+  isn't a graceful-degradation case; it's a required capability gap that blocks
+  a compliant client from negotiating safely.
+</Callout>
+
+## Structural Comparison Matrix
+
+| Operational Aspect                          | Before (initialize handshake)             | After (2026-07-28+)                             |
+| :------------------------------------------ | :---------------------------------------- | :---------------------------------------------- |
+| **How a client learns server capabilities** | Connection-start handshake response       | Explicit `server/discover` call                 |
+| **Is this required on the server?**         | `initialize` was implicit to the protocol | `server/discover` is an explicit, mandatory RPC |
+| **When a client can call it**               | N/A, automatic at connection              | Any time, typically before other requests       |
+
+## Fix it: add the required handler
+
+The exact response schema for `server/discover` wasn't confirmed from a primary source with full field-level detail here; check the current MCP specification text directly for the precise shape before implementing. What's confirmed is the requirement itself and its purpose: the response needs to communicate supported protocol versions, server capabilities, and server identity, the same three categories a pre-2026-07-28 `initialize` response would have returned from the server side.
+
+```bash title="audit existing servers for this gap"
+grep -rln "\"method\": \"initialize\"" --include="*.py" --include="*.ts" --include="*.mjs" .
+```
+
+If a server codebase only ever implemented `initialize` and never added a `server/discover` handler, that's the concrete gap to close. Cross-reference against the current SDK version for your language; the official Tier 1 SDKs updated for this revision should already expose the right interface to implement against, rather than hand-rolling the RPC from scratch.
+
+## Confirmed version
+
+Sourced from the official Model Context Protocol specification changelog, 2026-07-28 revision, published 2026-07-28. The requirement itself and its stated purpose are confirmed verbatim; the exact response field names weren't independently verified against a full schema reference, so confirm those against the live spec before implementing. Browse more posts like this in the [AI Productivity](/ai-productivity) archive.

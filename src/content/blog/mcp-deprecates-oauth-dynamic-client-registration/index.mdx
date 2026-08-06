@@ -1,0 +1,60 @@
+---
+title: "MCP Deprecates OAuth Dynamic Client Registration"
+description: "The 2026-07-28 MCP spec deprecates OAuth DCR for Client ID Metadata Documents. A stable HTTPS URL becomes the client_id instead of a minted registration."
+date: 2026-08-06
+category: ai-productivity
+tags: ["mcp", "model-context-protocol", "oauth", "authorization"]
+coverImage: "./cover.png"
+coverImageAlt: "A terminal window showing the verbatim MCP 2026-07-28 changelog entry: OAuth 2.0 Dynamic Client Registration Protocol deprecated in favor of Client ID Metadata Documents"
+faq:
+  - question: "Does this affect servers that only ever pre-register a single known client?"
+    answer: "No. This deprecation is specifically about Dynamic Client Registration, the flow where a server mints a new client_id at runtime for clients it hasn't seen before. A fixed, pre-registered client_id shared out of band never used DCR in the first place and isn't affected."
+  - question: "Do I need to host the metadata document myself?"
+    answer: "Yes. A Client ID Metadata Document is a JSON document hosted at a stable HTTPS URL the client itself controls, and that URL becomes the OAuth client_id directly. This is a genuine hosting requirement, not just a config change."
+---
+
+## Quick Answer
+
+The MCP 2026-07-28 specification deprecates the OAuth 2.0 Dynamic Client Registration Protocol (RFC 7591) in favor of Client ID Metadata Documents (CIMD, tracked under SEP-991). Instead of an authorization server minting a new `client_id` at registration time, the client hosts a JSON metadata document at a stable HTTPS URL it controls, and that URL becomes the `client_id` directly. DCR still works for backward compatibility, but CIMD is now the preferred default.
+
+## What's actually changing, and why
+
+The specification changelog states the change directly:
+
+> "OAuth 2.0 Dynamic Client Registration Protocol (RFC 7591) deprecated in favor of Client ID Metadata Documents"
+
+DCR's real weakness: an authorization server minting a `client_id` for any client that asks doesn't provide a reliable way to verify who's actually asking, which makes it vulnerable to phishing-style client impersonation. CIMD flips the identity model to be web-based instead: if a client controls the domain hosting its metadata document, it controls its own identity, verified by the authorization server fetching that URL directly rather than trusting a self-reported registration.
+
+## Structural Comparison Matrix
+
+| Operational Aspect               | OAuth DCR (deprecated)                             | Client ID Metadata Documents                     |
+| :------------------------------- | :------------------------------------------------- | :----------------------------------------------- |
+| **Where `client_id` comes from** | Minted by the authorization server at registration | The client's own stable HTTPS metadata URL       |
+| **Identity verification**        | Self-reported at registration time                 | Verified by fetching the client-controlled URL   |
+| **Hosting requirement**          | None, beyond the registration call                 | Client must host a JSON document at a stable URL |
+| **Pre-registration needed**      | No, that's the point of DCR                        | No, CIMD is also stateless in this sense         |
+
+## Fix it: host a metadata document, use its URL as client_id
+
+```json title="a Client ID Metadata Document, hosted at a stable HTTPS URL"
+{
+  "client_name": "Example MCP Client",
+  "redirect_uris": ["https://client.example.com/oauth/callback"],
+  "grant_types": ["authorization_code"],
+  "token_endpoint_auth_method": "none"
+}
+```
+
+The URL where this document is hosted, for example `https://client.example.com/.well-known/oauth-client`, is what gets used as the `client_id` in authorization requests, not an ID returned by a registration call. This is a genuine architecture change for any client currently calling a DCR registration endpoint at startup: that call, and whatever code stores the resulting minted `client_id`, gets replaced by hosting a static document and referencing its own URL.
+
+<Callout type="warning" title="DCR still works, this isn't a hard break yet">
+  Dynamic Client Registration continues to function for backward compatibility
+  per the changelog, so an existing DCR-based integration isn't broken today.
+  Treat this as a signal to plan the CIMD migration, not an emergency fix,
+  unless you're building new client integrations, where CIMD should be the
+  default from the start.
+</Callout>
+
+## Confirmed version
+
+Sourced from the official Model Context Protocol specification changelog, 2026-07-28 revision, published 2026-07-28, and independent sourcing on the Client ID Metadata Documents mechanism (SEP-991) for the concrete hosting and verification model. Browse more posts like this in the [AI Productivity](/ai-productivity) archive.

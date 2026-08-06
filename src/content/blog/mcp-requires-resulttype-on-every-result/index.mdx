@@ -1,0 +1,77 @@
+---
+title: "MCP Requires resultType on Every Returned Result"
+description: "The 2026-07-28 MCP spec makes resultType mandatory on every result. The old server-initiated request pattern is replaced by an input_required result."
+date: 2026-08-06
+category: ai-productivity
+tags: ["mcp", "model-context-protocol", "agents", "api"]
+coverImage: "./cover.png"
+coverImageAlt: "A real MCP InputRequiredResult example showing resultType input_required, an inputRequests confirmation elicitation, and an opaque requestState value"
+faq:
+  - question: "What happens to a server that returns a result without resultType?"
+    answer: "A 2026-07-28-compliant client should treat that as malformed, since the field is now mandatory on every result, not just the new interim ones. This is the kind of change that breaks silently until a client actually enforces the field, so testing against a strict client matters more than testing against a lenient one."
+  - question: "Is requestState something the client is meant to inspect or modify?"
+    answer: "No. It's described as an opaque blob the client must echo back unmodified. Treat it the same way you'd treat an opaque pagination cursor: pass it through exactly as received, never parse or alter it."
+---
+
+## Quick Answer
+
+The MCP 2026-07-28 specification makes `resultType` mandatory on every result a server returns: `"complete"` for an ordinary finished result, `"input_required"` for a new interim result type. This replaces the old pattern of a server initiating a mid-call request back to the client; instead, a call to `tools/call`, `prompts/get`, or `resources/read` can return an `InputRequiredResult` carrying `inputRequests` the client must fulfill, then re-issue the call with the answers.
+
+## What's actually changing
+
+The specification changelog states both halves of this change:
+
+> "All results now carry mandatory `resultType`: `complete` or `input_required`"
+
+> "Multi Round-Trip Requests (MRTR) pattern replaces server-initiated requests; servers return `InputRequiredResult` with `resultType: input_required` and `inputRequests` field"
+
+A real example of the interim result shape:
+
+```json title="a real InputRequiredResult, asking the client to confirm before continuing"
+{
+  "resultType": "input_required",
+  "inputRequests": {
+    "confirm": {
+      "type": "elicitation",
+      "message": "Delete 3 files?",
+      "schema": { "type": "boolean" }
+    }
+  },
+  "requestState": "eyJzdGVwIjoxLCJmaWxlcyI6WyJhIiwiYiIsImMiXX0="
+}
+```
+
+`inputRequests` is a map of server-initiated requests the client must resolve. `requestState` is an opaque blob the client echoes back unmodified on the follow-up call, carrying whatever internal progress state the server needs to resume, without the client needing to understand its contents.
+
+## Structural Comparison Matrix
+
+| Operational Aspect                     | Before (pre-2026-07-28)                     | After (2026-07-28+)                                          |
+| :------------------------------------- | :------------------------------------------ | :----------------------------------------------------------- |
+| **`resultType` field**                 | Not present on ordinary results             | Mandatory: `"complete"` or `"input_required"`                |
+| **Mid-call server-initiated requests** | A separate server-to-client request pattern | An `InputRequiredResult` returned from the original call     |
+| **Resuming after input is provided**   | N/A                                         | Client re-issues the call, echoing `requestState` unmodified |
+
+## Fix it: handle both branches, on both ends
+
+<Callout
+  type="danger"
+  title="This breaks both servers and clients that skip it"
+>
+  A server that doesn't set `resultType` on its ordinary results is sending
+  malformed responses under this spec. A client that doesn't branch on
+  `resultType: "input_required"` will either crash on the unfamiliar shape or
+  silently treat an interim result as a final one, neither of which is correct.
+</Callout>
+
+```json title="ordinary result: resultType now required"
+{
+  "resultType": "complete",
+  "content": [{ "type": "text", "text": "3 files deleted." }]
+}
+```
+
+Client-side handling needs an explicit branch: check `resultType`, and if it's `"input_required"`, resolve every entry in `inputRequests`, then re-issue the original call with the answers and the untouched `requestState`. Server-side, every result-returning code path needs the field added, not just the new interim-result path.
+
+## Confirmed version
+
+Sourced from the official Model Context Protocol specification changelog, 2026-07-28 revision, published 2026-07-28, including a real `InputRequiredResult` example from the current specification. Browse more posts like this in the [AI Productivity](/ai-productivity) archive.
