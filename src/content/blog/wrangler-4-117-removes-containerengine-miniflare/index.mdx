@@ -1,0 +1,72 @@
+---
+title: "Wrangler 4.117 Drops containerEngine From Miniflare"
+description: "Wrangler 4.117 removes containerEngine from unstable_getMiniflareWorkerOptions. Custom local-testing harnesses reading it now get undefined, silently."
+date: 2026-08-06
+category: dev-tools
+tags: ["wrangler", "miniflare", "cloudflare-workers", "testing"]
+coverImage: "./cover.png"
+coverImageAlt: "A terminal window showing the verbatim changelog entry: Remove containerEngine from the worker options returned by unstable_getMiniflareWorkerOptions"
+faq:
+  - question: "Does this affect a normal wrangler dev session that doesn't touch containers?"
+    answer: "No. This only affects code that calls the unstable_getMiniflareWorkerOptions API directly, which is a custom local-testing harness pattern, not the default wrangler dev flow. A project using Containers through wrangler.toml/jsonc bindings without a custom harness is unaffected."
+  - question: "Does Wrangler throw an error when containerEngine is missing from the returned options?"
+    answer: "No, and that is the actual risk here. Reading a field that no longer exists on a JavaScript object returns undefined instead of throwing, so code built against the old shape keeps running with a silently wrong value rather than failing loudly at the point of the change."
+---
+
+## Quick Answer
+
+Wrangler 4.117.0 removes `containerEngine` from the object `unstable_getMiniflareWorkerOptions` returns. If a custom local-testing harness reads `containerEngine` off that returned options object, it now gets `undefined` instead of a real value, with no error thrown. `containerEngine` needs to be set at the Miniflare instance level instead, not read from per-worker options.
+
+## Who this actually affects
+
+`unstable_getMiniflareWorkerOptions` is part of Wrangler's unstable Miniflare integration API: code that programmatically builds a Miniflare-backed local Worker instance, most commonly a custom Vitest or testing-harness setup that needs finer control than plain `wrangler dev` gives. `containerEngine` configures which local container runtime backs Cloudflare's Containers feature when a Worker uses container bindings.
+
+The change itself, from `cloudflare/workers-sdk`'s `packages/wrangler/CHANGELOG.md`:
+
+> "Remove `containerEngine` from the worker options returned by `unstable_getMiniflareWorkerOptions`"
+
+This shipped in `wrangler@4.117.0`, released 2026-07-31, as part of the broader Miniflare v5 upgrade bundled into that release.
+
+## Structural Comparison Matrix
+
+| Operational Aspect                | Before (Miniflare v4-era)                                                               | After (v4.117.0+)                                   |
+| :-------------------------------- | :-------------------------------------------------------------------------------------- | :-------------------------------------------------- |
+| **Where `containerEngine` lives** | Read off the per-worker options object returned by `unstable_getMiniflareWorkerOptions` | Set at the Miniflare instance level, not per-worker |
+| **Failure mode for old code**     | Field present, real value                                                               | Field absent; reads as `undefined`, no error thrown |
+| **Who is affected**               | Anyone using the plain `wrangler dev` flow: not affected                                | Custom harnesses calling the unstable API directly  |
+
+## Fix it: move the setting to the Miniflare instance
+
+<Callout type="danger" title="This fails silently, not loudly">
+  There is no thrown error, no deprecation warning printed at runtime, and no
+  type error unless your harness has strict typing on the returned shape. A
+  harness that destructures `containerEngine` off the worker options and passes
+  it along gets `undefined` and keeps running, which can mean local
+  container-backed tests silently stop using the engine you intended.
+</Callout>
+
+### Before: reading it off worker options
+
+```ts title="custom test harness (broken on 4.117+)"
+const workerOptions = await unstable_getMiniflareWorkerOptions(config);
+
+// containerEngine is now undefined here, not thrown
+const engine = workerOptions.containerEngine;
+```
+
+### After: set it on the Miniflare instance directly
+
+```ts title="custom test harness (fixed)"
+const workerOptions = await unstable_getMiniflareWorkerOptions(config);
+
+const mf = new Miniflare({
+  ...workerOptions,
+  containerEngine: "docker", // set at the instance level now
+});
+```
+
+The exact shape of the instance-level option depends on which Miniflare version your harness pins, so confirm the current constructor signature against your installed `miniflare` package version rather than copying this verbatim; the point that matters is which layer owns the setting, not the exact call shape.
+
+## Confirmed version
+
+Sourced directly from `cloudflare/workers-sdk`'s `packages/wrangler/CHANGELOG.md`, `wrangler@4.117.0`, released 2026-07-31. This one wasn't independently reproduced against a live Containers-backed harness, since that requires a container runtime and a bound Worker beyond what this post's scope covers; the changelog entry and the API's documented shape are the source. If your own harness pins an older Wrangler and hasn't hit this yet, check your `wrangler` and `miniflare` versions before upgrading past 4.117.0. Browse more posts like this in the [Dev Tools](/dev-tools) archive.

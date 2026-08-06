@@ -1,0 +1,73 @@
+---
+title: "Cloudflare Deprecates Legacy Workers KV API Routes"
+description: "Cloudflare retires /workers/namespaces/* on 2026-10-15 for /storage/kv/namespaces/*. Scripts calling the old KV REST path directly need one path change."
+date: 2026-08-06
+category: data-automation
+tags: ["cloudflare", "workers-kv", "api", "deprecation"]
+coverImage: "./cover.png"
+coverImageAlt: "A terminal window showing the verbatim Cloudflare changelog entry: the legacy Workers KV API routes under /accounts/{account_id}/workers/namespaces/* are deprecated"
+faq:
+  - question: "Does this affect a project that only uses KV through Wrangler?"
+    answer: "No, not directly. Wrangler's own KV commands (wrangler kv namespace create, wrangler kv key put, and the runtime binding itself) are Cloudflare's responsibility to keep pointed at a working endpoint. This deprecation matters to code that calls the REST API directly, outside Wrangler: a custom deploy script, a Terraform provider, or a homegrown CI step hitting the endpoint with curl or fetch."
+  - question: "Do the old and new routes behave differently?"
+    answer: "No. Cloudflare's changelog states the legacy and replacement routes are interchangeable, accepting the same request parameters and returning the same response payloads. This is a pure URL path change, not a request/response schema change."
+---
+
+## Quick Answer
+
+Cloudflare deprecated the legacy Workers KV REST API routes under `/accounts/{account_id}/workers/namespaces/*` on 2026-07-15; they stop working entirely on 2026-10-15. If any automation script, Terraform config, or CI pipeline calls that path directly, not through Wrangler, update the URL segment to `/storage/kv/namespaces/*`. The request parameters and response payloads are unchanged, so this is a one-line fix, not a rewrite.
+
+## What's actually changing
+
+Cloudflare is reorganizing its storage APIs under a unified `/storage/` namespace: Workers KV moves to `/storage/kv/`, R2 moves to `/storage/r2/`. Storage is becoming a first-class platform product, not a Workers-specific feature bolted under `/workers/`.
+
+Cloudflare's own changelog entry states it directly:
+
+> "The legacy Workers KV API routes under `/accounts/{account_id}/workers/namespaces/*` are deprecated"
+
+Published 2026-07-15, with an end-of-life date of 2026-10-15, exactly 90 days out from publication, a fairly tight window for infrastructure code that isn't actively maintained.
+
+<Callout type="info" title="Wrangler itself already handles this">
+  If your project only touches KV through `wrangler kv namespace create`,
+  `wrangler kv key put`, or the runtime binding declared in
+  `wrangler.toml`/`wrangler.jsonc`, Cloudflare's own tooling is responsible for
+  calling a working endpoint. This deprecation is only a problem for code that
+  calls the REST API directly, outside Wrangler.
+</Callout>
+
+## Structural Comparison Matrix
+
+All paths below are relative to `/accounts/{account_id}`.
+
+| Operational Aspect                | Legacy route (deprecated) | Current route              |
+| :-------------------------------- | :------------------------ | :------------------------- |
+| **Base path**                     | `/workers/namespaces/*`   | `/storage/kv/namespaces/*` |
+| **Request parameters**            | Unchanged                 | Identical to legacy        |
+| **Response payload shape**        | Unchanged                 | Identical to legacy        |
+| **Availability after 2026-10-15** | Removed                   | Active                     |
+
+## Fix it: change one URL segment
+
+```bash title="before: legacy path"
+curl -X GET \
+  "https://api.cloudflare.com/client/v4/accounts/<account_id>/workers/namespaces" \
+  -H "Authorization: Bearer <api_token>"
+```
+
+```bash title="after: current path"
+curl -X GET \
+  "https://api.cloudflare.com/client/v4/accounts/<account_id>/storage/kv/namespaces" \
+  -H "Authorization: Bearer <api_token>"
+```
+
+The same substitution applies to every route under this prefix: listing namespaces, reading/writing keys, and bulk operations all move from `/workers/namespaces/` to `/storage/kv/namespaces/` with no other change required. Grep infrastructure code for the literal string `workers/namespaces` to find every call site before the October cutoff:
+
+```bash title="find every call site before the cutoff"
+grep -rn "workers/namespaces" --include="*.tf" --include="*.sh" --include="*.mjs" .
+```
+
+This site's own `wrangler.toml` declares two real KV namespace bindings (`COUNTERS_KV`, `SESSION_KV`), so if a script here ever called the KV REST API directly against those same namespace IDs, instead of going through Wrangler, this is the exact path change it would need before 2026-10-15.
+
+## Confirmed version
+
+Sourced from Cloudflare's official changelog, "Deprecate legacy Workers KV namespace API routes," published 2026-07-15. Browse more posts like this in the [Data Automation](/data-automation) archive.

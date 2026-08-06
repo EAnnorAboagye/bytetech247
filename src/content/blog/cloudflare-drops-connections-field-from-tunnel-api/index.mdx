@@ -1,0 +1,71 @@
+---
+title: "Cloudflare Drops connections Field From Tunnel API"
+description: "Cloudflare removes the connections array from cfd_tunnel/warp_connector responses on 2026-10-05. Use the new dedicated connections endpoint instead."
+date: 2026-08-06
+category: data-automation
+tags: ["cloudflare", "zero-trust", "api", "deprecation"]
+relatedSlugs: ["cloudflare-removes-zero-trust-cidr-route-endpoints"]
+coverImage: "./cover.png"
+coverImageAlt: "A terminal window showing the real API change: the connections field is dropped from Cloudflare Tunnel and Mesh list and get responses, replaced by a dedicated endpoint"
+faq:
+  - question: "Is this the same change as the CIDR route endpoint removal?"
+    answer: "No, they're two distinct technical changes bundled into the same Cloudflare changelog post, both effective 2026-10-05. The route endpoint change affects how you address a specific route; this change affects the shape of tunnel/mesh list and get responses. Fixing one doesn't fix the other."
+  - question: "Why is Cloudflare removing this field instead of keeping it?"
+    answer: "Cloudflare's own stated reasoning: a Cloudflare Tunnel or Mesh node with many connections was inflating the response of every list and get call, since the full connection detail came back whether you needed it or not. Moving it to a dedicated endpoint means connection detail is only fetched when you actually ask for it."
+---
+
+## Quick Answer
+
+Starting 2026-10-05, Cloudflare Tunnel and Cloudflare Mesh (the `cfd_tunnel` and `warp_connector` API resources) drop the `connections` array from their list and get responses. Code reading `.connections` off a tunnel list/get call gets a missing field instead of the array it expects. Switch to the new dedicated endpoint, `GET /accounts/{account_id}/cfd_tunnel/{tunnel_id}/connections`, to fetch that same data.
+
+## What's actually changing, and why
+
+This is a distinct technical change from [the CIDR-encoded route endpoint removal](/data-automation/cloudflare-removes-zero-trust-cidr-route-endpoints/) bundled into the same Cloudflare changelog post and taking effect on the same date. That one is about how a route is addressed; this one is about what fields come back in a response.
+
+Cloudflare's own stated reasoning is a real performance problem: a Tunnel or Mesh node with many active connections was inflating the response body of every list and get call, since full connection detail came back regardless of whether the caller needed it. Splitting connection detail into its own endpoint means smaller, faster default responses, with connection detail fetched only when actually requested.
+
+The dedicated replacement endpoint, confirmed from Cloudflare's own API reference, returns connection records shaped as:
+
+```json title="GET /accounts/{account_id}/cfd_tunnel/{tunnel_id}/connections (response shape)"
+{
+  "id": "<connection uuid>",
+  "arch": "<cloudflared OS architecture>",
+  "config_version": "<remote tunnel config version>"
+}
+```
+
+## Structural Comparison Matrix
+
+| Operational Aspect                                  | Before (removed 2026-10-05)                           | After                                                  |
+| :-------------------------------------------------- | :---------------------------------------------------- | :----------------------------------------------------- |
+| **Where connection data lives**                     | Inline `connections` array on every list/get response | A dedicated `/cfd_tunnel/{tunnel_id}/connections` call |
+| **Response size for tunnels with many connections** | Inflated by full connection detail                    | Small, connection detail fetched separately            |
+| **Fields available per connection**                 | Whatever the inline array included                    | `id`, `arch`, `config_version`                         |
+
+## Fix it: call the dedicated endpoint
+
+```bash title="before: reading connections off the tunnel response"
+curl -X GET \
+  "https://api.cloudflare.com/client/v4/accounts/<account_id>/cfd_tunnel/<tunnel_id>" \
+  -H "Authorization: Bearer <api_token>"
+# .result.connections used to be here
+```
+
+```bash title="after: the dedicated connections endpoint"
+curl -X GET \
+  "https://api.cloudflare.com/client/v4/accounts/<account_id>/cfd_tunnel/<tunnel_id>/connections" \
+  -H "Authorization: Bearer <api_token>"
+```
+
+<Callout type="warning" title="Check both cfd_tunnel and warp_connector">
+  This change applies to both Cloudflare Tunnel (`cfd_tunnel`) and Cloudflare
+  Mesh (`warp_connector`) resources. If automation monitors connection health
+  for both, both call sites need the same fix, not just the more commonly used
+  Tunnel one.
+</Callout>
+
+Code that only reads other tunnel fields (name, status, created date) and never touches `.connections` needs no change at all; audit for the literal field access before assuming a rewrite is required.
+
+## Confirmed version
+
+Sourced from Cloudflare's official changelog, "Zero Trust Networks route endpoints and Cloudflare Tunnel connections field retiring on October 5, 2026," published 2026-07-09, and Cloudflare's own API reference for the dedicated connections endpoint's response shape. Browse more posts like this in the [Data Automation](/data-automation) archive.

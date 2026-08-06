@@ -1,0 +1,75 @@
+---
+title: "MCP Removes the ping and logging/setLevel Methods"
+description: "The 2026-07-28 MCP spec removes ping and logging/setLevel. Log level now sets per-request via _meta, and there is no stated ping replacement."
+date: 2026-08-06
+category: ai-productivity
+tags: ["mcp", "model-context-protocol", "agents", "observability"]
+relatedSlugs: ["mcp-deprecates-roots-sampling-and-logging"]
+coverImage: "./cover.png"
+coverImageAlt: "A terminal window showing the verbatim MCP 2026-07-28 changelog entry: removed protocols ping, logging/setLevel, notifications/roots/list_changed"
+faq:
+  - question: "What replaces ping as a liveness check?"
+    answer: "The specification changelog for this entry doesn't name a direct replacement RPC for ping. Since the protocol is now stateless per request (see the removed initialize handshake), a successful response to any ordinary request may serve the same liveness-confirming purpose ping used to, but that's an inference, not a stated spec replacement; check current spec text before relying on it."
+  - question: "Is this the same change as the Roots/Sampling/Logging deprecation?"
+    answer: "No. This entry is a Major Change, already effective: three specific protocol methods are removed outright. The separate Roots/Sampling/Logging deprecation is a broader, feature-level notice with a twelve-month runway before removal. Logging as a method is affected by both, but from different angles: this entry removes the specific setLevel call now, the other deprecates the whole feature area on a longer clock."
+---
+
+## Quick Answer
+
+The MCP 2026-07-28 specification removes three protocol methods outright: `ping`, `logging/setLevel`, and `notifications/roots/list_changed`. Log level now sets per-request through a `_meta` field (`io.modelcontextprotocol/logLevel`) instead of a standalone RPC call. There's no stated direct replacement for `ping` as a liveness check in this changelog entry.
+
+## What's actually changing
+
+The specification changelog states it directly:
+
+> "Removed protocols: `ping`, `logging/setLevel`, `notifications/roots/list_changed`; log level now set per-request via `io.modelcontextprotocol/logLevel` in `_meta`"
+
+Two of these three removals have a clear migration path; one doesn't. `logging/setLevel`'s replacement is explicit: a `_meta` field on each request instead of a dedicated call. `notifications/roots/list_changed`'s removal connects to [the broader Roots feature deprecation](/ai-productivity/mcp-deprecates-roots-sampling-and-logging/), which has its own migration guidance. `ping` simply has no stated replacement in this entry.
+
+## Structural Comparison Matrix
+
+| Operational Aspect                   | Before (removed 2026-07-28)        | After                                                    |
+| :----------------------------------- | :--------------------------------- | :------------------------------------------------------- |
+| **Setting log verbosity**            | Standalone `logging/setLevel` call | `_meta.io.modelcontextprotocol/logLevel` on each request |
+| **Liveness checking**                | Standalone `ping` call             | No stated direct replacement                             |
+| **Roots list-changed notifications** | `notifications/roots/list_changed` | Tied to the broader Roots deprecation                    |
+
+## Fix it: move log level into \_meta, reconsider liveness checks
+
+```json title="before: standalone logging/setLevel call (removed)"
+{
+  "jsonrpc": "2.0",
+  "method": "logging/setLevel",
+  "params": { "level": "debug" }
+}
+```
+
+```json title="after: log level carried per-request in _meta"
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/call",
+  "params": {
+    "name": "search",
+    "arguments": { "query": "example" },
+    "_meta": {
+      "io.modelcontextprotocol/logLevel": "debug"
+    }
+  }
+}
+```
+
+<Callout
+  type="warning"
+  title="Don't assume a health-check request works the same"
+>
+  If monitoring or orchestration code calls `ping` on an interval to confirm a
+  server is alive, that call has no direct replacement here. Consider whether
+  any ordinary low-cost request (like `server/discover`) serves the same purpose
+  in practice, and verify that assumption against the current spec rather than
+  treating this post's inference as confirmed guidance.
+</Callout>
+
+## Confirmed version
+
+Sourced from the official Model Context Protocol specification changelog, 2026-07-28 revision, published 2026-07-28. The lack of a stated `ping` replacement is confirmed by its absence from this changelog entry, not an independent claim that no replacement exists anywhere in the spec; check current spec text directly if liveness checking is critical to your integration. Browse more posts like this in the [AI Productivity](/ai-productivity) archive.

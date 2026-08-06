@@ -1,0 +1,70 @@
+---
+title: "New r2_buckets Local Dev Credentials in Wrangler"
+description: "Wrangler 4.115 adds local_dev.experimental_s3_credentials to r2_buckets bindings, scoping real S3-compatible credentials to local dev instead of faking R2."
+date: 2026-08-06
+category: dev-tools
+tags: ["wrangler", "cloudflare-workers", "r2", "local-dev"]
+coverImage: "./cover.png"
+coverImageAlt: "A terminal window showing the verbatim changelog entry for wrangler 4.115.0: Add experimental local_dev.experimental_s3_credentials to r2_buckets config"
+faq:
+  - question: "Does this replace Miniflare's built-in local R2 simulation?"
+    answer: "No. Miniflare's default local R2 simulation still works without any credentials. This field is for the specific case where local testing needs to talk to a real S3-compatible endpoint instead of the simulated local store, scoped to local dev only."
+  - question: "Is the exact sub-field shape (access key, secret key names) stable?"
+    answer: "It's marked experimental, and the field itself was already renamed once, from a flat experimental_local_s3_credentials key to the current nested local_dev.experimental_s3_credentials. Check wrangler r2 bucket --help or the current Cloudflare R2 docs for the exact current sub-field names before copying a config block verbatim."
+---
+
+## Quick Answer
+
+`wrangler@4.115.0` adds an experimental `local_dev.experimental_s3_credentials` field to `r2_buckets` bindings, letting a project supply real S3-compatible credentials scoped specifically to local development. Before this, local R2 testing either used Miniflare's built-in simulated store or had no clean way to point at a real S3-compatible endpoint without touching production-adjacent credentials.
+
+## What this actually solves
+
+The changelog entry, from `cloudflare/workers-sdk`'s `packages/wrangler/CHANGELOG.md`, `wrangler@4.115.0` (released 2026-07-28):
+
+> "Add experimental `local_dev.experimental_s3_credentials` to `r2_buckets` config"
+
+R2's Workers API is S3-compatible, and Miniflare's default local dev experience simulates an R2 bucket without needing any credentials at all. That default is fine for most local testing, but it isn't a real S3-compatible endpoint, so any local test that genuinely needs S3-specific behavior, not just an R2 binding's basic get/put/list surface, had no first-class way to supply real credentials scoped just to that local session.
+
+<Callout type="warning" title="The field name itself has already changed once">
+  This configuration key was originally shipped as a flat
+  `experimental_local_s3_credentials` field, then moved to the current nested
+  `local_dev.experimental_s3_credentials` shape (tracked across
+  `cloudflare/workers-sdk` pull requests #14119 and #14280). It's marked
+  experimental for a reason: confirm the current field name and its exact
+  sub-fields against `wrangler r2 bucket --help` or the current Cloudflare R2
+  docs before copying a config block from anywhere, including this post.
+</Callout>
+
+## Structural Comparison Matrix
+
+| Operational Aspect                      | Before (v4.114.0 and earlier)                      | After (v4.115.0+)                                         |
+| :-------------------------------------- | :------------------------------------------------- | :-------------------------------------------------------- |
+| **Default local R2**                    | Miniflare's simulated store, no credentials needed | Unchanged, still the default                              |
+| **Real S3-compatible endpoint locally** | No first-class config field                        | `local_dev.experimental_s3_credentials` on the binding    |
+| **Credential scope**                    | N/A                                                | Scoped to local dev, separate from production credentials |
+
+## Fix it: add the field to your local dev config
+
+```jsonc title="wrangler.jsonc (shape as of wrangler@4.115.0+; verify exact sub-fields yourself)"
+{
+  "r2_buckets": [
+    {
+      "binding": "MY_BUCKET",
+      "bucket_name": "my-bucket-name",
+      "local_dev": {
+        "experimental_s3_credentials": {
+          // exact sub-field names are experimental and have already
+          // changed once; confirm against `wrangler r2 bucket --help`
+          // before filling this in
+        },
+      },
+    },
+  ],
+}
+```
+
+If you don't need to test against a real S3-compatible endpoint locally, there's nothing to change. Miniflare's default simulated R2 store keeps working exactly as it did before this field existed.
+
+## Confirmed version
+
+Sourced from `cloudflare/workers-sdk`'s `packages/wrangler/CHANGELOG.md`, `wrangler@4.115.0`, released 2026-07-28, corroborated by the field-rename history tracked across pull requests #14119 and #14280. The exact sub-field shape wasn't independently reproduced here, since it's explicitly experimental and this site doesn't use R2 bindings; verify current syntax before adopting it. Browse more posts like this in the [Dev Tools](/dev-tools) archive.

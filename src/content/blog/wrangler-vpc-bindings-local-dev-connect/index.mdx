@@ -1,0 +1,56 @@
+---
+title: "VPC Bindings Now Connect in Wrangler Local Dev"
+description: "Wrangler 4.115 lets connect() work on remote VPC Network and VPC Service bindings during local dev, closing a real gap that used to force stubs."
+date: 2026-08-06
+category: dev-tools
+tags: ["wrangler", "cloudflare-workers", "vpc", "local-dev"]
+coverImage: "./cover.png"
+coverImageAlt: "A terminal window showing the verbatim changelog entry for wrangler 4.115.0: Support connect() on remote VPC Network and VPC Service bindings in local development"
+faq:
+  - question: "Does this work offline, fully simulated, like Miniflare's local R2 store?"
+    answer: "No. The changelog specifies remote VPC Network and VPC Service bindings, meaning the connection reaches the real, deployed VPC resource from your local wrangler dev session. It is local development against a real remote target, not an offline simulation."
+  - question: "What should I remove from my project now that this works?"
+    answer: "Any stub, mock, or conditional you added specifically to skip .connect() calls during local dev because they used to fail. Search your codebase for comments or conditionals referencing VPC bindings and local dev before assuming the workaround is still needed."
+---
+
+## Quick Answer
+
+`wrangler@4.115.0` adds support for calling `.connect()` on remote VPC Network and VPC Service bindings during local development. Before this, any code path calling `.connect()` on one of these bindings had to be stubbed out or skipped entirely until a real deploy, since local dev had no way to exercise it. If your project has a workaround for that gap, this is the release where it stops being necessary.
+
+## What was actually broken before
+
+VPC Network and VPC Service bindings let a Worker reach resources inside a private network Cloudflare's platform connects to. Before `wrangler@4.115.0`, `wrangler dev` had no path to actually open that connection locally, so any test or code path exercising `.connect()` on one of these bindings either had to be skipped in local dev, mocked out entirely, or only ever verified after a real deploy, which defeats a large part of the point of local development in the first place.
+
+The changelog entry, from `cloudflare/workers-sdk`'s `packages/wrangler/CHANGELOG.md`, `wrangler@4.115.0` (released 2026-07-28):
+
+> "Support `connect()` on remote VPC Network and VPC Service bindings in local development"
+
+The word "remote" is doing real work in that sentence: this isn't a fully offline local simulation the way Miniflare's default R2 or KV stores are. The local dev session actually reaches the real, deployed VPC resource, which is a meaningfully different testing story than a purely local mock.
+
+## Structural Comparison Matrix
+
+| Operational Aspect                       | Before (v4.114.0 and earlier)      | After (v4.115.0+)                        |
+| :--------------------------------------- | :--------------------------------- | :--------------------------------------- |
+| **`.connect()` on VPC bindings locally** | Not supported; had to stub or skip | Works, reaching the real remote resource |
+| **Where verification happened**          | Only after a real deploy           | Available during local `wrangler dev`    |
+| **Nature of the local connection**       | N/A                                | Remote, not a fully offline simulation   |
+
+## Fix it: remove the old workaround
+
+<Callout type="tip" title="Search for the workaround before assuming it's gone">
+  If a previous developer added a stub, a mock, or a conditional that skips VPC
+  binding calls specifically during local dev, it was very likely added because
+  of this exact gap. Grep the codebase for comments or conditionals referencing
+  VPC bindings and local dev, confirm the real `.connect()` call works now, and
+  remove the workaround rather than leaving a dead code path that silently
+  diverges from what local dev now actually does.
+</Callout>
+
+```bash title="confirm you're on a version that has this"
+wrangler --version
+# needs wrangler 4.115.0 or later
+```
+
+## Confirmed version
+
+Sourced from `cloudflare/workers-sdk`'s `packages/wrangler/CHANGELOG.md`, `wrangler@4.115.0`, released 2026-07-28. This wasn't independently reproduced against a real VPC Network or VPC Service resource here, since this site's own Worker doesn't use VPC bindings; the changelog entry is the primary source. Browse more posts like this in the [Dev Tools](/dev-tools) archive.

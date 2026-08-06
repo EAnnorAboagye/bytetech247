@@ -92,11 +92,34 @@ async function getAccessToken() {
   return body.access_token;
 }
 
+// Confirmed live (2026-08-05): submitting every sitemap URL on every deploy
+// blew through the API's 200/day publish-request quota after a handful of
+// same-day deploys — 31 of 39 URLs came back 429 RESOURCE_EXHAUSTED on one
+// run. The sitemap already carries an accurate <lastmod> per URL (see
+// src/pages/sitemap.xml.ts), so only resubmit what's actually new or
+// recently changed instead of the whole site every time. A URL with no
+// <lastmod> (shouldn't happen for posts, possible for a static page whose
+// git history lookup came back empty) is submitted rather than silently
+// skipped forever.
+const RECENT_WINDOW_MS = 3 * 24 * 60 * 60 * 1000;
+
 const sitemap = readFileSync("dist/sitemap.xml", "utf8");
-const urlList = [...sitemap.matchAll(/<loc>(.*?)<\/loc>/g)].map((m) => m[1]);
+const now = Date.now();
+const urlList = [
+  ...sitemap.matchAll(
+    /<url>\s*<loc>(.*?)<\/loc>(?:\s*<lastmod>(.*?)<\/lastmod>)?\s*<\/url>/g,
+  ),
+]
+  .filter(
+    ([, , lastmod]) =>
+      !lastmod || now - new Date(lastmod).getTime() <= RECENT_WINDOW_MS,
+  )
+  .map(([, loc]) => loc);
 
 if (urlList.length === 0) {
-  console.error("No URLs found in dist/sitemap.xml — nothing to submit.");
+  console.error(
+    "No recent URLs found in dist/sitemap.xml — nothing to submit.",
+  );
   process.exit(0);
 }
 

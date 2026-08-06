@@ -1,0 +1,69 @@
+---
+title: "Cloudflare Deprecates the Account Roles API"
+description: "Cloudflare deprecates the Account Roles API for the Permission Groups API. The data model changes from a flat role list to fine-grained permission groups."
+date: 2026-08-06
+category: data-automation
+tags: ["cloudflare", "api", "iam", "deprecation"]
+coverImage: "./cover.png"
+coverImageAlt: "A terminal window showing the real Cloudflare changelog entry: the Account Roles API only returns account-level roles today, and is deprecated in favor of the Permission Groups API"
+faq:
+  - question: "Is this a simple endpoint rename, like the KV routes deprecation?"
+    answer: "No. The KV deprecation is a pure URL path swap with identical request/response shapes. This one changes the underlying data model: a flat list of named account-level roles becomes a set of fine-grained permission groups. Automation checking `if role == 'Administrator'` needs real logic changes, not a find-and-replace on the endpoint path."
+  - question: "Does this have a hard end-of-life date yet?"
+    answer: "Cloudflare's changelog for this entry states the deprecation as effective 2026-07-21 without a separate end-of-life date in what's publicly documented for this specific entry. Treat the deprecation date as the signal to migrate, and check Cloudflare's current API deprecations reference for an EOL date before assuming there's no deadline at all."
+---
+
+## Quick Answer
+
+Cloudflare deprecates the Account Roles API (`GET /accounts/{account_id}/roles` and `GET /accounts/{account_id}/roles/{role_id}`) in favor of the Permission Groups API (`GET /accounts/{account_id}/iam/permission_groups`). This isn't a drop-in endpoint swap: the old API returns a flat list of account-level roles, while the new one models fine-grained, named permission groups. Automation checking role membership needs its logic rewritten, not just its endpoint URL.
+
+## What's actually changing
+
+Cloudflare's own reasoning for the deprecation is a real functional gap, not just a naming preference:
+
+> "The Account Roles API only returns account-level roles today, and is deprecated in favor of the Permission Groups API"
+
+The Account Roles API's whole limitation was scope: it only ever surfaced account-level roles, a flat list like "Administrator" or "Billing." The Permission Groups API, confirmed live at `GET /accounts/{account_id}/iam/permission_groups`, returns a paginated array of permission groups, each a named group of fine-grained permissions mapped to specific operations against specific resources, a genuinely different and more expressive model.
+
+## Structural Comparison Matrix
+
+| Operational Aspect | Account Roles API (deprecated)        | Permission Groups API                              |
+| :----------------- | :------------------------------------ | :------------------------------------------------- |
+| **Data model**     | Flat list of account-level role names | Named groups of fine-grained permissions           |
+| **List endpoint**  | `GET /accounts/{account_id}/roles`    | `GET /accounts/{account_id}/iam/permission_groups` |
+| **Filtering**      | Not documented for this endpoint      | Optional `name` query parameter                    |
+| **Granularity**    | Whole role only                       | Individual permission-to-operation mappings        |
+
+## Fix it: migrate the logic, not just the URL
+
+```bash title="before: listing flat account roles"
+curl -X GET \
+  "https://api.cloudflare.com/client/v4/accounts/<account_id>/roles" \
+  -H "Authorization: Bearer <api_token>"
+```
+
+```bash title="after: listing permission groups"
+curl -X GET \
+  "https://api.cloudflare.com/client/v4/accounts/<account_id>/iam/permission_groups" \
+  -H "Authorization: Bearer <api_token>"
+```
+
+<Callout type="danger" title="This is a data-model migration, not a URL swap">
+  Automation that checks `if role.name == "Administrator"` against the old API
+  has no direct equivalent field to swap in. The Permission Groups API models
+  permissions, not a single named role, so gating logic built around role names
+  needs to be rebuilt around specific permission group membership instead, real
+  design work, not a one-line change.
+</Callout>
+
+Before rewriting anything, pull the actual permission groups available on the account and map which ones correspond to the old role-based checks the automation relied on:
+
+```bash title="find the permission groups an account actually has"
+curl -X GET \
+  "https://api.cloudflare.com/client/v4/accounts/<account_id>/iam/permission_groups?name=Administrator" \
+  -H "Authorization: Bearer <api_token>"
+```
+
+## Confirmed version
+
+Sourced from Cloudflare's official changelog, published 2026-07-21, deprecation effective the same day, corroborated by Cloudflare's own live API reference for the Permission Groups API endpoint. Browse more posts like this in the [Data Automation](/data-automation) archive.

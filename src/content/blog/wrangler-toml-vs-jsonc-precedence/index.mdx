@@ -1,0 +1,98 @@
+---
+title: "Fix Wrangler wrangler.toml vs jsonc Precedence"
+description: "When both wrangler.toml and wrangler.jsonc exist, Wrangler silently uses jsonc with no warning. Confirmed by test, plus the fix for teams mid-migration."
+date: 2026-08-06
+category: dev-tools
+tags: ["wrangler", "cloudflare-workers", "cli", "configuration"]
+coverImage: "./cover.png"
+coverImageAlt: "A terminal window showing a real test: wrangler.jsonc silently wins over wrangler.toml, with no warning printed about the ignored file"
+faq:
+  - question: "Does Wrangler print any warning when both config files exist?"
+    answer: "No. Confirmed directly: deploying a project with both wrangler.toml and wrangler.jsonc present produces no warning, no notice, and no mention of the toml file at all. The jsonc file's settings are used silently."
+  - question: "Is there an official command to convert wrangler.toml to wrangler.jsonc?"
+    answer: "Not yet. As of this writing, cloudflare/workers-sdk issue #14501 is an open feature request for a wrangler config migrate subcommand that would rewrite wrangler.toml to wrangler.jsonc while preserving comments. Until it ships, migrating means hand-converting the file yourself."
+---
+
+## Quick Answer
+
+If a project has both `wrangler.toml` and `wrangler.jsonc` (or `wrangler.json`), Wrangler uses the JSON/JSONC file and silently ignores the TOML one, with no warning printed either way. Confirmed directly: giving the two files conflicting settings and running `wrangler deploy --dry-run` only ever reflects the JSONC file's values. If you're migrating gradually, delete the old file the moment the new one is ready. Leaving both around invites a config drift nobody notices until deploy time.
+
+## Confirmed: jsonc wins, and Wrangler says nothing
+
+To find the actual precedence rule instead of guessing from the docs, this was tested directly against `wrangler@4.119.0` in an isolated project: a valid `wrangler.toml` alongside a `wrangler.jsonc` whose `main` field pointed at a file that doesn't exist.
+
+```toml title="wrangler.toml (valid)"
+name = "test-worker"
+main = "index.js"
+compatibility_date = "2026-08-01"
+```
+
+```jsonc title="wrangler.jsonc (deliberately broken main)"
+{
+  "name": "test-worker-jsonc",
+  "main": "does-not-exist.js",
+  "compatibility_date": "2026-08-01",
+}
+```
+
+```bash title="wrangler deploy --dry-run"
+✘ [ERROR] The entry-point file at "does-not-exist.js" was not found.
+
+  This might mean that your entry-point file needs to be generated (which is
+  the general case when a framework is being used). If that's the case
+  please run your project's build command and try again.
+```
+
+The error came from the `jsonc` file's broken `main` path, not the `toml` file's valid one. That confirms the precedence: `wrangler.jsonc` wins whenever both files exist, and Wrangler never mentions the `toml` file is being ignored. A team that starts migrating by copying settings into a new `wrangler.jsonc`, then keeps editing the old `wrangler.toml` out of habit, gets no signal at all that their edits stopped mattering the moment the new file appeared.
+
+## Why this keeps happening
+
+Cloudflare's own docs recommend `wrangler.jsonc` for new projects and note that some newer Wrangler features are JSON-config-only, but there's no enforced migration path. `cloudflare/workers-sdk` issue #14501, opened 2026-07-01, asks for exactly the tooling that's missing:
+
+> A proposal for a `wrangler config migrate` subcommand that would rewrite `wrangler.toml` to `wrangler.jsonc` in place while preserving comments where jsonc allows.
+
+Until that ships, there's no built-in safety net for the conversion. This site's own deploy config is still on `wrangler.toml`, which makes the migration path a real, not hypothetical, question here too.
+
+<Callout
+  type="warning"
+  title="Check for both files before debugging anything else"
+>
+  If a Wrangler command is behaving differently than the `wrangler.toml` in
+  front of you suggests it should, check for a `wrangler.jsonc` or
+  `wrangler.json` sitting in the same directory first. It is the config actually
+  being read, and grepping the toml file for the setting in question will not
+  explain the behavior.
+</Callout>
+
+## Structural Comparison Matrix
+
+| Operational Aspect                       | Only `wrangler.toml` present | Both files present                          |
+| :--------------------------------------- | :--------------------------- | :------------------------------------------ |
+| **File Wrangler reads**                  | `wrangler.toml`              | `wrangler.jsonc`, silently                  |
+| **Warning printed about the other file** | N/A                          | None, confirmed by direct test              |
+| **Official conversion tooling**          | N/A                          | Not yet shipped; issue #14501 is still open |
+
+## Fix it: migrate deliberately, then delete the old file
+
+### Manual conversion (no official tool yet)
+
+```bash title="convert by hand"
+# 1. Read the existing wrangler.toml values
+cat wrangler.toml
+
+# 2. Write the equivalent wrangler.jsonc by hand,
+#    matching every field (bindings, routes, vars, compatibility_date)
+$EDITOR wrangler.jsonc
+
+# 3. Confirm the new file alone produces the expected deploy
+wrangler deploy --dry-run
+
+# 4. Only once step 3 looks right, remove the old file
+rm wrangler.toml
+```
+
+Don't keep both files around "just in case." Since Wrangler reads the JSONC file exclusively once it exists, the TOML file becomes dead weight the instant the new one is created, not a fallback. Anyone editing it later is editing a file nothing reads.
+
+## Confirmed version
+
+Reproduced directly against `wrangler@4.119.0`. The precedence and silent-ignore behavior aren't new in that specific release; they reflect how Wrangler has resolved config files for some time. What's newer and dated is the open request for tooling to close the gap: issue #14501, 2026-07-01. Browse more posts like this in the [Dev Tools](/dev-tools) archive.

@@ -1,0 +1,69 @@
+---
+title: "Wrangler Now Traces Local Dev by Default (v4.118)"
+description: "Wrangler 4.118 captures request traces and console logs into Local Explorer by default. Opt out with X_LOCAL_OBSERVABILITY=false if it causes trouble."
+date: 2026-08-06
+category: dev-tools
+tags: ["wrangler", "cloudflare-workers", "observability", "local-dev"]
+coverImage: "./cover.png"
+coverImageAlt: "A terminal window showing the verbatim changelog entries for local dev observability: added in wrangler 4.114.0, enabled by default in wrangler 4.118.0"
+faq:
+  - question: "Does this add real overhead to a normal wrangler dev session?"
+    answer: "It runs additional per-worker collector and streaming-tail services in the background to capture traces and logs, which is more processes than a plain wrangler dev session ran before v4.118.0. For most single-worker local dev setups this is negligible; for multi-process dev-registry setups running many local workers at once, it can add up."
+  - question: "Where is X_LOCAL_OBSERVABILITY=false documented?"
+    answer: "It isn't called out anywhere near the wrangler dev command's own --help output or its most visible docs page. It's confirmed in the Wrangler and Vite plugin release notes for this feature, which is easy to miss if you only skim the wrangler dev command reference when something starts behaving differently after an upgrade."
+---
+
+## Quick Answer
+
+Starting in `wrangler@4.118.0`, `wrangler dev` and the Cloudflare Vite plugin capture request traces and console logs into the Local Explorer's Observability tab automatically, with no flag needed. This used to be opt-in. If the extra per-worker collector and streaming-tail services this spins up cause trouble, for example in a multi-process dev-registry setup, set `X_LOCAL_OBSERVABILITY=false` to opt back out.
+
+## What changed, and when
+
+Local dev observability shipped in two stages. `wrangler@4.114.0` (released 2026-07-23) first added the capability:
+
+> "Add local-dev observability"
+
+`wrangler@4.118.0` (released 2026-07-31) then flipped it on by default:
+
+> "Enable local observability capture by default in dev"
+
+The same default-on behavior landed in the Cloudflare Vite plugin at version 1.50.0, via pull request #14944. Before 4.118.0, a developer had to explicitly opt in to get traces and console logs surfaced in the Local Explorer; after it, every `wrangler dev` or Vite-plugin dev session gets this automatically, whether or not anyone asked for it.
+
+## Structural Comparison Matrix
+
+| Operational Aspect       | Before (v4.113.0 and earlier) | After (v4.118.0+)                                 |
+| :----------------------- | :---------------------------- | :------------------------------------------------ |
+| **Default state**        | Opt-in only                   | Enabled automatically, no flag needed             |
+| **Background processes** | Just the dev server           | Adds per-worker collector/streaming-tail services |
+| **Opt-out mechanism**    | N/A                           | `X_LOCAL_OBSERVABILITY=false`                     |
+
+## Fix it: opt out if it conflicts with your setup
+
+<Callout type="tip" title="Most single-worker setups don't need to do anything">
+  If you run one Worker locally at a time, the added background services are
+  unlikely to be noticeable. The opt-out matters most for multi-process
+  dev-registry setups running several local workers simultaneously, where the
+  extra per-worker services can compete for resources or interfere with existing
+  tooling that already captures logs another way.
+</Callout>
+
+```bash title="opt out of local observability capture"
+X_LOCAL_OBSERVABILITY=false wrangler dev
+```
+
+For a persistent opt-out across every local session, set it in your shell profile or the project's `.env`/`.dev.vars` file rather than prefixing every command by hand:
+
+```bash title=".dev.vars"
+X_LOCAL_OBSERVABILITY=false
+```
+
+If you want the feature but it isn't showing traces, confirm the installed version first. This is version-gated, not a config toggle that exists on every Wrangler release:
+
+```bash title="confirm you're on a version that has this"
+wrangler --version
+# needs wrangler 4.118.0+ or Cloudflare Vite plugin 1.50.0+
+```
+
+## Confirmed version
+
+Sourced from `cloudflare/workers-sdk`'s `packages/wrangler/CHANGELOG.md`: the capability landed in `wrangler@4.114.0` (2026-07-23), and the default-on switch in `wrangler@4.118.0` (2026-07-31), corroborated by the Vite plugin's own 1.50.0 changelog entry for pull request #14944. Browse more posts like this in the [Dev Tools](/dev-tools) archive.

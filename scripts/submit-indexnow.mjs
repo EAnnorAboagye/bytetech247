@@ -17,11 +17,32 @@ const INDEXNOW_KEY = "36bbb4da9a59b608a7cf12feeb444a04";
 const SITE_URL = "https://bytetech247.com";
 const INDEXNOW_ENDPOINT = "https://api.indexnow.org/indexnow";
 
+// IndexNow's single bulk POST isn't subject to Google Indexing API's
+// documented per-day quota (see the same fix in submit-google-indexing.mjs,
+// prompted by that quota actually being hit), but the engines do apply
+// their own server-side rate limiting and quality scoring on submission
+// volume, so keep this consistent with the same recent-URLs-only filter
+// rather than resubmitting the whole site on every deploy. A URL with no
+// <lastmod> is submitted rather than silently skipped forever.
+const RECENT_WINDOW_MS = 3 * 24 * 60 * 60 * 1000;
+
 const sitemap = readFileSync("dist/sitemap.xml", "utf8");
-const urlList = [...sitemap.matchAll(/<loc>(.*?)<\/loc>/g)].map((m) => m[1]);
+const now = Date.now();
+const urlList = [
+  ...sitemap.matchAll(
+    /<url>\s*<loc>(.*?)<\/loc>(?:\s*<lastmod>(.*?)<\/lastmod>)?\s*<\/url>/g,
+  ),
+]
+  .filter(
+    ([, , lastmod]) =>
+      !lastmod || now - new Date(lastmod).getTime() <= RECENT_WINDOW_MS,
+  )
+  .map(([, loc]) => loc);
 
 if (urlList.length === 0) {
-  console.error("No URLs found in dist/sitemap.xml — nothing to submit.");
+  console.error(
+    "No recent URLs found in dist/sitemap.xml — nothing to submit.",
+  );
   process.exit(0);
 }
 

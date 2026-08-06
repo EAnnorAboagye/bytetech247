@@ -1,0 +1,64 @@
+---
+title: "MCP Removes SSE Resumability (Last-Event-ID Gone)"
+description: "The 2026-07-28 MCP spec eliminates Last-Event-ID and SSE event IDs. A broken stream now requires re-issuing the whole request, not resuming in place."
+date: 2026-08-06
+category: ai-productivity
+tags: ["mcp", "model-context-protocol", "agents", "streaming"]
+relatedSlugs: ["mcp-replaces-sse-subscriptions-with-subscriptions-listen"]
+coverImage: "./cover.png"
+coverImageAlt: "A terminal window showing the verbatim MCP 2026-07-28 changelog entry: eliminated Last-Event-ID header and SSE event IDs, broken streams require re-issuing as new requests"
+faq:
+  - question: "Is this the same change as the SSE-to-subscriptions/listen migration?"
+    answer: "No, related but distinct. The subscriptions/listen change is about how notifications are delivered and opted into. This change is about what happens when a stream breaks mid-request: whether the client can resume in place (the old behavior) or has to start over (the new behavior). Both are part of the same broader transport rewrite."
+  - question: "Does this affect short-lived requests that never stream long enough to disconnect?"
+    answer: "Not in practice. This matters specifically for long-lived streaming connections where a disconnect mid-stream was previously survivable via resumption. A request that completes quickly, well within typical connection stability, was never exposed to this behavior either way."
+---
+
+## Quick Answer
+
+The MCP 2026-07-28 specification eliminates the `Last-Event-ID` header and SSE event IDs entirely. Previously, a client whose SSE stream dropped mid-request could reconnect and resume from where it left off using `Last-Event-ID`. Under the new spec, a broken stream has no resumption path: the client has to re-issue the entire request as new.
+
+## What's actually changing
+
+The specification changelog states it directly:
+
+> "Eliminated `Last-Event-ID` header and SSE event IDs; broken streams require re-issuing as new requests"
+
+This is a real reliability-handling change, not a cosmetic one. Client code with retry logic built around SSE resumption, catch the disconnect, reconnect with the last known event ID, keep receiving from that point, has no equivalent behavior to fall back to. The correct behavior now is treating a broken stream the same as a failed request: discard whatever partial state existed and start over.
+
+## Structural Comparison Matrix
+
+| Operational Aspect             | Before (SSE resumability)                       | After (2026-07-28+)                       |
+| :----------------------------- | :---------------------------------------------- | :---------------------------------------- |
+| **Stream drops mid-request**   | Reconnect with `Last-Event-ID`, resume in place | No resumption; re-issue the whole request |
+| **Client-side state to track** | Last received event ID                          | None needed for this purpose              |
+| **Retry logic shape**          | Reconnect-and-resume                            | Full request retry                        |
+
+## Fix it: replace resume logic with a full retry
+
+<Callout type="warning" title="Idempotency matters more now">
+  If re-issuing a broken request as brand new could cause a duplicate side
+  effect (creating a resource twice, for example, rather than resuming a read),
+  that's a real correctness risk this change surfaces. Confirm which of a
+  client's streamed operations are safe to retry outright versus needing an
+  idempotency key or similar guard before relying on blind re-issue as the
+  recovery strategy.
+</Callout>
+
+```text title="before: resumable reconnect logic (no longer applicable)"
+on stream error:
+  reconnect with header Last-Event-ID: <last received id>
+  continue receiving from that point
+```
+
+```text title="after: full re-issue on stream failure"
+on stream error:
+  discard partial state from the broken stream
+  re-issue the original request as a new call
+```
+
+Any client library or hand-rolled retry wrapper that specifically implements SSE reconnect-with-`Last-Event-ID` needs that code path removed and replaced with a plain retry of the original request, plus whatever idempotency handling the specific operation actually needs.
+
+## Confirmed version
+
+Sourced from the official Model Context Protocol specification changelog, 2026-07-28 revision, published 2026-07-28. Browse more posts like this in the [AI Productivity](/ai-productivity) archive.

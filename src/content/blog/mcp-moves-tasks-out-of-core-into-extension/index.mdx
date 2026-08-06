@@ -1,0 +1,68 @@
+---
+title: "MCP Moves Tasks Out of Core Into an Extension"
+description: "The 2026-07-28 MCP spec moves Tasks into io.modelcontextprotocol/tasks and replaces blocking tasks/result with polling via tasks/get and tasks/update."
+date: 2026-08-06
+category: ai-productivity
+tags: ["mcp", "model-context-protocol", "agents", "async"]
+coverImage: "./cover.png"
+coverImageAlt: "A terminal window showing the verbatim MCP 2026-07-28 changelog entry: moved experimental tasks to official extension io.modelcontextprotocol/tasks, replaced blocking tasks/result with polling"
+faq:
+  - question: "Is the tasks feature itself going away?"
+    answer: "No, the opposite: it graduates from experimental core to a formal, official extension (tracked under SEP-2663) with a more complete set of methods (tasks/get, tasks/update, and a new tasks/cancel) than the experimental version had."
+  - question: "Why did the interaction pattern change from blocking to polling?"
+    answer: "A blocking tasks/result call ties up a request/response cycle for however long the underlying operation takes, which conflicts with the protocol's broader move toward statelessness and per-request negotiation. Polling with tasks/get lets the client control timing and keeps individual requests short-lived."
+---
+
+## Quick Answer
+
+The MCP 2026-07-28 specification moves long-running Tasks out of the experimental protocol core and into a formal, official extension, `io.modelcontextprotocol/tasks` (SEP-2663). The blocking `tasks/result` call is replaced by polling: call `tasks/get` with a `taskId`, respecting the server's `pollIntervalMs`, until the task reaches a terminal status carrying the final result or error. A new `tasks/update` and `tasks/cancel` round out the extension.
+
+## What's actually changing
+
+The specification changelog states it directly:
+
+> "Moved experimental tasks to official extension `io.modelcontextprotocol/tasks`; replaced blocking `tasks/result` with polling via `tasks/get` and new `tasks/update`"
+
+The extension introduces three methods: `tasks/get`, `tasks/update`, and `tasks/cancel`, plus a polymorphic-result discriminator (`resultType: "task"`) and a Task shape carrying status, any in-progress server-to-client requests, and a final result or error. Reads (`tasks/get`) and writes (`tasks/update`) are kept separate deliberately, so polling stays idempotent and cacheable rather than mutating state as a side effect of checking on it.
+
+## Structural Comparison Matrix
+
+| Operational Aspect   | Before (experimental core)   | After (io.modelcontextprotocol/tasks extension)   |
+| :------------------- | :--------------------------- | :------------------------------------------------ |
+| **Namespace**        | Experimental core protocol   | Formal extension, `io.modelcontextprotocol/tasks` |
+| **Getting a result** | Blocking `tasks/result` call | Poll `tasks/get` until terminal status            |
+| **Updating a task**  | Not separated from reads     | Dedicated `tasks/update` call                     |
+| **Canceling a task** | Not present                  | New `tasks/cancel` method                         |
+
+## Fix it: rewrite blocking waits into a polling loop
+
+```json title="before: blocking tasks/result (removed)"
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tasks/result",
+  "params": { "taskId": "task_abc123" }
+}
+```
+
+```json title="after: poll tasks/get on an interval until terminal"
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tasks/get",
+  "params": { "taskId": "task_abc123" }
+}
+```
+
+<Callout type="tip" title="Respect the server's pollIntervalMs">
+  Don't hardcode a polling interval on the client. The server communicates its
+  expected `pollIntervalMs`, and polling faster than that wastes requests
+  without getting the result any sooner, while polling much slower delays how
+  quickly the client notices completion.
+</Callout>
+
+Client code written around a single blocking `tasks/result` call needs a real control-flow rewrite: a loop that calls `tasks/get`, checks the returned status, and exits once that status is terminal, carrying either the final result or an error, rather than treating one call as sufficient.
+
+## Confirmed version
+
+Sourced from the official Model Context Protocol specification changelog, 2026-07-28 revision, published 2026-07-28, and the Tasks extension's own specification (SEP-2663) for the method names and polling pattern. Browse more posts like this in the [AI Productivity](/ai-productivity) archive.

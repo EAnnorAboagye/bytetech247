@@ -1,0 +1,69 @@
+---
+title: "Cloudflare Deprecates the Zone Settings Batch API"
+description: "Cloudflare retires batched zone settings reads/writes on 2026-09-15. Automation using the single-request endpoint needs to switch to per-setting calls."
+date: 2026-08-06
+category: data-automation
+tags: ["cloudflare", "api", "deprecation", "zone-settings"]
+coverImage: "./cover.png"
+coverImageAlt: "A terminal window showing the real Cloudflare changelog entry: the Zone Settings Batch API endpoints, which read and edit multiple zone settings in a single request, are deprecated"
+faq:
+  - question: "Does this affect the Cloudflare dashboard, or only the API?"
+    answer: "Only automation calling the batch API endpoint directly (GET/PATCH /zones/{zone_id}/settings) is affected. The Cloudflare dashboard's settings pages don't rely on this specific batch endpoint the same way, and changing settings by hand through the dashboard is unaffected."
+  - question: "Is there a bulk-edit alternative, or is this genuinely one call per setting?"
+    answer: "Cloudflare's own guidance is to migrate to per-setting endpoints, one call per zone setting. There's no batch replacement announced alongside this deprecation, so a pipeline that used to configure a zone in one request now needs one request per setting it touches."
+---
+
+## Quick Answer
+
+Cloudflare deprecates the Zone Settings Batch API, `GET`/`PATCH /zones/{zone_id}/settings`, which reads or edits multiple zone settings in a single request. It reaches end of life on 2026-09-15. Automation using that batch endpoint needs to migrate to per-setting endpoints (`/zones/{zone_id}/settings/{setting_name}`) before then, one call per setting instead of one call for all of them.
+
+## What's actually changing
+
+Cloudflare's own changelog states the change plainly:
+
+> "The Zone Settings Batch API endpoints, which read and edit multiple zone settings in a single request, are deprecated"
+
+Unlike most of the other deprecations in this wave, this isn't a URL path swap with the same request/response shape. The batch endpoint's whole value was reading or writing several settings (SSL mode, always-use-HTTPS, minify, and so on) in one call. The per-setting endpoints Cloudflare points to instead follow the pattern `/zones/{zone_id}/settings/{setting_name}`, confirmed elsewhere in Cloudflare's own API deprecations data for individual settings like `cname_flattening`. Migrating means genuinely restructuring any code that built one batched request into a loop, or a series, of per-setting requests.
+
+## Structural Comparison Matrix
+
+| Operational Aspect                   | Batch API (deprecated)      | Per-setting API                            |
+| :----------------------------------- | :-------------------------- | :----------------------------------------- |
+| **Requests to configure N settings** | 1                           | N                                          |
+| **Endpoint shape**                   | `/zones/{zone_id}/settings` | `/zones/{zone_id}/settings/{setting_name}` |
+| **Available after 2026-09-15**       | Removed                     | Active                                     |
+
+## Fix it: loop over per-setting calls
+
+```bash title="before: one batched request"
+curl -X PATCH \
+  "https://api.cloudflare.com/client/v4/zones/<zone_id>/settings" \
+  -H "Authorization: Bearer <api_token>" \
+  -H "Content-Type: application/json" \
+  --data '{"items":[{"id":"ssl","value":"full"},{"id":"always_use_https","value":"on"}]}'
+```
+
+```bash title="after: one request per setting"
+curl -X PATCH \
+  "https://api.cloudflare.com/client/v4/zones/<zone_id>/settings/ssl" \
+  -H "Authorization: Bearer <api_token>" \
+  -H "Content-Type: application/json" \
+  --data '{"value":"full"}'
+
+curl -X PATCH \
+  "https://api.cloudflare.com/client/v4/zones/<zone_id>/settings/always_use_https" \
+  -H "Authorization: Bearer <api_token>" \
+  -H "Content-Type: application/json" \
+  --data '{"value":"on"}'
+```
+
+<Callout type="warning" title="This changes request volume, not just syntax">
+  A pipeline configuring many zones with many settings each goes from one
+  request per zone to one request per setting per zone. If the automation runs
+  against API rate limits or is billed per request anywhere in its stack, this
+  is a real capacity-planning change, not a drop-in fix.
+</Callout>
+
+## Confirmed version
+
+Sourced from Cloudflare's official changelog and API deprecations reference. Published dates for this entry vary slightly across Cloudflare's own summaries; the end-of-life date corroborated across multiple independent lookups is 2026-09-15, migrate before then rather than relying on a single source's stated date. Browse more posts like this in the [Data Automation](/data-automation) archive.

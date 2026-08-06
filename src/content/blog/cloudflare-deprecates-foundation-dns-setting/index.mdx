@@ -1,0 +1,62 @@
+---
+title: "Cloudflare Deprecates the foundation_dns DNS Setting"
+description: "Cloudflare removes the foundation_dns boolean from DNS settings endpoints on 2026-11-23. Automation toggling it needs to find the replacement before then."
+date: 2026-08-06
+category: data-automation
+tags: ["cloudflare", "dns", "api", "deprecation"]
+coverImage: "./cover.png"
+coverImageAlt: "A terminal window showing the real Cloudflare changelog entry: the foundation_dns boolean is deprecated in the DNS settings endpoints for zone settings and account defaults"
+faq:
+  - question: "Is Foundation DNS itself being removed, or just this specific field?"
+    answer: "Just this specific boolean field on the DNS settings endpoints. Foundation DNS is Cloudflare's enterprise authoritative DNS offering and isn't described as being discontinued; the foundation_dns boolean used to enable/inspect it is what's deprecated, which most often signals the platform moved to a different field or endpoint for the same capability."
+  - question: "What exactly replaces foundation_dns?"
+    answer: "Cloudflare's changelog entry for this deprecation doesn't name an exact replacement field in what's publicly available as of this writing. Check the current DNS settings API reference directly before the November 2026 date rather than assuming a specific field name, since a wrong guess here is worse than double-checking."
+---
+
+## Quick Answer
+
+Cloudflare deprecates the `foundation_dns` boolean in the DNS settings endpoints for both zone settings and account defaults (`/zones/{zone_id}/dns_settings` and `/accounts/{account_id}/dns_settings`). It stops being honored on 2026-11-23. Automation reading or toggling this field needs to check the current DNS settings API reference for its replacement before that date, since the exact field name Cloudflare intends as the successor isn't specified in the changelog entry itself.
+
+## What's actually changing
+
+Cloudflare's changelog states the change directly:
+
+> "The `foundation_dns` boolean is deprecated in the DNS settings endpoints for zone settings and account defaults"
+
+Foundation DNS itself, Cloudflare's enterprise-grade authoritative DNS offering enabled via `"foundation_dns": true` on the DNS settings endpoint, isn't described as being discontinued. What's deprecated is specifically this boolean field on `/zones/{zone_id}/dns_settings` and `/accounts/{account_id}/dns_settings`, published and made effective the same day, 2026-07-27, with a longer runway before removal, 2026-11-23.
+
+<Callout type="warning" title="Don't guess the replacement field name">
+  Cloudflare's own changelog entry for this specific deprecation doesn't name an
+  exact successor field. Rather than assume a plausible-sounding replacement,
+  pull the current DNS settings API reference directly before updating
+  automation, and confirm the field name against a real API response, not a
+  guess.
+</Callout>
+
+## Structural Comparison Matrix
+
+| Operational Aspect         | Before 2026-11-23                                                      | After 2026-11-23                           |
+| :------------------------- | :--------------------------------------------------------------------- | :----------------------------------------- |
+| **`foundation_dns` field** | Read/write, controls Foundation DNS state                              | No longer honored                          |
+| **Endpoints affected**     | `/zones/{zone_id}/dns_settings`, `/accounts/{account_id}/dns_settings` | Same endpoints, different accepted fields  |
+| **Foundation DNS itself**  | Available                                                              | Still available, through a different field |
+
+## Fix it: audit before the field goes silent
+
+The real risk here isn't a thrown error. A script that `PATCH`es `foundation_dns` and checks only the HTTP status code, not the actual resulting DNS settings state, may keep reporting success on a field the API silently stops honoring, while Foundation DNS quietly stops being toggled the way the automation expects.
+
+```bash title="check what a DNS settings call currently returns"
+curl -X GET \
+  "https://api.cloudflare.com/client/v4/zones/<zone_id>/dns_settings" \
+  -H "Authorization: Bearer <api_token>"
+```
+
+```bash title="find every call site to review before 2026-11-23"
+grep -rn "foundation_dns" --include="*.tf" --include="*.sh" --include="*.mjs" .
+```
+
+Run the audit now, confirm the current API response shape against the live DNS settings docs, and update automation to match, rather than waiting for a silent no-op to surface as a support ticket in November.
+
+## Confirmed version
+
+Sourced from Cloudflare's official changelog, published 2026-07-27, deprecation effective the same day, end of life 2026-11-23. The exact replacement field name wasn't found in this deprecation's own changelog text; verify against the live DNS settings API reference before updating automation. Browse more posts like this in the [Data Automation](/data-automation) archive.
