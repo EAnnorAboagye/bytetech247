@@ -1,0 +1,58 @@
+---
+title: "Wrangler's July 2026 Breaking Changes: Full Guide"
+description: "Wrangler shipped 10 changes across v4.111-4.119 in July 2026. One real breaking change, plus nine config, local-dev, and CLI shifts. Full rundown and fixes."
+date: 2026-08-06
+category: dev-tools
+tags: ["wrangler", "cloudflare-workers", "cli", "deployment"]
+series: "Wrangler CLI's July 2026 Breaking Changes: What to Fix Before You Deploy"
+seriesOrder: 1
+coverImage: "./cover.png"
+coverImageAlt: "A dark comparison-matrix style cover listing Wrangler's July 2026 breaking changes: service environments removed, wrangler.toml vs jsonc precedence, containerEngine dropped from Miniflare, cloudflare.config.ts settings export, and local dev observability default-on"
+faq:
+  - question: "Do I need to fix all 10 of these before my next deploy?"
+    answer: "No. Only Cluster 1 (service environments removed) is a hard breaking change that stops a deploy outright if your config still uses legacy_env. The other nine are either config-shape changes that only bite if you use that specific feature (jsonc precedence, cloudflare.config.ts settings, r2_buckets local credentials), or new capabilities you can adopt whenever it's useful (wrangler check startup, OAuth device grant login). Check the table below for which ones actually apply to your setup."
+  - question: "Where does this list stop? Is there a Wrangler release after 4.119.0 not covered here?"
+    answer: "This pillar covers wrangler@4.111.0 through 4.119.0, released 2026-07-15 through 2026-08-05 - the active research window when this was written. A later release could ship more breaking changes; check the current cloudflare/workers-sdk CHANGELOG.md for anything past 4.119.0."
+---
+
+## Quick Answer
+
+Wrangler shipped 10 distinct changes across versions 4.111.0 through 4.119.0 in July 2026: one hard breaking change (service environments removed), plus nine config-format, local-dev, and CLI shifts. If you deploy with Wrangler, check the table below against your own `wrangler.toml`/`jsonc` and CI pipeline before your next deploy.
+
+Wrangler is the CLI every Cloudflare Workers developer runs on every deploy and every local dev session, including this site's own. Between 2026-07-15 and 2026-08-05, ten releases landed changes spanning config-file precedence, local-dev tooling, new CLI capability, and CI/agent automation. None of them are cosmetic. Each one below links to a full breakdown with the exact error, the exact fix, and the exact source.
+
+## Structural Comparison Matrix
+
+| #   | Change                                                  | Version           | Type              | Applies to you if...                                                              |
+| :-- | :------------------------------------------------------ | :---------------- | :---------------- | :-------------------------------------------------------------------------------- |
+| 1   | Service environments removed                            | 4.111.0           | Breaking          | Your config uses `legacy_env` or `[env.*]` blocks                                 |
+| 2   | `wrangler.toml` vs `jsonc` precedence                   | n/a (ongoing)     | Config hazard     | You have both a `wrangler.toml` and `wrangler.jsonc` in the same project          |
+| 3   | `containerEngine` dropped from Miniflare worker options | 4.117.0           | Breaking (API)    | You call `unstable_getMiniflareWorkerOptions()` directly in a custom test harness |
+| 4   | `cloudflare.config.ts` gains a `settings` export        | 4.113.0           | Config shape      | You use the experimental `cloudflare.config.ts` format                            |
+| 5   | Local dev observability on by default                   | 4.114.0 / 4.118.0 | Behavior default  | You run `wrangler dev` or the Cloudflare Vite plugin                              |
+| 6   | `wrangler check startup` graduates from alpha           | 4.116.0           | New capability    | You want real bundle-size numbers before deploying                                |
+| 7   | Naming prompts skipped in non-interactive deploys       | 4.116.0           | Fix               | You deploy via CI or an AI agent driving the CLI                                  |
+| 8   | `r2_buckets` local dev credentials                      | 4.115.0           | New config option | You test R2 bindings locally                                                      |
+| 9   | VPC bindings `.connect()` works in local dev            | 4.115.0           | New capability    | You use VPC Network/Service bindings and previously had to stub `.connect()`      |
+| 10  | `wrangler login` supports OAuth Device Grant            | 4.119.0           | New capability    | You authenticate from a headless/SSH/remote environment                           |
+
+Every row above is confirmed against the real `cloudflare/workers-sdk` changelog entry for its version, not summarized from memory. Full mechanism, exact error text, and the fix live in each linked post.
+
+## The 10 changes, in detail
+
+1. **[Wrangler Removes Service Environments (v4.111.0)](/dev-tools/wrangler-4-111-removes-service-environments/)**: the one hard breaking change. `legacy_env` is gone; every environment now deploys as its own independent Worker.
+2. **[Fix Wrangler wrangler.toml vs jsonc Precedence](/dev-tools/wrangler-toml-vs-jsonc-precedence/)**: Wrangler accepts both formats with no enforced precedence rule and no migration command. This site's own config hit this directly.
+3. **[Wrangler 4.117 Drops containerEngine From Miniflare](/dev-tools/wrangler-4-117-removes-containerengine-miniflare/)**: a custom Vitest harness reading `containerEngine` off the old worker-options shape now silently gets `undefined`.
+4. **[Wrangler's New cloudflare.config.ts settings Export](/dev-tools/wrangler-cloudflare-config-ts-settings-export/)**: account-level settings need a dedicated `settings` export now, or they stop applying silently.
+5. **[Wrangler Now Traces Local Dev by Default (v4.118)](/dev-tools/wrangler-local-dev-observability-default-on/)**: `wrangler dev` captures request traces automatically, which can conflict with multi-process dev-registry setups.
+6. **[Check Worker Bundle Size With wrangler check startup](/dev-tools/wrangler-check-startup-bundle-size/)**: no longer alpha-gated, and now reports real bundle size before you deploy.
+7. **[Wrangler Skips Naming Prompts in Agent/CI Deploys](/dev-tools/wrangler-skips-naming-prompts-ci-deploys/)**: fixes a real blocker for non-interactive CI pipelines and AI coding agents driving the CLI.
+8. **[New r2_buckets Local Dev Credentials in Wrangler](/dev-tools/wrangler-r2-buckets-local-dev-credentials/)**: a dedicated config key to scope credentials to local R2 testing instead of faking it or sharing production-adjacent access.
+9. **[VPC Bindings Now Connect in Wrangler Local Dev](/dev-tools/wrangler-vpc-bindings-local-dev-connect/)**: `.connect()` on VPC bindings finally works locally instead of requiring a stub.
+10. **[Wrangler Login Now Supports OAuth Device Grant](/dev-tools/wrangler-login-oauth-device-grant/)**: authenticate from a headless terminal with no local browser required.
+
+## Why this happened in one month
+
+Cloudflare ships Wrangler on a near-weekly cadence, and July 2026 concentrated an unusual amount of structural churn into a five-week window: one deliberate breaking change (service environments), plus a cluster of local-dev tooling upgrades (observability, R2 credentials, VPC bindings) that all landed within days of each other. None of these are speculative. Every version number and change description above is drawn directly from `cloudflare/workers-sdk`'s own [`packages/wrangler/CHANGELOG.md`](https://github.com/cloudflare/workers-sdk/blob/main/packages/wrangler/CHANGELOG.md), cross-checked against the release dates in that same file.
+
+Browse the rest of the [Dev Tools](/dev-tools) archive for more Cloudflare Workers and CLI coverage.

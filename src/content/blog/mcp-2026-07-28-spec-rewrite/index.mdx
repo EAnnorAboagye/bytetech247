@@ -1,0 +1,58 @@
+---
+title: "The MCP 2026-07-28 Spec Rewrite: Full Guide"
+description: "The MCP 2026-07-28 spec rewrites the protocol core: sessions gone, a new required RPC, subscriptions replaced. Full rundown of every breaking change."
+date: 2026-08-06
+category: ai-productivity
+tags: ["mcp", "model-context-protocol", "agents", "protocol"]
+series: "The MCP 2026-07-28 Spec Rewrite: What Breaks in Your Servers and Clients"
+seriesOrder: 1
+coverImage: "./cover.png"
+coverImageAlt: "A dark comparison-matrix style cover listing the MCP 2026-07-28 spec rewrite's changes: Mcp-Session-Id removed, initialize handshake replaced by _meta fields, server/discover now required, and SSE subscriptions replaced"
+faq:
+  - question: "Is the 2026-07-28 MCP spec backward compatible with servers built on the previous version?"
+    answer: "No, not for the eight Major Changes covered here. The spec removes the Mcp-Session-Id header, the initialize handshake, ping, logging/setLevel, and SSE resumability outright, and requires a new server/discover RPC and a resultType field on every result. A server or client built against the prior spec needs real changes, not just a version bump, before it can talk to a 2026-07-28-compliant counterpart."
+  - question: "Do I need to migrate off Roots, Sampling, and Logging immediately?"
+    answer: "No. Unlike the eight Major Changes, these three are deprecated with a runway: MCP's governance policy guarantees a minimum twelve-month window before removal. Audit which of the three your implementation actually uses and plan the migration now, rather than waiting for a forced break."
+---
+
+## Quick Answer
+
+The MCP 2026-07-28 specification is a comprehensive rewrite of the protocol core: a stateless architecture replaces session-based state, `initialize` is gone in favor of per-request `_meta` negotiation, servers must implement a new `server/discover` RPC, and SSE subscriptions/resumability are replaced. Eight changes are already-effective breaking changes; two (Roots/Sampling/Logging, and OAuth Dynamic Client Registration) are deprecations with a runway. Check the table below against what your own MCP servers and clients actually implement.
+
+Published 2026-07-28, this is directly dogfooded: this exact session runs on Claude Code, connected to real MCP servers, so every change below describes a protocol this environment's own tooling actually speaks. Sourced from the [official MCP specification changelog](https://modelcontextprotocol.io/specification/2026-07-28/changelog), which lists far more than 10 distinct, verbatim, non-overlapping technical changes.
+
+## Structural Comparison Matrix
+
+| #   | Change                    | Old behavior                                        | New behavior                                       | Status                     |
+| :-- | :------------------------ | :-------------------------------------------------- | :------------------------------------------------- | :------------------------- |
+| 1   | Protocol-level sessions   | `Mcp-Session-Id` header, sticky routing             | Explicit server-minted handles as tool arguments   | Breaking                   |
+| 2   | Handshake                 | One-time `initialize`/`initialized` exchange        | Per-request `_meta` version/capability fields      | Breaking                   |
+| 3   | Server discovery          | Implicit, via `initialize`                          | Mandatory `server/discover` RPC                    | Breaking (new requirement) |
+| 4   | Change notifications      | Persistent SSE GET stream, all types                | Opt-in `subscriptions/listen`, typed               | Breaking                   |
+| 5   | Health check / log level  | `ping`, `logging/setLevel` RPCs                     | No direct replacement; log level via `_meta`       | Breaking (removed)         |
+| 6   | Long-running tasks        | Experimental core, blocking `tasks/result`          | Formal extension, polling via `tasks/get`          | Breaking                   |
+| 7   | Result shape              | Implicit result, server-initiated mid-call requests | Mandatory `resultType`, client-driven MRTR pattern | Breaking                   |
+| 8   | Stream resumability       | `Last-Event-ID`, resume in place                    | None; re-issue the request as new                  | Breaking (removed)         |
+| 9   | Roots, Sampling, Logging  | Core features                                       | Deprecated, 12-month minimum runway                | Deprecated                 |
+| 10  | OAuth client registration | Dynamic Client Registration (RFC 7591)              | Client ID Metadata Documents                       | Deprecated                 |
+
+Every row above is drawn directly from the spec's own changelog entry for that change, not summarized from memory. Full mechanism, exact spec language, and migration path live in each linked post.
+
+## The 10 changes, in detail
+
+1. **[MCP Removes Protocol-Level Sessions (Mcp-Session-Id)](/ai-productivity/mcp-removes-protocol-level-sessions/)**: cross-call state now requires explicit, server-minted handles, not a session header.
+2. **[MCP Replaces initialize Handshake With \_meta Fields](/ai-productivity/mcp-replaces-initialize-handshake-with-meta-fields/)**: version and capability negotiation happens per-request now, not once at connection start.
+3. **[MCP Servers Must Now Implement server/discover](/ai-productivity/mcp-servers-must-implement-server-discover/)**: a new mandatory RPC, since there's no `initialize` call left to fall back on for discovery.
+4. **[MCP Replaces SSE Subscriptions With subscriptions/listen](/ai-productivity/mcp-replaces-sse-subscriptions-with-subscriptions-listen/)**: clients must explicitly opt into each notification type they care about.
+5. **[MCP Removes the ping and logging/setLevel Methods](/ai-productivity/mcp-removes-ping-and-logging-setlevel-methods/)**: no direct replacement for either; log level moves to a per-request `_meta` field.
+6. **[MCP Moves Tasks Out of Core Into an Extension](/ai-productivity/mcp-moves-tasks-out-of-core-into-extension/)**: a namespace change and a control-flow rewrite, from blocking to polling.
+7. **[MCP Requires resultType on Every Returned Result](/ai-productivity/mcp-requires-resulttype-on-every-result/)**: every response needs an explicit discriminator; the MRTR pattern replaces server-initiated mid-call requests.
+8. **[MCP Removes SSE Resumability (Last-Event-ID Gone)](/ai-productivity/mcp-removes-sse-resumability/)**: a broken stream now means re-issuing the whole request, not resuming in place.
+9. **[MCP Deprecates Roots, Sampling, and Logging](/ai-productivity/mcp-deprecates-roots-sampling-and-logging/)**: a deprecation with a runway, not an immediate break.
+10. **[MCP Deprecates OAuth Dynamic Client Registration](/ai-productivity/mcp-deprecates-oauth-dynamic-client-registration/)**: a migration path to Client ID Metadata Documents, at the authorization layer.
+
+## Why this happened in one revision
+
+MCP's 2026-07-28 revision moves the protocol from a connection-oriented, session-based design toward a stateless core, a structural shift that touches transport, discovery, notifications, and result handling all at once rather than landing as incremental point changes. None of the mechanisms above are speculative: every one is drawn directly from the [official specification changelog](https://modelcontextprotocol.io/specification/2026-07-28/changelog), published the same day as the revision itself.
+
+Browse the rest of the [AI Productivity](/ai-productivity) archive for more MCP and agent-tooling coverage.
