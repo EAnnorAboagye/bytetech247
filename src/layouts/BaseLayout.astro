@@ -114,7 +114,32 @@ const jsonLdBlocks = [
         window.dataLayer.push(args);
       };
       window.gtag("js", new Date());
-      window.gtag("config", analyticsId);
+      // send_page_view: false — this site uses <ClientRouter /> below, so
+      // every internal link click is a soft, client-side navigation (fetch
+      // + DOM swap), never a real browser page load. GA4 has no way to see
+      // those on its own: gtag.js's automatic page_view only fires once,
+      // right here, for whichever page the visitor actually landed on.
+      // Confirmed live: Realtime showed a visitor for the entry page only,
+      // every subsequent article click during that same visit went
+      // unrecorded — a well-documented gap in Google's own SPA guidance
+      // (developers.google.com/analytics/devguides/collection/ga4/views),
+      // not something Enhanced Measurement's history-listener can be
+      // assumed to cover, since that's a per-property dashboard toggle
+      // this code can't see or depend on. The astro:page-load listener
+      // below fires this same page_view manually instead — once for this
+      // initial load (it fires on the true first load too, not just
+      // transitions) and again on every ClientRouter navigation, so it's
+      // the single source of pageview truth rather than two overlapping
+      // ones.
+      window.gtag("config", analyticsId, { send_page_view: false });
+
+      document.addEventListener("astro:page-load", () => {
+        window.gtag("event", "page_view", {
+          page_location: window.location.href,
+          page_path: window.location.pathname,
+          page_title: document.title,
+        });
+      });
 
       window.addEventListener("load", () => {
         const gtagSrc = `https://www.googletagmanager.com/gtag/js?id=${analyticsId}`;
