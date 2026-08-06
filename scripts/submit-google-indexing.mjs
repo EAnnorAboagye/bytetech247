@@ -9,12 +9,15 @@
 // non-fatal (same posture as submit-indexnow.mjs), never a broken deploy.
 //
 // Auth is a Google service-account JWT flow (RS256-signed JWT -> exchanged
-// for a bearer token at Google's OAuth endpoint), hand-rolled with Node's
-// built-in crypto rather than pulling in google-auth-library/googleapis —
-// the whole flow is two fetches and one signature, not worth a dependency
-// for that. Requires the service account to be added as an Owner on this
-// property in Search Console (Settings -> Users and permissions) — the API
-// call fails with a permissions error otherwise, not a silent no-op.
+// for a bearer token at Google's OAuth endpoint), hand-rolled in
+// scripts/lib/google-service-account.mjs with Node's built-in crypto
+// rather than pulling in google-auth-library/googleapis — the whole flow
+// is two fetches and one signature, not worth a dependency for that. That
+// helper is shared with scripts/check-index-status.mjs, which requests a
+// different scope against the same service account. Requires the service
+// account to be added as an Owner on this property in Search Console
+// (Settings -> Users and permissions) — the API call fails with a
+// permissions error otherwise, not a silent no-op.
 //
 // Reads the full downloaded service-account JSON key from
 // GOOGLE_INDEXING_SERVICE_ACCOUNT (the whole file's contents as one
@@ -26,70 +29,23 @@
 // .github/workflows/ci.yml), same point as the IndexNow submission. Can
 // also be run manually: GOOGLE_INDEXING_SERVICE_ACCOUNT="$(cat key.json)" node scripts/submit-google-indexing.mjs
 import { readFileSync } from "node:fs";
-import { createSign } from "node:crypto";
+import {
+  loadServiceAccountCredentials,
+  getAccessToken,
+} from "./lib/google-service-account.mjs";
 
 const INDEXING_ENDPOINT =
   "https://indexing.googleapis.com/v3/urlNotifications:publish";
-const TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token";
 const SCOPE = "https://www.googleapis.com/auth/indexing";
 
-const rawCredentials = process.env.GOOGLE_INDEXING_SERVICE_ACCOUNT;
+const credentials = loadServiceAccountCredentials();
 
-if (!rawCredentials) {
+if (!credentials) {
   console.log(
     "GOOGLE_INDEXING_SERVICE_ACCOUNT not set — skipping Google Indexing API submission. " +
       "See scripts/submit-google-indexing.mjs for setup.",
   );
   process.exit(0);
-}
-
-const { client_email: clientEmail, private_key: privateKey } =
-  JSON.parse(rawCredentials);
-
-function base64url(input) {
-  return Buffer.from(input)
-    .toString("base64")
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/, "");
-}
-
-async function getAccessToken() {
-  const nowSeconds = Math.floor(Date.now() / 1000);
-  const header = { alg: "RS256", typ: "JWT" };
-  const claims = {
-    iss: clientEmail,
-    scope: SCOPE,
-    aud: TOKEN_ENDPOINT,
-    iat: nowSeconds,
-    exp: nowSeconds + 3600,
-  };
-
-  const unsigned = `${base64url(JSON.stringify(header))}.${base64url(JSON.stringify(claims))}`;
-  const signature = createSign("RSA-SHA256")
-    .update(unsigned)
-    .sign(privateKey, "base64")
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/, "");
-  const jwt = `${unsigned}.${signature}`;
-
-  const response = await fetch(TOKEN_ENDPOINT, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
-      assertion: jwt,
-    }),
-  });
-
-  const body = await response.json();
-  if (!response.ok) {
-    throw new Error(
-      `Token exchange failed: ${response.status} ${JSON.stringify(body)}`,
-    );
-  }
-  return body.access_token;
 }
 
 // Confirmed live (2026-08-05): submitting every sitemap URL on every deploy
@@ -124,7 +80,7 @@ if (urlList.length === 0) {
 }
 
 try {
-  const accessToken = await getAccessToken();
+  const accessToken = await getAccessToken(credentials, SCOPE);
   let succeeded = 0;
 
   for (const url of urlList) {
