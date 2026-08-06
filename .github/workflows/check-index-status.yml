@@ -1,0 +1,41 @@
+name: Check Index Status
+
+# Manual-only: runs scripts/check-index-status.mjs against the Search
+# Console URL Inspection API using the same GOOGLE_INDEXING_SERVICE_ACCOUNT
+# secret ci.yml's deploy job already has. Exists so checking real Google
+# crawl/index status never requires downloading the service-account key to
+# a laptop — trigger this from the Actions tab instead and read the
+# per-URL results in the job log.
+on:
+  workflow_dispatch:
+    inputs:
+      site_url:
+        description: >-
+          Search Console property, exactly as it appears in the property
+          switcher: "sc-domain:bytetech247.com" for a domain property, or
+          "https://bytetech247.com/" (trailing slash) for a URL-prefix
+          property. Wrong format fails with a clear error rather than
+          silently checking nothing.
+        required: true
+        default: "sc-domain:bytetech247.com"
+      urls:
+        description: >-
+          Optional space-separated URLs to spot-check. Leave blank to check
+          every URL in the live sitemap instead.
+        required: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: ".nvmrc"
+
+      - name: Check index status
+        env:
+          GOOGLE_INDEXING_SERVICE_ACCOUNT: ${{ secrets.GOOGLE_INDEXING_SERVICE_ACCOUNT }}
+          GSC_SITE_URL: ${{ inputs.site_url }}
+        run: node scripts/check-index-status.mjs ${{ inputs.urls }}
