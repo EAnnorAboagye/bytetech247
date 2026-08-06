@@ -103,7 +103,7 @@ Status values: pending (researched, not yet approved) -> approved (user greenlit
 
 The concrete methodology above (structural breaking point sourced from GitHub issues/changelogs) is proven for `guides-fixes`. The other three categories bend the same shape without changing the process in sections 1-6:
 
-- **dev-tools** — pillar is usually a tool/workflow friction point from a version bump, vendor change, or deprecated CLI flag, not necessarily a console error.
+- **dev-tools** — pillar is usually a tool/workflow friction point from a version bump, vendor change, or deprecated CLI flag, not necessarily a console error. Research sources widen here: alongside GitHub issues/changelogs, check Hacker News discussions and GitHub trending tool repos for emerging friction points — this category's audience surfaces problems there before they become formal issues. Every cluster must require opening a terminal, editing a config file, or running CLI parameters to resolve — reject a candidate that's explainable with no hands-on step, even if it's a real, timely topic; that's a `write-article`-general-category piece, not a dev-tools structural cluster. See [dev-tools-article](../dev-tools-article/SKILL.md) for the matching drafting blueprint.
 - **data-automation** — pillar is usually a pipeline, API, or schema breaking change (a deprecated endpoint, a changed webhook payload, a queue/rate-limit behavior shift).
 - **ai-productivity** — pillar is usually a model, agent-tooling, or prompting-pattern shift (a deprecated model ID, a changed tool-use schema, a capability regression).
 
