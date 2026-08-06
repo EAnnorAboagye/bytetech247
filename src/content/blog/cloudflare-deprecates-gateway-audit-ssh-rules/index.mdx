@@ -1,0 +1,60 @@
+---
+title: "Cloudflare Deprecates Gateway Audit SSH Rules"
+description: "Cloudflare fully removed Gateway audit_ssh network policy rules on 2026-07-15 after a staged rollout. Migrate to SSH with Access for Infrastructure."
+date: 2026-08-06
+category: data-automation
+tags: ["cloudflare", "zero-trust", "gateway", "deprecation"]
+coverImage: "./cover.png"
+coverImageAlt: "A terminal window showing the real staged deprecation timeline for Cloudflare Gateway's audit_ssh network policy action, ending in full removal on 2026-07-15"
+faq:
+  - question: "Did this break all at once, or gradually?"
+    answer: "Gradually, over roughly 19 months. New audit_ssh rules through the dashboard stopped in December 2024, new rules through the API and Terraform stopped 2025-11-03, editing existing rules stopped 2026-01-15, and every remaining rule stopped working entirely on 2026-07-15. A policy-as-code pipeline could have been quietly blocked on step two or three for months before the final cutoff."
+  - question: "What replaces the audit_ssh action?"
+    answer: "Cloudflare recommends SSH with Access for Infrastructure, described as providing deeper functionality than the old Gateway network policy action. This is a genuinely different feature area (Access for Infrastructure), not a renamed field on the same network policy resource."
+---
+
+## Quick Answer
+
+Cloudflare's Gateway `audit_ssh` network policy action is fully gone as of 2026-07-15, the end of a staged rollout that started in December 2024. If Terraform-managed Gateway policies referencing `action: "audit_ssh"` started failing to apply months before the final cutoff, that's expected: API and Terraform rule creation was already disabled on 2025-11-03, and editing existing rules stopped on 2026-01-15. Migrate to SSH with Access for Infrastructure, Cloudflare's stated replacement.
+
+## The actual timeline, staged over 19 months
+
+This deprecation didn't happen on one date. Cloudflare rolled it out in four distinct stages:
+
+- **December 2024**: creating new `audit_ssh` rules through the dashboard disabled.
+- **2025-11-03**: creating new rules through the API and Terraform disabled.
+- **2026-01-15**: editing existing rules disabled across dashboard, API, and Terraform alike.
+- **2026-07-15**: every remaining `audit_ssh` rule stops working entirely.
+
+For a policy-as-code pipeline that only creates or edits Gateway rules occasionally, this staged rollout means a `terraform apply` could have started failing on the 2025-11-03 or 2026-01-15 cutoff, months before the feature actually stopped functioning at runtime on 2026-07-15. Three separate dates, three separate places automation could have quietly broken.
+
+## Structural Comparison Matrix
+
+| Stage                        | What stopped                                | Date          |
+| :--------------------------- | :------------------------------------------ | :------------ |
+| **New rules, dashboard**     | Creating `audit_ssh` rules by hand          | December 2024 |
+| **New rules, API/Terraform** | Creating `audit_ssh` rules programmatically | 2025-11-03    |
+| **Editing existing rules**   | Any update, any interface                   | 2026-01-15    |
+| **Runtime enforcement**      | Existing rules stop applying at all         | 2026-07-15    |
+
+## Fix it: migrate to Access for Infrastructure
+
+```bash title="find Terraform-managed audit_ssh rules"
+grep -rln "audit_ssh" --include="*.tf" .
+```
+
+Cloudflare's stated replacement is SSH with Access for Infrastructure, described as providing deeper functionality than the old Gateway network policy action rather than being a like-for-like field rename. Treat this as a genuine migration to a different feature area, not a config tweak: any Terraform module referencing `audit_ssh` needs its resource block replaced with the Access for Infrastructure equivalent, not just a renamed action string.
+
+<Callout
+  type="warning"
+  title="Check for a stale Terraform state, not just live rules"
+>
+  If Terraform stopped being able to apply changes to an `audit_ssh` rule back
+  on 2026-01-15, the resource may still exist in state without matching what the
+  dashboard or API currently reports. Run a plan against current state before
+  assuming Terraform's view of these rules is accurate.
+</Callout>
+
+## Confirmed version
+
+Sourced from Cloudflare Community's mirror of the official Gateway changelog announcement and Cloudflare's own staged-deprecation timeline, full removal confirmed for 2026-07-15. This entry's own changelog corroboration in Cloudflare's API deprecations data was published 2026-05-13, ahead of the final cutoff. Browse more posts like this in the [Data Automation](/data-automation) archive.

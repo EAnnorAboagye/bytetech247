@@ -1,0 +1,65 @@
+---
+title: "Cloudflare Now Enforces a 65-Char Account Name Limit"
+description: "Cloudflare enforces a 65-character account name cap on 2026-09-27. Automation creating or renaming accounts with longer names starts failing validation."
+date: 2026-08-06
+category: data-automation
+tags: ["cloudflare", "api", "accounts", "validation"]
+coverImage: "./cover.png"
+coverImageAlt: "A terminal window showing the real Cloudflare changelog entry: account names will be limited to a maximum of 65 characters across all account creation and update APIs"
+faq:
+  - question: "Does this affect accounts that already have a longer name?"
+    answer: "Cloudflare's changelog describes this as enforcement on account creation and update APIs, not a retroactive rename of existing accounts. An account created before enforcement with a longer name isn't described as being forcibly renamed; the constraint applies going forward, to new creates and updates."
+  - question: "Is 65 characters counted in bytes or Unicode characters?"
+    answer: "Cloudflare's changelog states the limit as 65 characters without specifying byte-vs-codepoint counting. If account names in your automation ever include non-ASCII text, verify the exact counting behavior against a real API call before assuming a simple .length check in your language of choice matches Cloudflare's server-side count."
+---
+
+## Quick Answer
+
+Cloudflare enforces a 65-character maximum on account names across `POST /accounts` and `PUT /accounts/{account_id}` starting 2026-09-27. Automation that generates account names programmatically, prefixing a project ID or a long descriptive string, needs to validate length before the call, or the request starts failing once enforcement begins.
+
+## What's actually changing
+
+This is a new validation constraint, not an endpoint removal or a schema change. Cloudflare's changelog states it directly:
+
+> "Account names will be limited to a maximum of 65 characters across all account creation and update APIs"
+
+Before enforcement begins, a longer name is accepted the same way it always has been. After 2026-09-27, the same request that used to succeed starts returning a validation error instead, purely because of name length, with no other change to the request shape.
+
+## Structural Comparison Matrix
+
+| Operational Aspect                  | Before 2026-09-27                              | After 2026-09-27                 |
+| :---------------------------------- | :--------------------------------------------- | :------------------------------- |
+| **Account name over 65 characters** | Accepted                                       | Rejected with a validation error |
+| **Request shape**                   | Unchanged                                      | Unchanged                        |
+| **Endpoints affected**              | `POST /accounts`, `PUT /accounts/{account_id}` | Same endpoints                   |
+
+## Fix it: validate length before the call
+
+```bash title="before: a name that will start failing"
+curl -X POST "https://api.cloudflare.com/client/v4/accounts" \
+  -H "Authorization: Bearer <api_token>" \
+  -H "Content-Type: application/json" \
+  --data '{"name": "acme-corp-production-deployment-pipeline-service-account-2026-eu-west-region"}'
+```
+
+That name is 76 characters, over the limit. Truncate or restructure the naming scheme before enforcement lands:
+
+```bash title="after: within the 65-character cap"
+curl -X POST "https://api.cloudflare.com/client/v4/accounts" \
+  -H "Authorization: Bearer <api_token>" \
+  -H "Content-Type: application/json" \
+  --data '{"name": "acme-corp-prod-deploy-pipeline-2026-eu-west"}'
+```
+
+<Callout type="tip" title="Add a length check in code, not just at deploy time">
+  If account names are generated programmatically (a template string combining a
+  project slug, environment, and region, for example), add an explicit length
+  assertion in the code that builds the name, not just a manual check before
+  running a script. A silent truncation or an unhandled 400 error at 2 a.m.
+  during an automated account-creation flow is a worse failure mode than
+  catching it in code review.
+</Callout>
+
+## Confirmed version
+
+Sourced from Cloudflare's official changelog, published 2026-07-22, with enforcement beginning 2026-09-27. Browse more posts like this in the [Data Automation](/data-automation) archive.

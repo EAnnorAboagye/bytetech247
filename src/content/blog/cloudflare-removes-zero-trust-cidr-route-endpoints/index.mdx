@@ -1,0 +1,71 @@
+---
+title: "Cloudflare Removes Zero Trust CIDR Route Endpoints"
+description: "Cloudflare removes the CIDR-encoded route endpoints in the Zero Trust Networks API on 2026-10-05. Tunnel/WARP Connector automation needs to migrate before then."
+date: 2026-08-06
+category: data-automation
+tags: ["cloudflare", "zero-trust", "api", "deprecation"]
+relatedSlugs: ["cloudflare-drops-connections-field-from-tunnel-api"]
+coverImage: "./cover.png"
+coverImageAlt: "A terminal window showing the real teamnet routes endpoint change: the CIDR-encoded network path is removed in favor of a route_id-based endpoint"
+faq:
+  - question: "Do I need to recreate my existing routes to get a route_id?"
+    answer: "No. Call the List tunnel routes endpoint to read the route_id of every route you already have, or capture it from the response the first time you create a new route through the replacement endpoint. Existing routes already have a route_id; you just haven't needed to read it until now."
+  - question: "Does this affect routes managed through the Zero Trust dashboard instead of the API?"
+    answer: "No. This deprecation is specific to the CIDR-encoded REST API endpoints. Routes managed by hand through the Zero Trust dashboard are unaffected; this only matters for scripts, Terraform, or CI/CD pipelines calling the API directly."
+---
+
+## Quick Answer
+
+Cloudflare removes the CIDR-encoded route endpoints in the Zero Trust Networks API on 2026-10-05. Automation calling `POST`/`PATCH`/`DELETE` on `/accounts/{account_id}/teamnet/routes/network/{ip_network_encoded}` needs to switch to the standard, `route_id`-based endpoints instead, capturing each route's `route_id` from the List tunnel routes call or from the create response, before that date.
+
+## What's actually changing
+
+Two related changes land on the same date across the Zero Trust Networks API and Cloudflare Tunnel API. This post covers the route-endpoint removal; the other, a response field drop, is covered separately since it's a distinct technical change with its own fix.
+
+The CIDR-encoded route endpoints, which addressed a route by URL-encoding its IP network directly into the path, are being deprecated in favor of the `route_id`-based endpoints that already exist today:
+
+- Old (removed 2026-10-05): `POST`/`PATCH`/`DELETE /accounts/{account_id}/teamnet/routes/network/{ip_network_encoded}`
+- New (already available): `PATCH`/`DELETE /accounts/{account_id}/teamnet/routes/{route_id}`
+
+Consolidating on `route_id` matches how every other resource in the Zero Trust Networks API is already addressed, and drops the need to URL-encode a CIDR range into the path at all.
+
+## Structural Comparison Matrix
+
+| Operational Aspect                   | CIDR-encoded endpoint (removed)                         | route_id endpoint (current)                      |
+| :----------------------------------- | :------------------------------------------------------ | :----------------------------------------------- |
+| **How a route is addressed**         | IP network URL-encoded into the path                    | A stable `route_id`                              |
+| **URL encoding required**            | Yes, the CIDR range itself                              | No                                               |
+| **Consistency with rest of the API** | Inconsistent, this was the only CIDR-addressed resource | Matches every other Zero Trust Networks resource |
+
+## Fix it: capture route_id, then switch endpoints
+
+```bash title="find the route_id for every existing route"
+curl -X GET \
+  "https://api.cloudflare.com/client/v4/accounts/<account_id>/teamnet/routes" \
+  -H "Authorization: Bearer <api_token>"
+```
+
+Each route in that response includes its `route_id`. Store it wherever the automation currently stores the CIDR range, then switch the update/delete calls:
+
+```bash title="before: CIDR-encoded path"
+curl -X DELETE \
+  "https://api.cloudflare.com/client/v4/accounts/<account_id>/teamnet/routes/network/10.0.0.0%2F24" \
+  -H "Authorization: Bearer <api_token>"
+```
+
+```bash title="after: route_id path"
+curl -X DELETE \
+  "https://api.cloudflare.com/client/v4/accounts/<account_id>/teamnet/routes/<route_id>" \
+  -H "Authorization: Bearer <api_token>"
+```
+
+<Callout type="warning" title="Creating new routes already uses route_id">
+  Route creation isn't CIDR-encoded to begin with, only update and delete were.
+  If your automation only ever creates routes and never updates or deletes them
+  by CIDR, this deprecation may not touch it at all. Check which HTTP methods
+  your scripts actually call before assuming a rewrite is needed.
+</Callout>
+
+## Confirmed version
+
+Sourced from Cloudflare's official changelog, "Zero Trust Networks route endpoints and Cloudflare Tunnel connections field retiring on October 5, 2026," published 2026-07-09. Browse more posts like this in the [Data Automation](/data-automation) archive.

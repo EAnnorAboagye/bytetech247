@@ -1,0 +1,54 @@
+---
+title: "Cloudflare Deprecates Legacy Registrar Domain API"
+description: "Cloudflare retires the legacy Registrar domain management endpoints on 2026-09-27 in favor of the new Registrar API. Low-traffic automation is easy to miss."
+date: 2026-08-06
+category: data-automation
+tags: ["cloudflare", "registrar", "api", "deprecation"]
+coverImage: "./cover.png"
+coverImageAlt: "A terminal window showing the real Cloudflare changelog entry: the legacy Registrar domain management endpoints are deprecated and will reach their end of life on September 27, 2026"
+faq:
+  - question: "What exactly does the new Registrar API add over the legacy one?"
+    answer: "Cloudflare describes the new Registrar API as adding domain search and availability checking alongside registration and management, a broader surface than the legacy domain-management-only endpoints. It isn't purely a rename; it's a genuinely expanded API."
+  - question: "Is there an exact 1:1 URL mapping from the old endpoint to the new one?"
+    answer: "Cloudflare's own migration guidance points to the new Registrar API's documentation rather than a simple find-and-replace path swap. Confirm the exact new endpoint shape against the live Registrar API reference before updating automation, rather than assuming a mechanical path substitution like the Workers KV deprecation in this same pillar."
+---
+
+## Quick Answer
+
+Cloudflare deprecates the legacy Registrar domain management endpoints, `GET`/`PUT /accounts/{account_id}/registrar/domains`, reaching end of life 2026-09-27. Automation registering, renewing, or updating domains through this endpoint needs to migrate to the new Registrar API before then. Domain-management automation tends to be low-frequency and easy to forget about, which makes it exactly the kind of script that goes unmaintained until it starts failing.
+
+## What's actually changing
+
+Cloudflare's changelog states the change and its deadline directly:
+
+> "The legacy Registrar domain management endpoints are deprecated and will reach their end of life on September 27, 2026"
+
+Unlike the Workers KV deprecation earlier in this pillar, which is a pure URL path swap with an identical request/response shape, this migration points to a genuinely newer, broader API: Cloudflare describes the replacement Registrar API as adding domain search and availability checking alongside registration and management, not just the same operations at a new path.
+
+<Callout type="warning" title="Confirm the exact new endpoint shape yourself">
+  This deprecation doesn't reduce to a mechanical path substitution the way the
+  KV routes change does. Pull the current Registrar API reference directly and
+  confirm the exact request/response shape for whatever operation your
+  automation performs, register, renew, transfer, or update, rather than
+  assuming it mirrors the legacy endpoint's structure.
+</Callout>
+
+## Structural Comparison Matrix
+
+| Operational Aspect                   | Legacy Registrar API (deprecated)                    | New Registrar API                                        |
+| :----------------------------------- | :--------------------------------------------------- | :------------------------------------------------------- |
+| **Domain management endpoints**      | `GET`/`PUT /accounts/{account_id}/registrar/domains` | Documented separately in the new Registrar API reference |
+| **Domain search/availability check** | Not part of this API                                 | Included                                                 |
+| **Available after 2026-09-27**       | Removed                                              | Active                                                   |
+
+## Fix it: find and prioritize low-traffic automation
+
+```bash title="find every call site to review before 2026-09-27"
+grep -rn "registrar/domains" --include="*.tf" --include="*.sh" --include="*.mjs" .
+```
+
+Domain registration and renewal automation often runs rarely, once a year at renewal time, or only when a new domain is provisioned, which makes it easy for a deprecation notice to slip past whoever maintains it. If this grep finds anything, flag it for review now rather than waiting for the next renewal cycle to discover it silently stopped working.
+
+## Confirmed version
+
+Sourced from Cloudflare's official changelog, published 2026-06-29, documenting a deprecation effective 2026-04-10 and an end of life of 2026-09-27. The new Registrar API's exact endpoint shape wasn't independently verified here; confirm against Cloudflare's live Registrar API reference before migrating. Browse more posts like this in the [Data Automation](/data-automation) archive.

@@ -1,0 +1,53 @@
+---
+title: "Cloudflare AMP/SXG API Has Reached End of Life"
+description: "Cloudflare confirms AMP/SXG reached end of life on 2026-06-23 with no replacement. If /zones/{id}/amp/sxg calls started failing quietly, this is why."
+date: 2026-08-06
+category: data-automation
+tags: ["cloudflare", "api", "amp", "deprecation"]
+coverImage: "./cover.png"
+coverImageAlt: "A terminal window showing the real Cloudflare changelog entry: the AMP/SXG features have reached end of life, there will be no replacement"
+faq:
+  - question: "Why is Cloudflare publishing a changelog entry for something that already ended?"
+    answer: "Cloudflare's own deprecation entries are dated by when they're published to the changelog, not necessarily when the underlying change happened. This entry documents a deprecation (2025-09-18) and an end-of-life (2026-06-23) that both predate its 2026-07-08 publish date, likely a retroactive documentation pass rather than advance notice."
+  - question: "Is there any replacement for AMP/SXG on Cloudflare?"
+    answer: "No. Cloudflare's own changelog states it plainly: the features have reached end of life and there will be no replacement. This is a full feature removal, not a migration to a different endpoint."
+---
+
+## Quick Answer
+
+Cloudflare's AMP/SXG feature and its API (`GET`/`PUT /zones/{zone_id}/amp/sxg`) reached end of life on 2026-06-23, with no replacement. Cloudflare's changelog entry confirming this was published 2026-07-08, weeks after the actual cutoff. If automation calling this endpoint started failing in late June with no obvious cause, this is the explanation: the feature is gone, not a temporary outage.
+
+## Why this one reads differently than the rest of this pillar
+
+Every other post in this series is forward-looking: a deadline that hasn't arrived yet, with time to migrate before it does. This one is retroactive. Cloudflare's own changelog entry documents a deprecation date (2025-09-18) and an end-of-life date (2026-06-23) that both came before the changelog post itself went up on 2026-07-08:
+
+> "The AMP/SXG features have reached end of life. There will be no replacement"
+
+That gap between when something actually stopped working and when Cloudflare documented it is exactly the kind of thing that makes a real support ticket. Automation calling this endpoint didn't get a deprecation warning window; it just started failing on a date with no changelog entry to explain it until roughly two weeks later.
+
+## Structural Comparison Matrix
+
+| Operational Aspect                       | Before 2026-06-23 | After 2026-06-23                     |
+| :--------------------------------------- | :---------------- | :----------------------------------- |
+| **`GET`/`PUT /zones/{zone_id}/amp/sxg`** | Functional        | No longer available                  |
+| **Replacement**                          | N/A               | None; full feature removal           |
+| **Changelog notice**                     | N/A               | Published 2026-07-08, after the fact |
+
+## Fix it: remove the dead call, not just retry it
+
+<Callout type="danger" title="Retrying won't help">
+  If a script's error-handling logic treats a failure here as transient and
+  retries with backoff, that retry loop now runs forever against an endpoint
+  that isn't coming back. Remove the call entirely rather than wrapping it in
+  more resilient retry logic.
+</Callout>
+
+```bash title="find every call site to remove"
+grep -rn "amp/sxg" --include="*.tf" --include="*.sh" --include="*.mjs" .
+```
+
+There's no migration path to point automation at instead, since Cloudflare's own changelog says there's no replacement. The fix here is deletion: remove the call, and whatever downstream logic depended on its result, from the pipeline entirely.
+
+## Confirmed version
+
+Sourced from Cloudflare's official changelog, published 2026-07-08, documenting a deprecation dated 2025-09-18 and an end of life dated 2026-06-23, both already in effect at publication time. Browse more posts like this in the [Data Automation](/data-automation) archive.
