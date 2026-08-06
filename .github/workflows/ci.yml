@@ -13,11 +13,11 @@ jobs:
       # `git log`, which silently returns nothing for a shallow clone
       # once a file's real last-touching commit is older than whatever
       # depth was fetched — full history, not the default shallow clone.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version-file: ".nvmrc"
           cache: "npm"
@@ -70,11 +70,11 @@ jobs:
       # `git log`, which silently returns nothing for a shallow clone
       # once a file's real last-touching commit is older than whatever
       # depth was fetched — full history, not the default shallow clone.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version-file: ".nvmrc"
           cache: "npm"
