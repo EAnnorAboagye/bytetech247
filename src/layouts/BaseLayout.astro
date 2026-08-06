@@ -57,19 +57,33 @@ const jsonLdBlocks = [
     <!-- Trusted Types default policy — required for Astro's own ClientRouter
          (astro:transitions) to function under this page's
          require-trusted-types-for 'script' CSP directive (see
-         scripts/generate-security-headers.mjs). ClientRouter isn't
-         Trusted-Types-aware: every client-side navigation calls
+         applyCsp()/cspFor() in worker/index.ts, which generates this
+         header per-request — moved there from a static build-time file
+         2026-08-06 to support a real per-request CSP nonce). ClientRouter
+         isn't Trusted-Types-aware: every client-side navigation calls
          `new DOMParser().parseFromString(html, ...)` on the fetched page
          internally, and a raw string into that sink throws
          "This document requires 'TrustedHTML' assignment" with no default
          policy registered — confirmed live: with the CSP header actually
-         enforced (astro dev/preview never apply dist/_headers, so this
-         never surfaced in local testing or e2e), every single link click
-         site-wide silently failed to navigate. Registering the identity
-         'default' policy here is safe specifically because its only
-         caller in practice is ClientRouter fetching *our own* same-origin
-         page HTML from this build — never attacker-controlled data. Must
-         run before <ClientRouter /> attaches its navigation listeners
+         enforced (astro dev/preview never run the Worker that sets this
+         header, so this never surfaced in local testing or e2e), every
+         single link click site-wide silently failed to navigate. This
+         same pass-through policy is also what makes AdSense's own
+         internal dynamic script injection work under Trusted Types
+         without a dedicated policy of its own — any caller that doesn't
+         request a specific named policy falls back to this one.
+         Registering the identity 'default' policy here is safe for
+         ClientRouter specifically because its only caller in practice is
+         ClientRouter fetching *our own* same-origin page HTML from this
+         build — never attacker-controlled data. It's a deliberate,
+         separate tradeoff that this same pass-through also covers
+         AdSense's internal script injection, which this site can't
+         audit or scope as narrowly (AdSense ships no Trusted Types
+         policy of its own) — accepted because script-src's nonce +
+         'strict-dynamic' is what actually gates *which* scripts get to
+         run at all; this policy only governs *how* an already-trusted
+         script is allowed to keep injecting more content once running.
+         Must run before <ClientRouter /> attaches its navigation listeners
          (i.e., before anything below can trigger a client-side nav), so
          it's the very first script in <head>. -->
     <script is:inline>
@@ -91,12 +105,23 @@ const jsonLdBlocks = [
          ad_personalization makes gtag.js attempt Google Ads remarketing
          and audience-building requests (stats.g.doubleclick.net,
          google.com/ads/ga-audiences) plus a dynamically-injected inline
-         script for the same feature — none of which are in this site's
-         CSP allowlist (scripts/generate-security-headers.mjs), correctly,
-         since this site has no Google Ads account and privacy.astro only
-         discloses Analytics, never remarketing/advertising. That mismatch
-         was firing blocked-by-CSP console errors on every pageview, which
-         is what was actually costing the Best Practices points.
+         script for the same feature — none of which were in this site's
+         CSP allowlist at the time, correctly, since this site didn't run
+         ads yet and privacy.astro only disclosed Analytics, never
+         remarketing/advertising. That mismatch was firing blocked-by-CSP
+         console errors on every pageview, which is what was actually
+         costing the Best Practices points.
+
+         Still denied now that AdSense is integrated (2026-08-06): denying
+         ad_storage/ad_user_data/ad_personalization means AdSense serves
+         non-personalized ads only, which Google explicitly supports
+         without any consent UI. Granting them would require a
+         Google-certified Consent Management Platform for EEA/UK/Swiss
+         visitors under Google's EU User Consent Policy — this site has no
+         CMP (the 2026-08-04 decision above removed the old
+         CookieConsent.astro gate entirely), so granting ad consent by
+         default would violate that policy the moment a real EEA/UK
+         visitor loads the page. Revisit only alongside adding a real CMP.
 
          The actual gtag.js fetch is deferred until the window "load" event,
          not a static <script src> tag — the old consent-gated version
@@ -174,7 +199,7 @@ const jsonLdBlocks = [
       window.addEventListener("load", () => {
         const gtagSrc = `https://www.googletagmanager.com/gtag/js?id=${analyticsId}`;
         // Trusted Types (enforced via the Content-Security-Policy header,
-        // see scripts/generate-security-headers.mjs) rejects a plain
+        // see worker/index.ts's cspFor()) rejects a plain
         // string assigned to script.src — this policy only ever returns
         // the one hardcoded gtag.js URL built above, never an
         // attacker-influenced value, which is what makes it a real
@@ -199,16 +224,29 @@ const jsonLdBlocks = [
     </script>
     <!-- Cloudflare Web Analytics, self-hosted (Manual Setup) — see the
          cloudflareBeaconToken comment in src/config.ts for why this isn't
-         left to the zone's Automatic Setup. A same-origin external
-         <script src>, same as gtag.js below: already covered by
-         script-src's static.cloudflareinsights.com host allowlist, no
-         hash needed. -->
+         left to the zone's Automatic Setup. A same-origin-authored
+         <script src> tag, same as gtag.js below and the AdSense tag that
+         follows: gets its CSP nonce from the Worker's HTMLRewriter pass
+         (worker/index.ts), not a host allowlist entry. -->
     <script
       type="module"
       src="https://static.cloudflareinsights.com/beacon.min.js"
       data-cf-beacon={JSON.stringify({
         token: siteConfig.cloudflareBeaconToken,
       })}></script>
+    <!-- Google AdSense loader — enables Auto Ads once turned on in the
+         AdSense dashboard, no ad-unit markup needed here. A static
+         <script src>, not a JS-driven Trusted Types sink (unlike the
+         gtag.js loader above), so it's unaffected by
+         require-trusted-types-for; it gets its CSP nonce the same way
+         the two tags above do. See adsensePublisherId's comment in
+         src/config.ts for why ad_storage/ad_user_data/ad_personalization
+         stay denied (non-personalized ads only) until this site has a
+         real Consent Management Platform. -->
+    <script
+      async
+      src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${siteConfig.adsensePublisherId}`}
+      crossorigin="anonymous"></script>
     <!-- Backup ownership-verification method alongside the DNS TXT record
          already in place (Cloudflare DNS) — Google Search Console's
          "additional verification methods" page for

@@ -1,0 +1,4 @@
+# Google AdSense authorized-seller declaration (adstxt.guide).
+# f08c47fec0942fa0 is Google's own universal AdSense certification
+# authority ID — the same value for every publisher, not account-specific.
+google.com, pub-2225877475261768, DIRECT, f08c47fec0942fa0

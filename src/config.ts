@@ -106,4 +106,14 @@ export const siteConfig = {
   // Automatic Setup should be turned off in the dashboard once this
   // ships, so the beacon doesn't fire twice per pageview.
   cloudflareBeaconToken: "90df95ac9f614fe1833024011e9e4b03",
+
+  // Google AdSense publisher ID — not a secret, same reasoning as
+  // analyticsId above (visible in the page source of every AdSense site).
+  // Loaded in BaseLayout.astro's <head>; see worker/index.ts's cspFor()
+  // for the nonce + 'strict-dynamic' CSP this requires. BaseLayout.astro's
+  // gtag Consent Mode default keeps ad_storage/ad_user_data/
+  // ad_personalization denied, so this serves non-personalized ads only
+  // until a real Consent Management Platform exists for EEA/UK/Swiss
+  // visitors.
+  adsensePublisherId: "pub-2225877475261768",
 } as const;

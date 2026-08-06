@@ -15,6 +15,106 @@ export interface Env {
   ASSETS: Fetcher;
   COUNTERS_KV: KVNamespace;
   SESSION_KV: KVNamespace;
+  // Set once via `wrangler secret put CSP_NONCE_SECRET` — never committed.
+  // See deriveNonce() below for what it's used for.
+  CSP_NONCE_SECRET: string;
+}
+
+// A real per-request-unique CSP nonce would need every HTML response
+// marked uncacheable, throwing away the edge caching this site relies on
+// today (confirmed live: bytetech247.com HTML responses come back
+// `cf-cache-status: HIT`). Deriving the nonce from a secret + a 5-minute
+// time bucket instead means every request within the same window —
+// cached or freshly computed — agrees on the same value, so caching
+// keeps working unmodified while the nonce still rotates every 5
+// minutes rather than staying fixed forever the way the old hash-based
+// CSP did.
+const NONCE_WINDOW_MS = 5 * 60 * 1000;
+
+async function deriveNonce(secret: string): Promise<string> {
+  const bucket = Math.floor(Date.now() / NONCE_WINDOW_MS);
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const signature = await crypto.subtle.sign(
+    "HMAC",
+    key,
+    new TextEncoder().encode(String(bucket)),
+  );
+  // base64url, no padding — '+', '/', '=' aren't valid inside a CSP
+  // nonce-source token unquoted from the header's perspective, and this
+  // is also going straight into an HTML attribute value.
+  return btoa(String.fromCharCode(...new Uint8Array(signature)))
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "")
+    .slice(0, 32);
+}
+
+// Google's own Publisher Tag docs are explicit that GPT/AdSense's
+// ad-serving domains "change over time" and don't support a static
+// host-allowlist CSP — they recommend nonce + 'strict-dynamic' instead
+// (developers.google.com/publisher-tag/guides/content-security-policy).
+// frame-src/img-src/connect-src widen to `https:` for the same reason:
+// ad creatives, iframes, and measurement beacons span far more
+// Google/ad-tech domains than can be safely enumerated (the exact
+// mistake that made the old hash-based script-src go stale twice
+// already, both times for the same Cloudflare beacon script — see git
+// history). The actual XSS protection stays in script-src's nonce +
+// strict-dynamic, which still blocks arbitrary injected script
+// execution; widening the other directives only affects what ad
+// *content* is allowed to render, a much lower-severity concern.
+// require-trusted-types-for is left in place untouched — the
+// pass-through `default` Trusted Types policy already registered in
+// BaseLayout.astro (`createHTML: (html) => html`, etc.) accepts any
+// unqualified sink usage, which is exactly what AdSense's internal
+// script injection will hit, the same way it already transparently
+// covers Astro's own ClientRouter today.
+function cspFor(nonce: string): string {
+  return [
+    `default-src 'self'`,
+    `script-src 'nonce-${nonce}' 'strict-dynamic' 'unsafe-inline' https: http:`,
+    `style-src 'self' 'unsafe-inline'`,
+    `img-src 'self' https: data:`,
+    `font-src 'self'`,
+    `frame-src https:`,
+    `connect-src 'self' https:`,
+    `frame-ancestors 'none'`,
+    `base-uri 'self'`,
+    `form-action 'self'`,
+    `object-src 'none'`,
+    `require-trusted-types-for 'script'`,
+    `upgrade-insecure-requests`,
+  ].join("; ");
+}
+
+// Tags every <script> element in an HTML response with the current
+// nonce (first-party scripts and the AdSense loader alike — whichever
+// file they came from) and sets the matching Content-Security-Policy
+// header. No-ops for non-HTML responses (the /api/counter JSON
+// response, the markdown-alternate branch, etc.).
+function applyCsp(response: Response, nonce: string): Response {
+  if (!response.headers.get("Content-Type")?.includes("text/html")) {
+    return response;
+  }
+  const rewritten = new HTMLRewriter()
+    .on("script", {
+      element(el) {
+        el.setAttribute("nonce", nonce);
+      },
+    })
+    .transform(response);
+  const headers = new Headers(rewritten.headers);
+  headers.set("Content-Security-Policy", cspFor(nonce));
+  return new Response(rewritten.body, {
+    status: rewritten.status,
+    statusText: rewritten.statusText,
+    headers,
+  });
 }
 
 // Sitewide preference declaration (contentsignals.org / draft-romm-aipref-
@@ -89,6 +189,10 @@ export default {
       return handleCounter(request, env);
     }
 
+    // Computed once per request, reused at every HTML return point below
+    // so a single response never mixes two different nonce values.
+    const nonce = await deriveNonce(env.CSP_NONCE_SECRET);
+
     // Not yet implemented — falling through to static assets is the
     // correct behavior for both until they're built, not an error:
     //
@@ -147,13 +251,16 @@ export default {
       headers.set("Content-Signal", CONTENT_SIGNAL);
       const existingVary = headers.get("Vary");
       headers.set("Vary", existingVary ? `${existingVary}, Accept` : "Accept");
-      return new Response(response.body, {
-        status: response.status,
-        headers,
-      });
+      return applyCsp(
+        new Response(response.body, {
+          status: response.status,
+          headers,
+        }),
+        nonce,
+      );
     }
 
-    return response;
+    return applyCsp(response, nonce);
   },
 };
 

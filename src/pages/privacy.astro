@@ -1,7 +1,7 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { siteConfig } from "../config";
-const lastUpdated = "August 5, 2026";
+const lastUpdated = "August 6, 2026";
 ---
 
 <BaseLayout
@@ -35,7 +35,17 @@ const lastUpdated = "August 5, 2026";
       address, user agent, requested URL, timestamp — the same way any web
       server does;{" "}
       {siteConfig.name} does not access or process these logs beyond normal operational
-      troubleshooting.
+      troubleshooting. This site also runs{" "}
+      <a href="https://www.google.com/adsense/start/" rel="noopener">
+        Google AdSense
+      </a>, which may set cookies and use device/browser data to serve ads. This
+      site keeps ad personalization signals (Google's "ad_storage,"
+      "ad_user_data," and "ad_personalization" consent categories) turned off by
+      default for every visitor, so AdSense serves non-personalized ads only —
+      it does not build an ad profile of you or use your data for interest-based
+      targeting on this site. See{" "}
+      <a href="/affiliate-disclosure/">Affiliate/Advertising Disclosure</a>{" "}
+      for more on how ads are handled here.
     </p>
 
     <h2>What may be added later, and how it will be handled</h2>
@@ -43,9 +53,9 @@ const lastUpdated = "August 5, 2026";
       If comments are added (via Giscus, which authenticates through your own
       GitHub account), that exchange happens directly between you and GitHub; {
         siteConfig.name
-      } does not see or store your GitHub credentials. If advertising, affiliate links,
-      or a newsletter are ever added, this page will be updated first, before any
-      of it goes live. See the{" "}
+      } does not see or store your GitHub credentials. If affiliate links or a newsletter
+      are ever added, this page will be updated first, before any of it goes live.
+      See the{" "}
       <a href="/affiliate-disclosure/">Affiliate/Advertising Disclosure</a>{" "}
       page for the current status of monetization on this site.
     </p>
