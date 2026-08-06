@@ -113,6 +113,25 @@ const jsonLdBlocks = [
       window.gtag = function gtag(...args) {
         window.dataLayer.push(args);
       };
+      // Explicit Consent Mode v2 default — confirmed live: with no consent
+      // signal sent at all, real gtag.js (once loaded) initialized fine
+      // (google_tag_manager populated, dataLayer had gtm.load etc.) but
+      // never made a single network request to any Analytics endpoint —
+      // not even a denied/cookieless ping, verified via the Performance
+      // Resource Timing API and by monkey-patching fetch/sendBeacon/XHR
+      // before manually firing a gtag('event', ...) call. Google's current
+      // default for gtag.js is to treat an *unset* consent state as
+      // restricted rather than unrestricted, so "no consent gate" (this
+      // site's actual policy — see privacy.astro) has to be stated
+      // explicitly, not left implicit, to actually take effect. Must come
+      // before the "js"/"config" calls below per Google's documented
+      // ordering.
+      window.gtag("consent", "default", {
+        ad_storage: "granted",
+        analytics_storage: "granted",
+        ad_user_data: "granted",
+        ad_personalization: "granted",
+      });
       window.gtag("js", new Date());
       // send_page_view: false — this site uses <ClientRouter /> below, so
       // every internal link click is a soft, client-side navigation (fetch
