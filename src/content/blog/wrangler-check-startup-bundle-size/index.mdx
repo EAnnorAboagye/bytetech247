@@ -1,0 +1,83 @@
+---
+title: "Check Worker Bundle Size With wrangler check startup"
+description: "wrangler check startup graduated from alpha in v4.116 and now shows real bundle size and a startup CPU profile. Run on this site: 3.95 KiB, gzip 1.54 KiB."
+date: 2026-08-06
+category: dev-tools
+tags: ["wrangler", "cloudflare-workers", "cli", "performance"]
+coverImage: "./cover.png"
+coverImageAlt: "A real terminal capture of wrangler check startup run against this site's own Worker, showing a 3.95 KiB bundle and a startup profile"
+faq:
+  - question: "Does this command deploy anything?"
+    answer: "No. wrangler check startup builds the Worker locally and analyzes it, the same way wrangler deploy --dry-run stops short of a real deploy. Nothing is uploaded to Cloudflare."
+  - question: "Is the local startup time the same as production cold-start time?"
+    answer: "No, and Wrangler says so directly in its own output. The CPU profile is measured on your local machine, which has a different CPU than Cloudflare's runtime, so it's useful for understanding where time is spent at startup, not for predicting the exact production number."
+---
+
+## Quick Answer
+
+`wrangler check startup` graduated from alpha in `wrangler@4.116.0` and now reports your Worker's real bundle size and a local startup CPU profile, all from a single terminal command, no deploy required. Run it before a deploy that would otherwise only surface a bundle-bloat or slow-startup problem as a production cold-start regression or a dashboard warning after the fact.
+
+## What it actually reports
+
+The changelog entry, from `cloudflare/workers-sdk`'s `packages/wrangler/CHANGELOG.md`, `wrangler@4.116.0` (released 2026-07-30):
+
+> "Graduate `wrangler check startup` from alpha and show bundle size"
+
+Run directly against this site's own built Worker:
+
+```bash title="wrangler check startup, run on this repo"
+$ wrangler check startup
+
+ ⛅️ wrangler 4.118.0
+────────────────────
+├ Building your Worker
+│ Worker Built! 🎉
+│
+├ Analysing
+│ Startup phase analysed
+│
+│ Bundle: 3.95 KiB / gzip: 1.54 KiB
+│
+│ Local startup profile:
+│   Profile window: 153.0 ms
+│   Sampled time: 76.2 ms
+│   Active: 71.6 ms (including 0.0 ms garbage collection)
+│   Idle: 4.6 ms
+│   Samples: 3
+│
+│ CPU Profile has been written to worker-startup.cpuprofile.
+```
+
+Two real numbers come out of this: the actual bundle size (gzip and raw), and a sampled CPU profile of the Worker's startup phase, written to a `.cpuprofile` file that loads directly into Chrome DevTools' profiler or VS Code for a flamegraph view.
+
+<Callout type="info" title="Local timing is not production timing">
+  Wrangler's own output is direct about this: the CPU profile runs on your local
+  machine, which has a different CPU than Cloudflare's runtime. Use it to see
+  where time is spent during startup, not to predict the exact cold-start number
+  a real deploy will show.
+</Callout>
+
+## Structural Comparison Matrix
+
+| Operational Aspect                    | Before (alpha, pre-4.116.0)                                 | After (v4.116.0+)                     |
+| :------------------------------------ | :---------------------------------------------------------- | :------------------------------------ |
+| **Command availability**              | Behind alpha gating                                         | Generally available                   |
+| **Bundle size reported**              | Not shown                                                   | Raw and gzip size, in the same output |
+| **How you'd catch bloat before this** | Only after a deploy, via dashboard or cold-start complaints | Locally, before deploying at all      |
+
+## Fix it: add this to your pre-deploy routine
+
+```bash title="run before a deploy, not after a regression report"
+npm run build
+wrangler check startup
+```
+
+The `.cpuprofile` file it writes isn't meant to be committed. It's a local diagnostic artifact, so add it to `.gitignore` if your project doesn't already ignore Wrangler's build output:
+
+```gitignore title=".gitignore"
+worker-startup.cpuprofile
+```
+
+## Confirmed version
+
+Reproduced directly against this site's own build, `wrangler@4.118.0`, tracing back to the labeled graduation in `wrangler@4.116.0` (released 2026-07-30). The bundle size and profile numbers above are this site's real Worker, not illustrative figures. Browse more posts like this in the [Dev Tools](/dev-tools) archive.

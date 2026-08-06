@@ -1,0 +1,95 @@
+---
+title: "Wrangler Removes Service Environments (v4.111.0)"
+description: "Wrangler 4.111 removes service environments and legacy_env. Each environment now deploys as its own Worker, and here is the exact error and how to migrate."
+date: 2026-08-06
+category: dev-tools
+tags: ["wrangler", "cloudflare-workers", "cli", "deployment"]
+coverImage: "./cover.png"
+coverImageAlt: "A terminal window showing wrangler's real error: the legacy_env field is no longer supported, service environments have been removed"
+faq:
+  - question: "Does this affect a Worker that never used [env.*] blocks at all?"
+    answer: "No. This only breaks configs that set legacy_env explicitly (true or false) or rely on Wrangler's old default of treating environments as name-scoped variables inside one deployed Worker. A config with no legacy_env field and no [env.*] sections is unaffected."
+  - question: "Is there a flag to keep the old single-Worker-per-environment behavior?"
+    answer: "No. Removing legacy_env was a deliberate, non-optional breaking change in wrangler@4.111.0, and the changelog labels it a Breaking Change with no compatibility flag to restore the old behavior. Every environment now deploys as its own separate Worker, permanently."
+---
+
+## Quick Answer
+
+Wrangler 4.111.0 removes the `legacy_env` configuration field entirely. If your `wrangler.toml` or `wrangler.jsonc` still sets `legacy_env` (either value), `wrangler deploy` now fails at config-parse time with a hard error. Delete the field: each environment already deploys as its own Worker named `<name>-<environment>`, which is what `legacy_env = true` (the old default) already did.
+
+## What actually changed
+
+Wrangler used to support two ways of handling named environments (`[env.staging]`, `[env.production]`) in one config file: the modern default, where each environment deploys as a completely separate Worker (`my-worker-staging`, `my-worker-production`), and a legacy mode, toggled by `legacy_env`, where every environment shared a single deployed Worker with environment-scoped variables layered on top.
+
+`wrangler@4.111.0`, released 2026-07-15, removes the legacy mode outright:
+
+> "Remove support for service environments and the `legacy_env` configuration field"
+
+That's the exact changelog entry, and it's labeled a Breaking Change in `cloudflare/workers-sdk`'s own `CHANGELOG.md`, not a deprecation warning, a removal.
+
+## The exact error
+
+Reproduced directly against `wrangler@4.119.0` with a minimal config that still sets `legacy_env`:
+
+```toml title="wrangler.toml"
+name = "test-worker"
+main = "index.js"
+compatibility_date = "2026-08-01"
+legacy_env = false
+
+[env.staging]
+name = "test-worker-staging"
+```
+
+```bash title="wrangler deploy --dry-run"
+✘ [ERROR] Processing wrangler.toml configuration:
+
+    - The "legacy_env" field is no longer supported, so please remove it from your configuration file.
+      Service environments have been removed, and each environment is now deployed as its own Worker named "<name>-<environment>". This matches the behaviour of "legacy_env = true", which was the default, so removing the field will not change how your Worker is deployed.
+      Refer to https://developers.cloudflare.com/workers/wrangler/environments/ for more information.
+```
+
+Wrangler's own error message is unusually direct about the fix: since `legacy_env = true` was already the default, most configs don't need to change deploy behavior at all, just delete the field.
+
+## Structural Comparison Matrix
+
+| Operational Aspect          | Before (`legacy_env`)                                          | After (v4.111.0+)                                                   |
+| :-------------------------- | :------------------------------------------------------------- | :------------------------------------------------------------------ |
+| **Worker per environment**  | One shared Worker, environment-scoped variables layered on top | Separate Worker per environment, named `<name>-<environment>`       |
+| **Config field required**   | `legacy_env = true` or `false`                                 | Field removed entirely; present at all is a hard error              |
+| **CI/DNS/dashboard impact** | Single deploy target to track                                  | Must reference the per-environment Worker name for each environment |
+
+## Fix it: delete the field, check your automation
+
+<Callout
+  type="warning"
+  title="Check CI/CD and dashboards before deploying, not after"
+>
+  If any script, GitHub Actions workflow, or monitoring dashboard still
+  references the old single-Worker name for an environment (`my-worker` instead
+  of `my-worker-staging`), it will silently point at the wrong target once
+  `legacy_env` is gone. Wrangler's error only catches the config file, not
+  everything downstream that assumed the old naming.
+</Callout>
+
+### Before: config that fails on 4.111+
+
+```toml title="wrangler.toml (fails on 4.111+)"
+legacy_env = false
+
+[env.staging]
+name = "my-worker-staging"
+```
+
+### After: remove the field, keep the environment block
+
+```toml title="wrangler.toml (fixed)"
+[env.staging]
+name = "my-worker-staging"
+```
+
+If your config previously relied on `legacy_env = true` (sharing one Worker across environments), the fix is more than deleting a line: each environment now deploys as its own independent Worker, so anything that assumed a single shared Worker instance needs to be re-verified per environment. That includes KV namespaces bound only in the top-level config, a single `workers.dev` route, and secrets set once and expected to apply everywhere. Run `wrangler deploy --dry-run` for each environment after the change and confirm the resulting Worker name matches what your DNS routes, CI scripts, and dashboards expect.
+
+## Confirmed version
+
+Reproduced directly: `legacy_env` in any form is rejected by `wrangler@4.119.0`, tracing back to the labeled Breaking Change in `wrangler@4.111.0` (released 2026-07-15). There is no flag to restore the removed behavior; this is unconditional past that version. Browse more posts like this in the [Dev Tools](/dev-tools) archive.

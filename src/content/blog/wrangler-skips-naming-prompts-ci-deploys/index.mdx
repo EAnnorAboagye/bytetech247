@@ -1,0 +1,50 @@
+---
+title: "Wrangler Skips Naming Prompts in Agent/CI Deploys"
+description: "Wrangler 4.116 detects non-interactive terminals and skips the first-deploy naming prompt automatically, fixing CI pipelines and AI agents driving the CLI."
+date: 2026-08-06
+category: dev-tools
+tags: ["wrangler", "cloudflare-workers", "github-actions", "ci-cd"]
+relatedSlugs: ["automate-static-site-deploys-github-actions-cloudflare-workers"]
+coverImage: "./cover.png"
+coverImageAlt: "A terminal window showing the verbatim changelog entry for wrangler 4.116.0: Avoid Worker and workers.dev naming prompts in agent-driven deploys"
+faq:
+  - question: "Does this change anything for a deploy run from an interactive terminal?"
+    answer: "No. The naming prompt still appears the first time you deploy a new Worker from an interactive shell. This change only affects non-interactive contexts, where Wrangler now detects there's no human available to answer and skips the prompt automatically instead of hanging."
+  - question: "How does Wrangler decide a deploy is non-interactive?"
+    answer: "The changelog entry doesn't spell out the exact detection heuristic, and it wasn't independently reproduced here. In practice this covers the contexts it's aimed at: CI runners like GitHub Actions, and terminal sessions driven by an AI coding agent rather than a person typing at a prompt."
+---
+
+## Quick Answer
+
+Before `wrangler@4.116.0`, the first `wrangler deploy` for a new Worker could block on an interactive naming prompt, a real problem for any non-interactive CI pipeline or AI agent driving the CLI directly, since there's no human there to answer it. `wrangler@4.116.0` detects that non-interactive context and skips the prompt automatically. If your CI deploy used to hang or fail on a first-time deploy, this is why it stopped.
+
+## The actual problem this closes
+
+Deploying a Worker for the first time historically asked the developer to confirm its name and whether to register a `workers.dev` subdomain, an interactive question with no default a script can safely assume. In a normal terminal, a person answers it once and moves on. In a CI pipeline like a GitHub Actions workflow, or a terminal session driven by an AI coding agent typing commands directly, there's no one to answer, so the process either hung waiting for input or failed outright depending on how the runner handled stdin.
+
+The changelog entry, from `cloudflare/workers-sdk`'s `packages/wrangler/CHANGELOG.md`, `wrangler@4.116.0` (released 2026-07-30):
+
+> "Avoid Worker and workers.dev naming prompts in agent-driven deploys"
+
+## Structural Comparison Matrix
+
+| Operational Aspect                     | Before (v4.115.0 and earlier)           | After (v4.116.0+)            |
+| :------------------------------------- | :-------------------------------------- | :--------------------------- |
+| **Interactive terminal, first deploy** | Prompts for name/subdomain confirmation | Same behavior, unchanged     |
+| **CI pipeline, first deploy**          | Could hang or fail waiting for input    | Prompt skipped automatically |
+| **AI agent driving the CLI directly**  | Same risk as CI: no one to answer       | Prompt skipped automatically |
+
+## Why this matters for this site's own pipeline
+
+This site deploys through a GitHub Actions workflow, not Cloudflare's built-in Git integration (the tradeoffs between the two are covered in [Cloudflare Workers Deploys: Built-In Git vs. GitHub Actions](/data-automation/automate-static-site-deploys-github-actions-cloudflare-workers)). A first-time deploy of a brand-new Worker through that exact kind of pipeline is precisely the scenario this change targets: a non-interactive runner with no terminal attached for a human to answer a naming prompt.
+
+<Callout type="tip" title="Existing Workers are unaffected">
+  This only matters on a Worker's first deploy, the one time the naming prompt
+  would have appeared at all. A CI pipeline redeploying an existing Worker was
+  never blocked by this in the first place, since the prompt only fires when
+  Wrangler doesn't yet know the Worker's name is already registered.
+</Callout>
+
+## Confirmed version
+
+Sourced from `cloudflare/workers-sdk`'s `packages/wrangler/CHANGELOG.md`, `wrangler@4.116.0`, released 2026-07-30. The exact non-interactive detection heuristic wasn't independently reproduced here since it requires a genuinely fresh Worker name and a non-TTY environment to trigger the old behavior for comparison; the changelog entry is the primary source. Browse more posts like this in the [Dev Tools](/dev-tools) archive.

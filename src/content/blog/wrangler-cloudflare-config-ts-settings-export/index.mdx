@@ -1,0 +1,85 @@
+---
+title: "Wrangler's New cloudflare.config.ts settings Export"
+description: "Wrangler 4.113 adds a defineSettings export to the experimental cloudflare.config.ts format, moving accountId and complianceRegion out of the Worker config."
+date: 2026-08-06
+category: dev-tools
+tags: ["wrangler", "cloudflare-workers", "configuration", "typescript"]
+coverImage: "./cover.png"
+coverImageAlt: "A terminal window showing the verbatim changelog entry for wrangler 4.113.0: Add a settings export to the experimental cloudflare.config.ts config"
+faq:
+  - question: "Do I need this if I'm using wrangler.toml or wrangler.jsonc?"
+    answer: "No. The settings export only applies to the experimental cloudflare.config.ts format, used behind the --experimental-new-config flag. Projects on wrangler.toml or wrangler.jsonc are unaffected."
+  - question: "What happens if I don't add the settings export after upgrading?"
+    answer: "Account-level fields like accountId and complianceRegion that used to live inline in the Worker's own config export stop applying if they aren't moved into the new settings export. Wrangler doesn't error on a missing settings export; the account-level settings you expected just don't take effect."
+---
+
+## Quick Answer
+
+Wrangler 4.113.0 adds a `settings` export to the experimental `cloudflare.config.ts` config format, built with a new `defineSettings` function. Account-level fields (`accountId`, `complianceRegion`) that used to sit inline in the Worker's own config now need their own dedicated export, separate from the `default` export that defines the Worker itself. Miss the move and those settings silently stop applying.
+
+## What the new export looks like
+
+`cloudflare.config.ts` is Wrangler's experimental TypeScript-based alternative to `wrangler.toml`/`wrangler.jsonc`, available behind `wrangler --experimental-new-config`. Before this change, everything, including account-level settings, lived in the file's single `default` export alongside the Worker's own bindings and routes.
+
+`wrangler@4.113.0`'s changelog states it plainly:
+
+> "Add a `settings` export to the experimental `cloudflare.config.ts` config"
+
+The actual code shape, from the merged pull request (`cloudflare/workers-sdk#14724`, "Support settings export in new config," merged 2026-07-20):
+
+```ts title="cloudflare.config.ts"
+import { defineSettings } from "wrangler/config";
+
+export const settings = defineSettings({
+  accountId: "<your-account-id>",
+});
+```
+
+`settings` accepts `accountId` and `complianceRegion`. The Worker's own configuration stays on the `default` export, unchanged; `settings` is a new, separate export sitting next to it in the same file.
+
+## Structural Comparison Matrix
+
+| Operational Aspect               | Before (v4.112.0 and earlier)         | After (v4.113.0+)                                |
+| :------------------------------- | :------------------------------------ | :----------------------------------------------- |
+| **Where account settings live**  | Inline in the single `default` export | Dedicated `settings` export via `defineSettings` |
+| **Compliance region config**     | Mixed with Worker-level fields        | Isolated in `settings`, alongside `accountId`    |
+| **Failure mode if not migrated** | N/A                                   | Settings silently don't apply; no error thrown   |
+
+## Fix it: split the exports
+
+<Callout type="warning" title="No error on a missing settings export">
+  Wrangler doesn't fail the build if `cloudflare.config.ts` has no `settings`
+  export. It just means account-level fields you expected to apply, like a
+  compliance region restriction, don't take effect. Confirm the setting is
+  actually active through the dashboard or API, not just by the file compiling.
+</Callout>
+
+### Before: everything on the default export
+
+```ts title="cloudflare.config.ts (pre-4.113 shape)"
+export default {
+  name: "my-worker",
+  main: "src/index.ts",
+  accountId: "<your-account-id>",
+};
+```
+
+### After: account settings split into their own export
+
+```ts title="cloudflare.config.ts (4.113.0+)"
+import { defineSettings } from "wrangler/config";
+
+export const settings = defineSettings({
+  accountId: "<your-account-id>",
+  complianceRegion: "eu",
+});
+
+export default {
+  name: "my-worker",
+  main: "src/index.ts",
+};
+```
+
+## Confirmed version
+
+Sourced from `cloudflare/workers-sdk`'s `packages/wrangler/CHANGELOG.md` (`wrangler@4.113.0`, released 2026-07-21) and the merged pull request implementing it (`#14724`, merged 2026-07-20). This wasn't independently reproduced against a live account here, since `cloudflare.config.ts` is still experimental and this site's own deploy runs on `wrangler.toml`; the changelog and the PR's own code example are the primary sources. Browse more posts like this in the [Dev Tools](/dev-tools) archive.
