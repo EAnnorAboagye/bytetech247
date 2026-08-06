@@ -98,8 +98,7 @@ This fits when the error is genuinely console/terminal output. When the bug is a
 
 ## 12. House style (this project's additions)
 
-- **Human dashes only.** No em dash (`—`) anywhere in article prose — use a hyphen (`-`), a comma, or split into two sentences instead. This tightens `write-article`'s existing "em dashes used as a default transition" ban into a hard rule for this category: never, not just "not as a lazy transition." Exception: if a real, verbatim error/log string genuinely contains an em dash, preserve it exactly — don't rewrite a quoted string to satisfy a style rule.
-- **Readability target: Flesch Reading Ease 90-100** ("very easy," roughly 5th-grade level) — this is the numeric version of `write-article`'s existing "grade-5 sentence structure, not vocabulary" rule, not a new or conflicting one. In practice: short sentences (aim ~15-20 words average), mostly common everyday words, active voice, one idea per sentence — while still keeping the precise technical terms the reader needs (`SSR`, `undefined`, the exact API name), per `write-article`'s existing guidance not to water those down. If you want a score checked on a specific draft, say so and it can be computed from the actual sentence/word/syllable counts rather than eyeballed.
+- Inherits `write-article`'s base rules on readability (Flesch Reading Ease 90-100) and dashes (hyphens only, no em dash — see that skill's section 4) — nothing category-specific to add on top of those.
 - **Tone: direct imperative, not hedged suggestion.** A reader here has a broken build, not idle curiosity. Write "Add the array guard before the `.map()` call," not "You might consider adding a guard clause." Save nuance and trade-offs for the closing paragraph (`write-article` step 2.9), not the fix itself.
 
 ## 13. Before calling a guides-fixes draft done
@@ -121,6 +120,4 @@ Run `write-article`'s full checklist first, then check these on top:
 - [ ] Cover image is generated from real captured data (via `scripts/make-terminal-cover.mjs` or a hand-built SVG using the documented palette), or an approved Pexels photo only if the topic is genuinely conceptual — never AI-generated, never text/data invented for the image.
 - [ ] Cover image was compared against sibling/interlinked posts' actual images, not just their alt text, to rule out a near-duplicate layout.
 - [ ] `.claude/content-plans/guides-fixes.md` (if it exists) has this entry flipped to `written` with the real slug filled in.
-- [ ] Zero em dashes in the prose (verbatim quoted strings are the only exception).
 - [ ] Tone reads as direct imperative, not hedged suggestion.
-- [ ] Read the draft's sentences aloud: short, plain, one idea each — consistent with a 90-100 Flesch Reading Ease target.

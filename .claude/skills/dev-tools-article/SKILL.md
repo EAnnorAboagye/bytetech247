@@ -94,10 +94,9 @@ Kept from `pillar-cluster`'s general methodology, adapted for this category:
 - **Paraphrased** = a described friction point or workflow problem with no single literal string to quote (e.g. "context switching between branches loses uncommitted build artifacts").
 - Every factual claim about how a tool behaves needs a real source and date, verified the same way the Vite 8 pillar's dev-toolbar claim had to be corrected this session after an unverified assumption turned out false — check the actual current behavior (source code, current docs, a recent issue) rather than stating what "used to be true" or "should be true" as current fact.
 
-## 12. House style (inherited from guides-fixes-article)
+## 12. House style (inherited from write-article, tone from guides-fixes-article)
 
-- **Human dashes only.** No em dash (`—`) anywhere in article prose — use a hyphen, a comma, or split into two sentences. Exception: a real, verbatim quoted string (a flag name, an error) that itself contains one — preserve it exactly.
-- **Readability target: Flesch Reading Ease 90-100.** Short sentences (~15-20 words average), common words, active voice, one idea per sentence — while keeping the precise technical terms readers need (`worktree`, `flag`, the exact command name).
+- Inherits `write-article`'s base rules on readability (Flesch Reading Ease 90-100) and dashes (hyphens only, no em dash — see that skill's section 4) — nothing category-specific to add on top of those.
 - **Tone: direct imperative, not hedged suggestion.** Write "Use worktrees when you need two branches checked out at once," not "You might want to consider worktrees in some cases."
 
 ## 13. Before calling a dev-tools draft done
@@ -118,6 +117,4 @@ Run `write-article`'s full checklist first, then check these on top:
 - [ ] Cover image is generated from real captured data (terminal script) or a hand-built SVG using the documented palette and the post's real comparison data — never AI-generated, never invented text/numbers.
 - [ ] Cover image was compared against sibling/interlinked posts' actual images to rule out a near-duplicate layout.
 - [ ] `.claude/content-plans/dev-tools.md` (if it exists) has this entry flipped to `written` with the real slug filled in.
-- [ ] Zero em dashes in the prose (verbatim quoted strings are the only exception).
 - [ ] Tone reads as direct imperative, not hedged suggestion.
-- [ ] Read the draft's sentences aloud: short, plain, one idea each — consistent with a 90-100 Flesch Reading Ease target.
