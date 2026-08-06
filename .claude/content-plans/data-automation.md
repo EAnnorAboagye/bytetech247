@@ -7,7 +7,7 @@ Status values: pending (researched, not yet approved) -> approved (user greenlit
 **Cloudflare's July 2026 API Deprecation Wave: What Breaks in Automated Pipelines**
 
 - Status: written
-- Slug: -
+- Slug: cloudflares-july-2026-api-deprecation-wave
 - Why pillar: Cloudflare's own official API deprecations tracker (`developers.cloudflare.com/fundamentals/api/reference/deprecations/`, backed by `cloudflare-docs`' `api-deprecations.yaml`) published 9 distinct, dated deprecation entries between 2026-05-13 and 2026-07-27, all inside the ~90-day freshness window and several within the last 2-4 weeks. Every entry is a REST API endpoint or field removal that silently breaks infrastructure scripts, Terraform configs, and CI pipelines calling Cloudflare's API directly, exactly the "pipeline/API/schema breaking change" structural profile `data-automation` targets, distinct from `dev-tools`' Wrangler-CLI-specific pillar (this covers the HTTP API layer any automation script or IaC tool calls, not the CLI). One cluster (Workers KV legacy namespace routes) is genuinely first-person dogfooded: this site's own `wrangler.toml` declares real KV bindings (`COUNTERS_KV`, `SESSION_KV`), so Wrangler itself calls the exact API surface being deprecated. The remaining clusters are honestly framed as the same Cloudflare account/platform surface any Cloudflare-hosted project's automation may call, not falsely claimed as run by this site's own scripts.
 
 ## Clusters

@@ -47,6 +47,14 @@ Each cluster needs all of these fields — this is stricter than the original pr
 - **Source + date** — the issue/changelog/thread and its real date, so this plan can be re-verified for staleness before anyone drafts from it.
 - **Interlink target** — which existing post (if any, from step 3) or sibling cluster this should link to/from once written. If none exists yet, say so rather than leaving it blank.
 
+## 5a. Wiring the batch together — not optional
+
+A pillar/cluster plan is worthless as an SEO structure if the 10 written articles never actually link to each other. Confirmed live (2026-08-05): three full batches (30 posts across `dev-tools`, `data-automation`, `ai-productivity`) shipped with zero `relatedSlugs` and zero `series`/`seriesOrder` set on any of them — every one of the site's own topic-cluster hub-and-spoke mechanisms (`src/pages/[category]/[slug].astro`'s "Series progress (N of M)" nav, which only renders when `series` matches across posts) sat unused, so those 30 pages had no structural link to the pillar they were supposedly clustered under. Don't repeat this:
+
+- The moment a batch's clusters are approved, decide the shared `series` value **now** — the pillar's title (or a shortened version of it) — and the `seriesOrder` each cluster will get (its position in the plan, 1-10; continuing 11-20 for a second pillar in the same category, matching the numbering convention in step 7). Record it in the plan file so `write-article` doesn't have to reinvent it per cluster.
+- Hand this off explicitly to whoever drafts each cluster (see `write-article`'s own checklist, which now requires it): every cluster in an approved batch gets `series` + `seriesOrder` in frontmatter, no exceptions, even though the 10 clusters aren't meant to be read in a strict linear order the way a migration-guide series is — the shared `series` value is what makes the site render the "part of this cluster, here are the other 9" navigation regardless of read order.
+- **The pillar topic itself is currently never published as a real page** — it only exists in this plan file as the rationale for picking 10 clusters. That's a real gap: a proper topic-cluster structure has a hub page the 10 spokes link back to, not just each other. Before finalizing the plan, ask the user whether the pillar topic should also be drafted as its own standalone article (broad, comprehensive coverage of the pillar topic, linking out to all 10 clusters once written) — don't silently skip this decision the way every batch so far has.
+
 ## 6. Output format
 
 Plain text, no article prose:
@@ -119,4 +127,6 @@ If the user supplies a category-specific prompt (as they did for `guides-fixes`)
 - [ ] Every cluster names a real source and date, not a vague "recent issue."
 - [ ] Interlink targets are named where they exist, not left implicit.
 - [ ] `.claude/content-plans/<category-slug>.md` was written or updated (merged, not overwritten) to match this output.
+- [ ] A shared `series` value and per-cluster `seriesOrder` (1-10, or continuing the sequence for a later pillar) are decided and recorded in the plan, so every cluster in the batch actually gets linked together once written (see step 5a) — this is not optional.
+- [ ] Whether the pillar topic itself should be drafted as a standalone hub article was raised with the user explicitly, not silently skipped (see step 5a).
 - [ ] Output makes clear this is a plan for review, not a request to start drafting — drafting starts only after the user approves specific clusters, and then goes through `write-article` one cluster at a time.

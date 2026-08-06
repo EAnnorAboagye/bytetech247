@@ -7,7 +7,7 @@ Status values: pending (researched, not yet approved) -> approved (user greenlit
 **The MCP 2026-07-28 Spec Rewrite: What Breaks in Your Servers and Clients**
 
 - Status: written
-- Slug: -
+- Slug: mcp-2026-07-28-spec-rewrite
 - Why pillar: The Model Context Protocol's 2026-07-28 specification, published 2026-07-28 (9 days before this research), is a genuinely comprehensive rewrite: a stateless protocol core, removed session handling, a new required server RPC, a replaced subscription mechanism, moved/removed protocol methods, and multiple feature-level deprecations (Roots, Sampling, Logging, Dynamic Client Registration). Sourced directly from the official MCP specification changelog (`modelcontextprotocol.io/specification/2026-07-28/changelog`), which lists far more than 10 distinct, verbatim, non-overlapping technical changes, no stretching required. This is directly dogfooded: this exact session runs on Claude Code, connected to multiple real MCP servers (GitHub, Cloudflare, Slack, and others), so every cluster describes a protocol this environment's own tooling actually speaks. The existing `prompting-guide-ai-coding-assistants` post covers prompting technique, not protocol mechanics, so there's no collision.
 
 ## Clusters

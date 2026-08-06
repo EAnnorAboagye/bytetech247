@@ -7,7 +7,7 @@ Status values: pending (researched, not yet approved) -> approved (user greenlit
 **Wrangler CLI's July 2026 Breaking Changes: What to Fix Before You Deploy**
 
 - Status: written
-- Slug: -
+- Slug: wranglers-july-2026-breaking-changes
 - Why pillar: Wrangler is the CLI every Cloudflare Workers developer runs on every deploy and every local dev session, including this site's own (`wrangler.toml`, `worker/index.ts`). Between 2026-07-01 and 2026-08-05, Wrangler shipped one explicit breaking change (service environments removed) plus nine more config/CLI-behavior changes spanning config-file format (`wrangler.toml`/`jsonc`, `cloudflare.config.ts`), local-dev tooling (observability, R2, VPC bindings), new CLI capability (`wrangler check startup`, device-grant login), and CI/agent automation (naming-prompt skip) — ten genuinely distinct, non-overlapping, hands-on angles under one actively-shipping CLI, confirmed in-window against the real changelog and release dates, not a guessed range.
 
 ## Clusters

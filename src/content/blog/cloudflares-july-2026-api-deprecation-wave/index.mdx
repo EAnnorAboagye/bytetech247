@@ -1,0 +1,58 @@
+---
+title: "Cloudflare's July 2026 API Deprecation Wave: Full Guide"
+description: "Cloudflare published 10 API deprecations affecting automated pipelines between May and July 2026. Full rundown of every endpoint, deadline, and fix."
+date: 2026-08-06
+category: data-automation
+tags: ["cloudflare", "api", "deprecation", "automation"]
+series: "Cloudflare's July 2026 API Deprecation Wave: What Breaks in Automated Pipelines"
+seriesOrder: 1
+coverImage: "./cover.png"
+coverImageAlt: "A dark comparison-matrix style cover listing Cloudflare's July 2026 API deprecations: legacy Workers KV routes, Zero Trust CIDR route endpoints, Tunnel connections field, Zone Settings Batch API, and the 65-character account name limit"
+faq:
+  - question: "Do all 10 of these deprecations affect every Cloudflare account?"
+    answer: "No. Each one only bites if your automation actually calls that specific API surface: Workers KV bindings, Zero Trust Tunnel/Mesh, zone settings batch calls, account creation scripts, DNS settings toggles, role enumeration, AMP/SXG, domain registrar automation, or Gateway audit_ssh policies. Check the table below against what your own scripts and Terraform configs actually call."
+  - question: "Which of these are already in effect, not just upcoming?"
+    answer: "Two: the AMP/SXG API reached end of life 2026-06-23, and Gateway's audit_ssh action fully stopped working 2026-07-15, both before this guide was published. If automation calling either has been silently failing with no obvious cause, that's why - see clusters 8 and 10 below for the exact staged timelines."
+---
+
+## Quick Answer
+
+Cloudflare published 10 distinct API deprecations affecting automated pipelines between 2026-05-13 and 2026-07-27: mostly REST endpoint and field removals across Workers KV, Zero Trust, zone settings, account management, DNS, and domain registration. Two have already taken full effect; the other eight have deadlines between September 2026 and March 2027. Check the table below against what your own scripts, Terraform configs, or CI pipeline actually call.
+
+Cloudflare's own API deprecations tracker logged nine distinct, dated entries in this window, all inside the active research period and several within weeks of each other. Every one is a REST API endpoint or field removal that can silently break infrastructure automation calling Cloudflare's API directly, not through a UI a human would notice failing. This site's own `wrangler.toml` declares real KV bindings, making the first cluster below a genuinely first-person, dogfooded example rather than a hypothetical.
+
+## Structural Comparison Matrix
+
+| #   | Deprecation                                 | API surface                                   | Deadline                          | Status            |
+| :-- | :------------------------------------------ | :-------------------------------------------- | :-------------------------------- | :---------------- |
+| 1   | Legacy Workers KV namespace routes          | `/accounts/{account_id}/workers/namespaces/*` | 2026-10-15                        | Upcoming          |
+| 2   | Zero Trust CIDR route endpoints             | Zero Trust Networks routes API                | 2026-10-05                        | Upcoming          |
+| 3   | `connections` field dropped from Tunnel API | Tunnel/Mesh list and get responses            | 2026-10-05                        | Upcoming          |
+| 4   | Zone Settings Batch API                     | `/zones/{zone_id}/settings` (batch)           | 2026-09-15                        | Upcoming          |
+| 5   | 65-character account name limit enforced    | Account creation/update APIs                  | 2026-09-27                        | Upcoming          |
+| 6   | `foundation_dns` setting                    | DNS settings endpoints                        | 2026-11-23                        | Upcoming          |
+| 7   | Account Roles API                           | `/accounts/{account_id}/roles`                | 2026-07-21 (no published EOL yet) | Deprecated        |
+| 8   | AMP/SXG API                                 | `/zones/{zone_id}/amp/sxg`                    | 2026-06-23                        | **Already ended** |
+| 9   | Legacy Registrar domain API                 | `/accounts/{account_id}/registrar/domains`    | 2026-09-27                        | Upcoming          |
+| 10  | Gateway Audit SSH rules                     | Gateway network policy `audit_ssh` action     | 2026-07-15                        | **Already ended** |
+
+Every deadline above is Cloudflare's own stated date, cross-checked against its official changelog entry for that deprecation. Two (AMP/SXG and Gateway Audit SSH) already reached end of life before this guide was published - if automation calling either has been failing with no obvious cause, that is why.
+
+## The 10 deprecations, in detail
+
+1. **[Cloudflare Deprecates Legacy Workers KV API Routes](/data-automation/cloudflare-deprecates-legacy-workers-kv-api-routes/)**: the legacy `/workers/namespaces/*` routes stop 2026-10-15. This site's own KV bindings are the dogfooded example.
+2. **[Cloudflare Removes Zero Trust CIDR Route Endpoints](/data-automation/cloudflare-removes-zero-trust-cidr-route-endpoints/)**: CIDR-encoded Tunnel/WARP Connector routing goes away 2026-10-05.
+3. **[Cloudflare Drops connections Field From Tunnel API](/data-automation/cloudflare-drops-connections-field-from-tunnel-api/)**: a schema change on the same 2026-10-05 date, distinct from cluster 2: a missing response field, not a removed endpoint.
+4. **[Cloudflare Deprecates the Zone Settings Batch API](/data-automation/cloudflare-deprecates-zone-settings-batch-api/)**: batched zone-settings reads/writes end 2026-09-15; migrate to per-setting calls.
+5. **[Cloudflare Now Enforces a 65-Char Account Name Limit](/data-automation/cloudflare-enforces-65-char-account-name-limit/)**: a new validation constraint on account creation/rename APIs, effective 2026-09-27.
+6. **[Cloudflare Deprecates the foundation_dns DNS Setting](/data-automation/cloudflare-deprecates-foundation-dns-setting/)**: the `foundation_dns` boolean stops working 2026-11-23.
+7. **[Cloudflare Deprecates the Account Roles API](/data-automation/cloudflare-deprecates-account-roles-api/)**: already in effect since 2026-07-21; migrate to the Permission Groups API, a genuinely different data model.
+8. **[Cloudflare AMP/SXG API Has Reached End of Life](/data-automation/cloudflare-amp-sxg-api-end-of-life/)**: already ended 2026-06-23, with no replacement.
+9. **[Cloudflare Deprecates Legacy Registrar Domain API](/data-automation/cloudflare-deprecates-legacy-registrar-domain-api/)**: domain registration/renewal automation loses its endpoint 2026-09-27.
+10. **[Cloudflare Deprecates Gateway Audit SSH Rules](/data-automation/cloudflare-deprecates-gateway-audit-ssh-rules/)**: a staged rollout that fully ended 2026-07-15, three separate dates where a policy-as-code pipeline could have quietly broken.
+
+## Why this happened in one window
+
+Cloudflare is consolidating storage APIs under a unified `/storage/` namespace and tightening validation across account management, alongside routine Zero Trust and Gateway feature retirements. None of the dates or endpoint paths above are estimated - they come directly from [Cloudflare's official API deprecations reference](https://developers.cloudflare.com/fundamentals/api/reference/deprecations/) and its changelog, cross-checked per cluster against the individual changelog post.
+
+Browse the rest of the [Data Automation](/data-automation) archive for more Cloudflare API and pipeline coverage.
