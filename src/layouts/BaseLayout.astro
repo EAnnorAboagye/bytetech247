@@ -85,7 +85,18 @@ const jsonLdBlocks = [
          consent gate (a deliberate decision made 2026-08-04, replacing the
          earlier consent-gated CookieConsent.astro component; see
          privacy.astro's analytics section, which must stay consistent
-         with this).
+         with this). Only analytics_storage is granted, not the three
+         ad_* signals — confirmed live via a 2026-08-06 PageSpeed Insights
+         audit (Best Practices 92/100): granting ad_storage/ad_user_data/
+         ad_personalization makes gtag.js attempt Google Ads remarketing
+         and audience-building requests (stats.g.doubleclick.net,
+         google.com/ads/ga-audiences) plus a dynamically-injected inline
+         script for the same feature — none of which are in this site's
+         CSP allowlist (scripts/generate-security-headers.mjs), correctly,
+         since this site has no Google Ads account and privacy.astro only
+         discloses Analytics, never remarketing/advertising. That mismatch
+         was firing blocked-by-CSP console errors on every pageview, which
+         is what was actually costing the Best Practices points.
 
          The actual gtag.js fetch is deferred until the window "load" event,
          not a static <script src> tag — the old consent-gated version
@@ -127,10 +138,10 @@ const jsonLdBlocks = [
       // before the "js"/"config" calls below per Google's documented
       // ordering.
       window.gtag("consent", "default", {
-        ad_storage: "granted",
+        ad_storage: "denied",
         analytics_storage: "granted",
-        ad_user_data: "granted",
-        ad_personalization: "granted",
+        ad_user_data: "denied",
+        ad_personalization: "denied",
       });
       window.gtag("js", new Date());
       // send_page_view: false — this site uses <ClientRouter /> below, so
