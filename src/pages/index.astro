@@ -184,8 +184,14 @@ const recentItemListJsonLd = itemListJsonLd(
 <style>
   .homepage-intro {
     max-width: 40rem;
+    margin-top: calc(var(--spacing) * 2);
     color: var(--color-fg-muted);
     font-size: var(--text-lg);
+    /* Same "give plain text room to breathe" line-height as .legal
+       (global.css) and .article-content — this paragraph never got it,
+       so it was stuck on Tailwind's Preflight default of 1.5 while every
+       other block of prose on the site reads at 1.7. */
+    line-height: 1.7;
   }
 
   .homepage-secondary-grid {

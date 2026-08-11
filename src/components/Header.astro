@@ -175,7 +175,6 @@ const topTagsByCategory = getTopTagsByCategory(posts);
     font-size: var(--text-lg);
     color: var(--color-fg);
     text-decoration: none;
-    margin-right: auto;
   }
 
   .site-header__logo-mark {
@@ -187,6 +186,30 @@ const topTagsByCategory = getTopTagsByCategory(posts);
     display: flex;
     gap: calc(var(--spacing) * 2);
     margin-left: calc(var(--spacing) * 3);
+  }
+
+  /* Below 72rem only the mobile toggle (not the desktop nav) is visible,
+     so it's the one that needs to absorb the row's free space and push
+     itself + the actions group over to the right edge, next to the logo
+     on the left — same visual grouping as before this rework, just
+     carried by a different element (see the min-width:72rem override
+     below for the desktop side of this). Harmless when hidden: a
+     display:none element takes no part in flex layout, so this rule is a
+     no-op above 72rem regardless of the media query it lives outside of. */
+  .site-header__mobile-toggle {
+    margin-left: auto;
+  }
+
+  /* Desktop: nav sits right after the logo (no gap-eating auto margin on
+     either of them), and the actions group is what gets pushed to the
+     far right instead — previously the logo carried this auto margin,
+     which pushed the *entire* nav+actions group flush against the
+     right edge, crowding "Home"/the category links up against the
+     search icon instead of anchoring them near the logo. */
+  @media (min-width: 72rem) {
+    .site-header__actions {
+      margin-left: auto;
+    }
   }
 
   .site-header__action {
@@ -390,4 +413,45 @@ const topTagsByCategory = getTopTagsByCategory(posts);
   }
 
   document.addEventListener("astro:page-load", setupHeaderElevation);
+
+  // Hover-to-open for the horizontal (desktop) nav's category dropdowns —
+  // layered on top of <details>'s native click/keyboard toggle, which
+  // stays fully intact, so keyboard users are unaffected and touch
+  // devices (which can't hover) still open panels the normal way, via a
+  // tap. Gated on (hover: hover) and (pointer: fine): the standard way to
+  // detect "this is a real mouse," rather than a screen-width guess — a
+  // touchscreen laptop docked with a mouse still gets hover, a touch-only
+  // tablet at a desktop width never does. Listens on each <li> (which
+  // contains both the summary and the absolutely-positioned panel under
+  // it), not the summary alone, so moving the pointer from trigger to
+  // panel never registers as "left" in between.
+  const hoverCapable = window.matchMedia("(hover: hover) and (pointer: fine)");
+  let hoverNavCloseTimers: WeakMap<
+    Element,
+    ReturnType<typeof setTimeout>
+  > = new WeakMap();
+
+  function setupHoverNav() {
+    if (!hoverCapable.matches) return;
+
+    for (const li of document.querySelectorAll(
+      ".primary-nav--horizontal > li",
+    )) {
+      const details = li.querySelector(":scope > details");
+      if (!details) continue;
+
+      li.addEventListener("mouseenter", () => {
+        const pending = hoverNavCloseTimers.get(li);
+        if (pending) clearTimeout(pending);
+        details.setAttribute("open", "");
+      });
+
+      li.addEventListener("mouseleave", () => {
+        const timer = setTimeout(() => details.removeAttribute("open"), 150);
+        hoverNavCloseTimers.set(li, timer);
+      });
+    }
+  }
+
+  document.addEventListener("astro:page-load", setupHoverNav);
 </script>
