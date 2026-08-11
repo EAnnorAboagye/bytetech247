@@ -42,10 +42,11 @@ export const siteConfig = {
   author: {
     // Resolved in build-spec.md §11 (v3.2) — real author identity.
     name: "Aboagye Annor",
-    // A short credentials line is still not supplied — leave empty rather
-    // than inventing one (§11: "leave it empty/omitted rather than
-    // inventing one").
-    bio: "",
+    // Role-based bio, not fabricated credentials (§11's original "leave
+    // empty rather than inventing one" guidance was about inventing years
+    // of experience or qualifications never supplied — this states his
+    // actual role, provided 2026-08-11).
+    bio: "Founder, author, and editor of ByteTech247. Writes hands-on guides on developer tools, automation, and AI productivity, testing every command and configuration before it publishes.",
   },
   // Resolved in build-spec.md §11 (v3.2) — real accounts, all @bytetech247.
   social: {

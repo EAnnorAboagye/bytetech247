@@ -6,14 +6,14 @@ import { siteConfig } from "../config";
 
 <BaseLayout
   title={`About — ${siteConfig.name}`}
-  description={`About ${siteConfig.name}: a single-author technical blog covering Dev Tools, Data & Automation, AI Productivity, and Guides & Fixes.`}
+  description={`About ${siteConfig.name}: ${siteConfig.description}`}
   noindex
 >
   <article class="legal">
     <h1>About</h1>
     <p>
-      {siteConfig.name} is a single-author technical blog built around one rule: every
-      post exists to solve one real, specific problem, not to fill a content calendar.
+      {siteConfig.name} is a technical publication built around one rule: every post
+      exists to solve one real, specific problem, not to fill a content calendar.
       If you landed here searching an exact error message, a specific CLI flag, or
       how one tool actually behaves compared to another in practice, that's the kind
       of question this site is written to answer.
@@ -39,12 +39,18 @@ import { siteConfig } from "../config";
       </li>
     </ul>
 
+    <h2>Who's behind it</h2>
+    <p>
+      {siteConfig.name} is founded and led by {siteConfig.author.name}, who
+      writes, tests, and edits every post published here before it goes live.
+    </p>
+
     <AuthorBio />
 
     <p>
-      Every post is fact-checked and run by the author before it's published —
-      see the <a href="/editorial-policy/">Editorial Policy</a> for exactly how. Spotted
-      something outdated, or have a topic worth covering? <a href="/contact/"
+      Every post is fact-checked and run before it's published — see the{" "}
+      <a href="/editorial-policy/">Editorial Policy</a> for exactly how. Spotted something
+      outdated, or have a topic worth covering? <a href="/contact/"
         >Get in touch</a
       >.
     </p>

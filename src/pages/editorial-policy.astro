@@ -1,7 +1,7 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { siteConfig } from "../config";
-const lastUpdated = "July 31, 2026";
+const lastUpdated = "August 11, 2026";
 ---
 
 <BaseLayout
@@ -14,7 +14,9 @@ const lastUpdated = "July 31, 2026";
     <p class="legal__updated">Last updated: {lastUpdated}</p>
 
     <p>
-      {siteConfig.name} is written and edited by a single author — see the{" "}
+      {siteConfig.name} is founded and edited by {siteConfig.author.name} — see the{
+        " "
+      }
       <a href="/about/">About</a> page. This page explains how that content gets made
       and how mistakes get fixed.
     </p>
@@ -49,13 +51,14 @@ const lastUpdated = "July 31, 2026";
       to the post; the site does not silently republish-and-hide a factual error.
     </p>
 
-    <h2>AI-assisted writing</h2>
+    <h2>Tools used in production</h2>
     <p>
-      Some drafting, editing, and code-review work on {siteConfig.name} is done with
-      AI coding assistants — this is disclosed here rather than hidden, since it's
-      directly relevant to a site covering developer tools and AI productivity. Every
-      post is still reviewed and tested by the human author before publishing; AI
-      assistance changes how a post gets drafted, not whether it's been verified.
+      {siteConfig.name}'s editorial process uses AI coding assistants for
+      drafting support and code review — the same category of tools this site
+      covers for its readers. Every post is still researched, tested, and
+      verified by{" "}
+      {siteConfig.author.name} before publishing: AI assistance changes how a draft
+      comes together, not whether its claims and code have been checked.
     </p>
 
     <p class="legal__disclaimer">
