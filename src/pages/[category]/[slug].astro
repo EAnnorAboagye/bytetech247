@@ -145,7 +145,7 @@ const nextInSeries =
 >
   <div class="post-layout">
     <AdSlot
-      slot={siteConfig.adSlots.articleHeader}
+      adSlot={siteConfig.adSlots.articleHeader}
       minHeight="100px"
       label="Advertisement"
       class="post-header-ad"
@@ -205,7 +205,7 @@ const nextInSeries =
       <TOCSidebar headings={headings} variant="inline" />
 
       <AdSlot
-        slot={siteConfig.adSlots.articleAfterImage}
+        adSlot={siteConfig.adSlots.articleAfterImage}
         minHeight="250px"
         label="Advertisement"
         class="post-ad"
@@ -242,7 +242,7 @@ const nextInSeries =
                  principle as the Quick Answer / H2 ads: no series, no
                  slot, not a hidden empty box. */}
             <AdSlot
-              slot={siteConfig.adSlots.articleAfterPillarCluster}
+              adSlot={siteConfig.adSlots.articleAfterPillarCluster}
               minHeight="250px"
               label="Advertisement"
               class="post-ad"
@@ -266,7 +266,7 @@ const nextInSeries =
       <FaqSection faq={post.data.faq} />
 
       <AdSlot
-        slot={siteConfig.adSlots.articleBeforeAuthorBio}
+        adSlot={siteConfig.adSlots.articleBeforeAuthorBio}
         minHeight="250px"
         label="Advertisement"
         class="post-ad"
@@ -311,7 +311,7 @@ const nextInSeries =
         relatedPosts.length > 0 && (
           <>
             <AdSlot
-              slot={siteConfig.adSlots.articleAfterTags}
+              adSlot={siteConfig.adSlots.articleAfterTags}
               minHeight="250px"
               label="Advertisement"
               class="post-ad"
@@ -332,7 +332,7 @@ const nextInSeries =
         recentPosts.length > 0 && (
           <>
             <AdSlot
-              slot={siteConfig.adSlots.articleBeforeRecent}
+              adSlot={siteConfig.adSlots.articleBeforeRecent}
               minHeight="250px"
               label="Advertisement"
               class="post-ad"
@@ -353,7 +353,7 @@ const nextInSeries =
     <aside class="post-sidebar">
       <TOCSidebar headings={headings} />
       <AdSlot
-        slot={siteConfig.adSlots.articleSidebar}
+        adSlot={siteConfig.adSlots.articleSidebar}
         minHeight="600px"
         label="Advertisement"
         class="post-sidebar__ad"
