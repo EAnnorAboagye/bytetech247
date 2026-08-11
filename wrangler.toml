@@ -1,13 +1,19 @@
 # build-spec.md Phase 11 / §11: a single native Cloudflare Worker named
-# "bytetech247", live at bytetech247.workers.dev — deliberately not
-# Cloudflare Pages (only a standalone Worker can be issued a
-# *.workers.dev domain). This Worker serves the static Astro build via
-# the [assets] binding and handles a small number of dynamic routes in
-# worker/index.ts, falling through to static-asset serving for
-# everything else.
+# "bytetech247" — deliberately not Cloudflare Pages. Serves the static
+# Astro build via the [assets] binding and handles a small number of
+# dynamic routes in worker/index.ts, falling through to static-asset
+# serving for everything else. The custom domain bytetech247.com (bound
+# in the dashboard under Settings -> Domains & Routes) is the only
+# public entry point.
 name = "bytetech247"
 main = "worker/index.ts"
 compatibility_date = "2026-07-30"
+# wrangler's own default is workers_dev = true, which would publish this
+# same Worker (identical content, no canonical redirect) a second time at
+# bytetech247.workers.dev — an unbranded, unintended duplicate of the
+# live site. Pinned to false so that stays true regardless of any future
+# dashboard toggle or teammate's local Wrangler default.
+workers_dev = false
 
 [assets]
 directory = "./dist"
