@@ -19,57 +19,31 @@ interface Props {
   class?: string;
 }
 
-const { slot, minHeight, label = "Advertisement", class: className } = Astro.props;
+const {
+  slot,
+  minHeight,
+  label = "Advertisement",
+  class: className,
+} = Astro.props;
 const adClient = `ca-${siteConfig.adsensePublisherId}`;
 ---
 
 {
   slot && (
-    <>
-      <div
-        class:list={["ad-slot", className]}
-        style={`--ad-slot-min-height: ${minHeight}`}
-      >
-        <p class="ad-slot__label">{label}</p>
-        <ins
-          class="adsbygoogle"
-          style="display:block;width:100%;height:100%"
-          data-ad-client={adClient}
-          data-ad-slot={slot}
-          data-ad-format="auto"
-          data-full-width-responsive="true"
-        />
-      </div>
-      <script is:inline>
-        // is:inline — window.adsbygoogle is an untyped third-party global
-        // with no ambient declaration in this project; a normal processed
-        // <script> here would fail `astro check`. Same fix
-        // BaseLayout.astro's gtag setup already uses for the same reason
-        // (see its own comment on that block).
-        //
-        // One delegated pass per navigation covers every AdSlot instance
-        // on the page (sidebar + in-article), same convention as this
-        // site's other shared component scripts (Header.astro's
-        // dropdown-close, etc.) rather than one inline push-script copy
-        // per instance. Scoped inside the `slot &&` branch above so an
-        // unconfigured AdSlot really does render nothing at all, not
-        // just an empty box with an inert script still attached.
-        document.addEventListener("astro:page-load", () => {
-          const unfilled = document.querySelectorAll(
-            "ins.adsbygoogle:not([data-adsbygoogle-status])",
-          );
-          for (let i = 0; i < unfilled.length; i++) {
-            try {
-              (window.adsbygoogle = window.adsbygoogle || []).push({});
-            } catch {
-              // AdSense script blocked (ad blocker, offline, not yet
-              // approved) — the reserved min-height above keeps layout
-              // stable either way.
-            }
-          }
-        });
-      </script>
-    </>
+    <div
+      class:list={["ad-slot", className]}
+      style={`--ad-slot-min-height: ${minHeight}`}
+    >
+      <p class="ad-slot__label">{label}</p>
+      <ins
+        class="adsbygoogle"
+        style="display:block;width:100%;height:100%"
+        data-ad-client={adClient}
+        data-ad-slot={slot}
+        data-ad-format="auto"
+        data-full-width-responsive="true"
+      />
+    </div>
   )
 }
 
@@ -99,3 +73,38 @@ const adClient = `ca-${siteConfig.adsensePublisherId}`;
     flex: 1;
   }
 </style>
+
+<script is:inline>
+  // is:inline — window.adsbygoogle is an untyped third-party global with
+  // no ambient declaration in this project; a normal processed <script>
+  // here would fail `astro check`. Same fix BaseLayout.astro's gtag setup
+  // already uses for the same reason (see its own comment on that block).
+  //
+  // Deliberately NOT nested inside the `slot &&` conditional above —
+  // prettier-plugin-astro's formatter genuinely crashes on a <script>
+  // tag nested inside a conditional JSX expression (confirmed live: the
+  // Astro compiler itself handles it fine, `astro build` never
+  // complained, only `prettier --check` did). Kept as an always-present,
+  // top-level script instead: with no configured slot there's no
+  // `ins.adsbygoogle` on the page, so the querySelectorAll below simply
+  // finds nothing and the loop body never runs — a functional no-op,
+  // even though the (empty) script tag itself is still in the page.
+  //
+  // One delegated pass per navigation covers every AdSlot instance on
+  // the page (sidebar + in-article), same convention as this site's
+  // other shared component scripts (Header.astro's dropdown-close, etc.)
+  // rather than one inline push-script copy per instance.
+  document.addEventListener("astro:page-load", () => {
+    const unfilled = document.querySelectorAll(
+      "ins.adsbygoogle:not([data-adsbygoogle-status])",
+    );
+    for (let i = 0; i < unfilled.length; i++) {
+      try {
+        (window.adsbygoogle = window.adsbygoogle || []).push({});
+      } catch {
+        // AdSense script blocked (ad blocker, offline, not yet approved) —
+        // the reserved min-height above keeps layout stable either way.
+      }
+    }
+  });
+</script>
