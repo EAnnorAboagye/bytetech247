@@ -135,5 +135,30 @@ export const siteConfig = {
   adSlots: {
     articleSidebar: "",
     articleInline: "",
+    // Homepage placements (index.astro): one after the header/before the
+    // hero, one after the hero, one after the featured/secondary grid,
+    // one after Recent, and one after each of the four category
+    // sections — the exact layout requested 2026-08-11. All empty until
+    // real AdSense ad-unit slot IDs exist; AdSlot renders nothing for an
+    // empty string.
+    homepageHeader: "",
+    homepageAfterHero: "",
+    homepageAfterFeatured: "",
+    homepageAfterRecent: "",
+    homepageAfterDevTools: "",
+    homepageAfterDataAutomation: "",
+    homepageAfterAiProductivity: "",
+    homepageAfterGuidesFixes: "",
   } as Record<string, string>,
 } as const;
+
+// Maps each category slug to the siteConfig.adSlots key for the ad slot
+// that follows its homepage section — kept here rather than inline in
+// index.astro's CATEGORIES.map() so the mapping stays next to the
+// adSlots keys it has to match.
+export const CATEGORY_HOMEPAGE_AD_SLOT: Record<CategorySlug, string> = {
+  "dev-tools": "homepageAfterDevTools",
+  "data-automation": "homepageAfterDataAutomation",
+  "ai-productivity": "homepageAfterAiProductivity",
+  "guides-fixes": "homepageAfterGuidesFixes",
+};

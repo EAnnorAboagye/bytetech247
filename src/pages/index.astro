@@ -9,7 +9,8 @@ import Grid from "../components/layout/Grid.astro";
 import Stack from "../components/layout/Stack.astro";
 import HeroTile from "../components/HeroTile.astro";
 import PostCard from "../components/PostCard.astro";
-import { CATEGORIES, siteConfig } from "../config";
+import AdSlot from "../components/AdSlot.astro";
+import { CATEGORIES, CATEGORY_HOMEPAGE_AD_SLOT, siteConfig } from "../config";
 import { itemListJsonLd, absoluteUrl } from "../lib/json-ld";
 
 const allPosts = (await getCollection("blog")).sort(
@@ -54,6 +55,12 @@ const recentItemListJsonLd = itemListJsonLd(
   }
   <Center gutter="0">
     <Stack space="12" class="homepage-sections">
+      <AdSlot
+        slot={siteConfig.adSlots.homepageHeader}
+        minHeight="100px"
+        label="Advertisement"
+      />
+
       <div>
         <h1 class="sr-only">{siteConfig.title}</h1>
         <p class="homepage-intro">
@@ -67,26 +74,44 @@ const recentItemListJsonLd = itemListJsonLd(
         heroPost && (
           <section aria-label="Featured post">
             <HeroTile post={heroPost} />
-            {secondaryPosts.length > 0 && (
-              <Grid
-                minItemWidth="16rem"
-                space="4"
-                class="homepage-secondary-grid"
-              >
-                {secondaryPosts.slice(0, 4).map((post) => (
-                  <PostCard post={post} eager />
-                ))}
-              </Grid>
-            )}
           </section>
         )
       }
+
+      <AdSlot
+        slot={siteConfig.adSlots.homepageAfterHero}
+        minHeight="250px"
+        label="Advertisement"
+      />
+
+      {
+        heroPost && secondaryPosts.length > 0 && (
+          <section aria-label="Popular posts">
+            <h2 class="section-heading">Popular</h2>
+            <Grid
+              minItemWidth="16rem"
+              space="4"
+              class="homepage-secondary-grid"
+            >
+              {secondaryPosts.slice(0, 4).map((post) => (
+                <PostCard post={post} eager />
+              ))}
+            </Grid>
+          </section>
+        )
+      }
+
+      <AdSlot
+        slot={siteConfig.adSlots.homepageAfterFeatured}
+        minHeight="250px"
+        label="Advertisement"
+      />
 
       <section aria-label="Recent posts">
         <h2 class="section-heading">Recent</h2>
         {
           recentPosts.length > 0 ? (
-            <Grid minItemWidth="18rem" space="4">
+            <Grid minItemWidth="18rem" space="4" class="responsive-cap-grid">
               {recentPosts.map((post) => (
                 <PostCard post={post} />
               ))}
@@ -97,24 +122,58 @@ const recentItemListJsonLd = itemListJsonLd(
         }
       </section>
 
+      <AdSlot
+        slot={siteConfig.adSlots.homepageAfterRecent}
+        minHeight="250px"
+        label="Advertisement"
+      />
+
       {
-        CATEGORIES.map((category) => {
-          const categoryPosts = allPosts.filter(
-            (post) => post.data.category === category.slug,
-          );
+        CATEGORIES.map((category, index) => {
+          // 6 max per section, same as Recent — homepage sections are a
+          // preview/entry point, not the full archive. Capped here
+          // because this loop previously rendered every single post ever
+          // published in that category with no limit at all,
+          // unbounded growth on the one page every visitor lands on
+          // first. "View all" below is what keeps every post still
+          // reachable from here despite the cap.
+          const categoryPosts = allPosts
+            .filter((post) => post.data.category === category.slug)
+            .slice(0, 6);
+          const isLast = index === CATEGORIES.length - 1;
           return (
-            <section aria-label={category.name}>
-              <h2 class="section-heading">{category.name}</h2>
-              {categoryPosts.length > 0 ? (
-                <Grid minItemWidth="18rem" space="4">
-                  {categoryPosts.map((post) => (
-                    <PostCard post={post} />
-                  ))}
-                </Grid>
-              ) : (
-                <p>No posts yet in {category.name}.</p>
-              )}
-            </section>
+            <>
+              <section aria-label={category.name}>
+                <h2 class="section-heading">{category.name}</h2>
+                {categoryPosts.length > 0 ? (
+                  <>
+                    <Grid
+                      minItemWidth="18rem"
+                      space="4"
+                      class="responsive-cap-grid"
+                    >
+                      {categoryPosts.map((post) => (
+                        <PostCard post={post} />
+                      ))}
+                    </Grid>
+                    <a href={`/${category.slug}/`} class="homepage-view-all">
+                      View all in {category.name} →
+                    </a>
+                  </>
+                ) : (
+                  <p>No posts yet in {category.name}.</p>
+                )}
+              </section>
+
+              <AdSlot
+                slot={
+                  siteConfig.adSlots[CATEGORY_HOMEPAGE_AD_SLOT[category.slug]]
+                }
+                minHeight="250px"
+                label="Advertisement"
+                class={isLast ? "homepage-last-ad" : undefined}
+              />
+            </>
           );
         })
       }
@@ -137,6 +196,52 @@ const recentItemListJsonLd = itemListJsonLd(
     font-size: var(--text-2xl);
     margin-bottom: calc(var(--spacing) * 4);
     color: var(--color-fg);
+  }
+
+  .homepage-view-all {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+    margin-top: calc(var(--spacing) * 3);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--color-accent);
+    text-decoration: none;
+  }
+
+  .homepage-view-all:hover {
+    text-decoration: underline;
+  }
+
+  /*
+   * Recent and each category grid render up to 6 posts in the static
+   * HTML (so the full set exists for crawlers/SEO and desktop readers),
+   * but only the first 4 should actually show on mobile/tablet —
+   * requested 2026-08-11. :global() is required here: this class is
+   * applied via Grid.astro's `class` prop, so the actual element it
+   * lands on is rendered by Grid.astro's own template, not this page's
+   * — Astro's scoped-style attribute only ever lands on elements a
+   * component writes directly in its own template (confirmed live
+   * elsewhere in this codebase: PostCard.astro's :global(.post-card)
+   * comment has the same root cause). Reverted back to visible at
+   * >=64rem, the same breakpoint TOCSidebar.astro already uses to mean
+   * "desktop, not tablet."
+   */
+  .responsive-cap-grid > :global(.post-card-wrapper:nth-child(n + 5)) {
+    display: none;
+  }
+
+  @media (min-width: 64rem) {
+    .responsive-cap-grid > :global(.post-card-wrapper:nth-child(n + 5)) {
+      display: block;
+    }
+  }
+
+  /* The last category's trailing ad slot sits directly above the
+     footer rather than another content section — a hair more breathing
+     room than the Stack gap alone gives every other inter-section gap. */
+  :global(.homepage-last-ad) {
+    margin-bottom: calc(var(--spacing) * 2);
   }
 
   /* 6rem between major sections (hero / recent / each category) reads
