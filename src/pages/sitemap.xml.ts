@@ -15,18 +15,15 @@ import { getLastVerifiedDate } from "../lib/last-verified";
 // homepage don't have a single meaningful source file the way a static
 // page does — their real content is whichever posts they list — so their
 // lastmod is the most recent post date among what they show instead.
+//
+// /archive/ and the legal/about pages (contact, privacy, terms,
+// affiliate-disclosure, editorial-policy) are deliberately absent — they
+// all carry <meta name="robots" content="noindex, follow"> (see the
+// `noindex` prop on their BaseLayout usage), and a sitemap should only
+// ever list URLs you actually want indexed. Listing a noindex URL here
+// is a known Search Console "Sitemap contains noindex" warning.
 const STATIC_PATHS: { path: string; file: string }[] = [
   { path: "/", file: "src/pages/index.astro" },
-  { path: "/archive/", file: "src/pages/archive.astro" },
-  { path: "/about/", file: "src/pages/about.astro" },
-  { path: "/contact/", file: "src/pages/contact.astro" },
-  { path: "/privacy/", file: "src/pages/privacy.astro" },
-  { path: "/terms/", file: "src/pages/terms.astro" },
-  {
-    path: "/affiliate-disclosure/",
-    file: "src/pages/affiliate-disclosure.astro",
-  },
-  { path: "/editorial-policy/", file: "src/pages/editorial-policy.astro" },
 ];
 
 export const GET: APIRoute = async () => {

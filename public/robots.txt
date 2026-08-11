@@ -19,4 +19,15 @@ Allow: /
 User-agent: *
 Allow: /
 
+# Tag pages, /archive/, and the legal/about pages (contact, privacy, terms,
+# affiliate-disclosure, editorial-policy) are intentionally NOT Disallowed
+# here even though they're kept out of Google's index — see the `noindex`
+# meta tag on each of those pages instead. Google has to be able to crawl
+# a URL to see its noindex tag; blocking crawling in robots.txt would stop
+# Google from ever discovering (or re-confirming) that tag, which is the
+# opposite of what a Disallow line looks like it would do. robots.txt only
+# controls crawling, not indexing — see
+# https://developers.google.com/search/docs/crawling-indexing/robots/intro
+
 Sitemap: https://bytetech247.com/sitemap.xml
+Sitemap: https://bytetech247.com/rss.xml

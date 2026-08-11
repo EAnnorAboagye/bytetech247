@@ -25,6 +25,14 @@ interface Props {
   preloadImage?: string;
   /** Absolute URL of the post's plain-Markdown export ([slug].md.ts), if any. */
   markdownUrl?: string;
+  /**
+   * Set on tag pages, /archive/, and legal/about pages (contact, privacy,
+   * terms, affiliate-disclosure, editorial-policy) — Google should only
+   * index category pages and posts, not these navigation/utility pages.
+   * `follow` (not a bare `noindex`) so link equity still flows through
+   * them to the posts they list/link to.
+   */
+  noindex?: boolean;
 }
 
 const {
@@ -36,6 +44,7 @@ const {
   jsonLd,
   preloadImage,
   markdownUrl,
+  noindex = false,
 } = Astro.props;
 
 // Computed per-page, not a sitewide constant — every page needs its own
@@ -291,6 +300,7 @@ const jsonLdBlocks = [
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
     <meta name="description" content={description} />
+    {noindex && <meta name="robots" content="noindex, follow" />}
     <link rel="canonical" href={canonicalUrl} />
     <link
       rel="alternate"

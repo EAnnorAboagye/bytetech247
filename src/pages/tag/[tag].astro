@@ -42,6 +42,7 @@ const { display, posts } = Astro.props as Props;
 <BaseLayout
   title={`#${display} — ${siteConfig.name}`}
   description={`Posts tagged "${display}" on ${siteConfig.name}.`}
+  noindex
 >
   {
     /* gutter="0" — <main> (BaseLayout) already applies its own
