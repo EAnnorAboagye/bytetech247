@@ -25,12 +25,20 @@ const topTagsByCategory = getTopTagsByCategory(posts);
     <a href="/" class="site-header__logo">
       <img
         src="/logo-mark.svg"
-        alt=""
+        alt={siteConfig.name}
         width="28"
         height="28"
         class="site-header__logo-mark"
       />
-      {siteConfig.name}
+      {
+        /* aria-hidden, not a second copy of the name for sighted users
+           only — the image's own alt above already gives this link its
+           full accessible name ("ByteTech247"). Without this, a screen
+           reader announces it twice ("ByteTech247, ByteTech247") on
+           literally every page, since both the alt text and this text
+           node concatenate into the same <a>'s accessible name. */
+      }
+      <span aria-hidden="true">{siteConfig.name}</span>
     </a>
 
     <details class="site-header__mobile-toggle">
