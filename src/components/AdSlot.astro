@@ -1,0 +1,101 @@
+---
+// Manual, CLS-safe ad placement — replaces relying on Auto Ads (which
+// injects wherever Google decides, with no reserved space) for the two
+// placements that actually earn a fixed spot: the article sidebar, under
+// the TOC, and one in-article slot. Renders nothing if no slot ID is
+// configured in src/config.ts (siteConfig.adSlots) — a missing slot ID
+// is a safe no-op, not a broken <ins> tag with an empty data-ad-slot.
+//
+// The reserved minHeight is load-bearing, not decorative: it's set
+// before the AdSense script has run, so the layout never shifts once the
+// creative (or nothing, if unfilled) loads in — the one part of "premium
+// ad placement" that's also a real Core Web Vitals (CLS) fix.
+import { siteConfig } from "../config";
+
+interface Props {
+  slot: string;
+  minHeight: string;
+  label?: string;
+  class?: string;
+}
+
+const { slot, minHeight, label = "Advertisement", class: className } = Astro.props;
+const adClient = `ca-${siteConfig.adsensePublisherId}`;
+---
+
+{
+  slot && (
+    <>
+      <div
+        class:list={["ad-slot", className]}
+        style={`--ad-slot-min-height: ${minHeight}`}
+      >
+        <p class="ad-slot__label">{label}</p>
+        <ins
+          class="adsbygoogle"
+          style="display:block;width:100%;height:100%"
+          data-ad-client={adClient}
+          data-ad-slot={slot}
+          data-ad-format="auto"
+          data-full-width-responsive="true"
+        />
+      </div>
+      <script is:inline>
+        // is:inline — window.adsbygoogle is an untyped third-party global
+        // with no ambient declaration in this project; a normal processed
+        // <script> here would fail `astro check`. Same fix
+        // BaseLayout.astro's gtag setup already uses for the same reason
+        // (see its own comment on that block).
+        //
+        // One delegated pass per navigation covers every AdSlot instance
+        // on the page (sidebar + in-article), same convention as this
+        // site's other shared component scripts (Header.astro's
+        // dropdown-close, etc.) rather than one inline push-script copy
+        // per instance. Scoped inside the `slot &&` branch above so an
+        // unconfigured AdSlot really does render nothing at all, not
+        // just an empty box with an inert script still attached.
+        document.addEventListener("astro:page-load", () => {
+          const unfilled = document.querySelectorAll(
+            "ins.adsbygoogle:not([data-adsbygoogle-status])",
+          );
+          for (let i = 0; i < unfilled.length; i++) {
+            try {
+              (window.adsbygoogle = window.adsbygoogle || []).push({});
+            } catch {
+              // AdSense script blocked (ad blocker, offline, not yet
+              // approved) — the reserved min-height above keeps layout
+              // stable either way.
+            }
+          }
+        });
+      </script>
+    </>
+  )
+}
+
+<style>
+  .ad-slot {
+    min-height: var(--ad-slot-min-height);
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--spacing) * 1);
+    padding: calc(var(--spacing) * 2);
+    border: 1px solid var(--color-border);
+    border-radius: 0.5rem;
+    background-color: var(--color-bg-subtle);
+  }
+
+  .ad-slot__label {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-fg-muted);
+    user-select: none;
+  }
+
+  .ad-slot ins {
+    flex: 1;
+  }
+</style>

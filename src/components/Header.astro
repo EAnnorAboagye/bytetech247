@@ -19,6 +19,7 @@ const posts = await getCollection("blog");
 const topTagsByCategory = getTopTagsByCategory(posts);
 ---
 
+<div class="site-header__sentinel" aria-hidden="true"></div>
 <header class="site-header">
   <div class="site-header__bar">
     <a href="/" class="site-header__logo">
@@ -114,10 +115,38 @@ const topTagsByCategory = getTopTagsByCategory(posts);
 </header>
 
 <style>
+  /* 1px, zero-height — exists only so the IntersectionObserver below has
+     something at the very top of the page to watch. Once it scrolls out
+     of view, the header has moved away from the page's natural top edge
+     and earns a border/shadow to read as "floating" rather than flush. */
+  .site-header__sentinel {
+    position: absolute;
+    top: 0;
+    height: 1px;
+    width: 100%;
+    pointer-events: none;
+  }
+
   .site-header {
-    position: relative;
-    border-bottom: 1px solid var(--color-border);
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    border-bottom: 1px solid transparent;
     background-color: var(--color-bg);
+    transition:
+      border-color var(--duration-base) var(--ease-out-expo),
+      box-shadow var(--duration-base) var(--ease-out-expo);
+  }
+
+  .site-header--elevated {
+    border-bottom-color: var(--color-border);
+    box-shadow: var(--shadow-card);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .site-header {
+      transition: none;
+    }
   }
 
   .site-header__bar {
@@ -258,6 +287,19 @@ const topTagsByCategory = getTopTagsByCategory(posts);
       height: 44px;
     }
 
+    /* Pre-existing narrow-viewport overflow, confirmed live at 375px: two
+       44px touch targets plus their gap and this row's own margin-left
+       ran 7px past the actual viewport width, forcing a page-wide
+       horizontal scrollbar on every page (this header renders on all of
+       them). Tightening just the two mobile-only spacing values below
+       removes the overflow without touching the 40px desktop sizing
+       (only .site-header__action's WIDTH changes there, not this
+       margin/gap). */
+    .site-header__actions {
+      gap: calc(var(--spacing) * 1);
+      margin-left: var(--spacing);
+    }
+
     .site-header__mobile-toggle > summary {
       width: 44px;
       height: 44px;
@@ -314,4 +356,30 @@ const topTagsByCategory = getTopTagsByCategory(posts);
       details.removeAttribute("open");
     }
   });
+
+  // Toggles the header's floating border/shadow once the page has
+  // scrolled past the 1px sentinel at the very top — an
+  // IntersectionObserver instead of a scroll listener for the same
+  // reason TOCSidebar.astro's scroll-spy uses one (no per-frame layout
+  // work). Re-armed on every view-transition navigation, same pattern as
+  // that scroll-spy, since the sentinel element itself is replaced.
+  let headerElevationObserver: IntersectionObserver | null = null;
+
+  function setupHeaderElevation() {
+    headerElevationObserver?.disconnect();
+
+    const sentinel = document.querySelector(".site-header__sentinel");
+    const header = document.querySelector(".site-header");
+    if (!sentinel || !header) return;
+
+    headerElevationObserver = new IntersectionObserver(
+      ([entry]) => {
+        header.classList.toggle("site-header--elevated", !entry.isIntersecting);
+      },
+      { threshold: 0 },
+    );
+    headerElevationObserver.observe(sentinel);
+  }
+
+  document.addEventListener("astro:page-load", setupHeaderElevation);
 </script>

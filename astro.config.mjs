@@ -12,6 +12,7 @@ import {
   transformerFixCommentContrast,
   rehypeCodeBlockChrome,
 } from "./src/build/shiki-plugins.mjs";
+import { rehypeQuickAnswer } from "./src/build/rehype-quick-answer.mjs";
 
 // GFM tables don't emit scope="col" on <th> by default — Phase 3 requires
 // it for accessibility/AI-GEO parsing of tabular content. GFM only ever
@@ -52,7 +53,11 @@ export default defineConfig({
         transformerFixCommentContrast(),
       ],
     },
-    rehypePlugins: [rehypeTableHeaderScope, rehypeCodeBlockChrome],
+    rehypePlugins: [
+      rehypeTableHeaderScope,
+      rehypeCodeBlockChrome,
+      rehypeQuickAnswer,
+    ],
   },
   vite: {
     plugins: [tailwindcss()],

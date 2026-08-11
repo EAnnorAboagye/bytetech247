@@ -28,6 +28,31 @@
   --color-accent-fg: oklch(0.98 0.012 250);
 
   /*
+   * Card elevation — plain box-shadow (cheap to paint, no backdrop-filter
+   * anywhere on the site) so PostCard/HeroTile can lift on hover without
+   * costing anything on scroll. Values differ by theme (see the `tokens`
+   * layer below): a black shadow reads as a visible dent against the dark
+   * background's own near-black cards, so dark mode needs a stronger
+   * alpha than light mode to be visible at all, not just an inverted copy.
+   */
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.04), 0 8px 20px rgb(0 0 0 / 0.06);
+  --shadow-card-hover: 0 2px 6px rgb(0 0 0 / 0.07), 0 16px 32px rgb(0 0 0 / 0.1);
+
+  /*
+   * Per-category accents — same lightness/chroma recipe as --color-accent
+   * (just a different hue per category slug from src/config.ts), so every
+   * card still reads as one brand system, not four unrelated colors.
+   * Lets a reader tell categories apart at a glance in a mixed grid
+   * (Recent, related, search) without re-reading the text label every
+   * time. Dark-mode values live in the `tokens` layer below, same split
+   * as --color-accent itself.
+   */
+  --category-accent-dev-tools: oklch(0.46 0.11 217);
+  --category-accent-data-automation: oklch(0.46 0.11 265);
+  --category-accent-ai-productivity: oklch(0.46 0.11 320);
+  --category-accent-guides-fixes: oklch(0.5 0.13 45);
+
+  /*
    * Modular type scale, ratio 1.25. `lg` and up are fluid via clamp()
    * (computed by scripts/print-type-scale.mjs); `xs`/`sm`/`base` stay
    * static — shrinking body copy below 1rem on narrow viewports is a
@@ -99,6 +124,13 @@
       --color-fg-muted: oklch(0.68 0.012 250);
       --color-accent: oklch(0.78 0.12 177);
       --color-accent-fg: oklch(0.15 0.012 250);
+      --shadow-card: 0 1px 2px rgb(0 0 0 / 0.3), 0 8px 20px rgb(0 0 0 / 0.35);
+      --shadow-card-hover:
+        0 2px 6px rgb(0 0 0 / 0.35), 0 16px 32px rgb(0 0 0 / 0.4);
+      --category-accent-dev-tools: oklch(0.75 0.12 217);
+      --category-accent-data-automation: oklch(0.75 0.12 265);
+      --category-accent-ai-productivity: oklch(0.75 0.12 320);
+      --category-accent-guides-fixes: oklch(0.78 0.14 45);
     }
   }
 
@@ -110,6 +142,13 @@
     --color-fg-muted: oklch(0.68 0.012 250);
     --color-accent: oklch(0.78 0.12 177);
     --color-accent-fg: oklch(0.15 0.012 250);
+    --shadow-card: 0 1px 2px rgb(0 0 0 / 0.3), 0 8px 20px rgb(0 0 0 / 0.35);
+    --shadow-card-hover:
+      0 2px 6px rgb(0 0 0 / 0.35), 0 16px 32px rgb(0 0 0 / 0.4);
+    --category-accent-dev-tools: oklch(0.75 0.12 217);
+    --category-accent-data-automation: oklch(0.75 0.12 265);
+    --category-accent-ai-productivity: oklch(0.75 0.12 320);
+    --category-accent-guides-fixes: oklch(0.78 0.14 45);
   }
 
   :root[data-theme="light"] {
@@ -120,6 +159,13 @@
     --color-fg-muted: oklch(0.46 0.012 250);
     --color-accent: oklch(0.46 0.11 177);
     --color-accent-fg: oklch(0.98 0.012 250);
+    --shadow-card: 0 1px 2px rgb(0 0 0 / 0.04), 0 8px 20px rgb(0 0 0 / 0.06);
+    --shadow-card-hover:
+      0 2px 6px rgb(0 0 0 / 0.07), 0 16px 32px rgb(0 0 0 / 0.1);
+    --category-accent-dev-tools: oklch(0.46 0.11 217);
+    --category-accent-data-automation: oklch(0.46 0.11 265);
+    --category-accent-ai-productivity: oklch(0.46 0.11 320);
+    --category-accent-guides-fixes: oklch(0.5 0.13 45);
   }
 }
 
@@ -275,6 +321,22 @@
   }
 
   /*
+   * BaseLayout's astro:page-load script gives the page's own h1 a
+   * tabindex="-1" and calls .focus() on it after every navigation, so
+   * screen-reader users land somewhere sensible instead of at <body>.
+   * That's correct — but it also made the rule above draw a visible
+   * accent-color box around every single article/legal-page headline on
+   * every load, for every sighted visitor too (confirmed live:
+   * document.activeElement === h1 immediately after navigation). A
+   * tabindex="-1" element is never reachable by real Tab navigation —
+   * only by this script's own .focus() call — so suppressing its ring
+   * costs keyboard users nothing.
+   */
+  h1[tabindex="-1"]:focus-visible {
+    outline: none;
+  }
+
+  /*
    * Motion tokens (Phase 1) wired into real transitions rather than left
    * declared-but-unused — hover/focus color changes across the site now
    * share one duration/easing instead of relying on Tailwind's untokened
@@ -296,6 +358,31 @@
     summary {
       transition: none;
     }
+  }
+}
+
+@layer components {
+  /*
+   * Maps a post's category slug (rendered as data-category on the card
+   * wrapper) to that category's accent token, into one local custom
+   * property components can read without four copy-pasted color rules
+   * each. Falls back to the sitewide --color-accent for any element that
+   * doesn't sit inside a categorized card.
+   */
+  [data-category="dev-tools"] {
+    --card-accent: var(--category-accent-dev-tools);
+  }
+
+  [data-category="data-automation"] {
+    --card-accent: var(--category-accent-data-automation);
+  }
+
+  [data-category="ai-productivity"] {
+    --card-accent: var(--category-accent-ai-productivity);
+  }
+
+  [data-category="guides-fixes"] {
+    --card-accent: var(--category-accent-guides-fixes);
   }
 }
 

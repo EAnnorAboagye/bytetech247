@@ -34,7 +34,7 @@ const categoryName = getCategoryName(post.data.category);
 const href = `/${post.data.category}/${post.id}/`;
 ---
 
-<div class="post-card-wrapper">
+<div class="post-card-wrapper" data-category={post.data.category}>
   <Card as="article" padding="none" class="post-card">
     <a href={href} class="post-card__link">
       <Picture
@@ -72,8 +72,31 @@ const href = `/${post.data.category}/${post.id}/`;
     height: 100%;
   }
 
-  .post-card {
+  /*
+   * :global() — .post-card is the class Card.astro (a *child* component)
+   * actually renders its <article> with, via the `class` prop. Astro's
+   * scoped-style attribute only ever lands on elements a component
+   * writes directly in its own template, never on a child component's
+   * internal output — confirmed live: an unscoped rule here matched
+   * nothing at all (no data-astro-cid on that <article>), so both of
+   * these silently never applied. Same reasoning as the :global() usage
+   * on .post-share / .article-content h2 etc. in [slug].astro.
+   */
+  :global(.post-card) {
     height: 100%;
+    position: relative;
+  }
+
+  /* A 3px category-colored top edge — the fastest way to tell categories
+     apart in a mixed grid (Recent, related, search) before reading any
+     text. Drawn as a pseudo-element, not a border, so it doesn't disturb
+     the card's existing 1px border-radius corners. */
+  :global(.post-card::before) {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 3px;
+    background-color: var(--card-accent, var(--color-accent));
   }
 
   .post-card__link {
@@ -101,7 +124,7 @@ const href = `/${post.data.category}/${post.id}/`;
   .post-card__category {
     font-size: var(--text-xs);
     font-weight: 600;
-    color: var(--color-accent);
+    color: var(--card-accent, var(--color-accent));
     text-transform: uppercase;
     letter-spacing: 0.05em;
   }

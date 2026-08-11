@@ -116,4 +116,15 @@ export const siteConfig = {
   // until a real Consent Management Platform exists for EEA/UK/Swiss
   // visitors.
   adsensePublisherId: "pub-2225877475261768",
+
+  // Manual AdSense ad-unit slot IDs (Ads -> By ad unit -> Display ads in
+  // the AdSense dashboard, not the Auto Ads toggle) — replaces the
+  // zero-control Auto Ads placement with fixed, CLS-safe positions (see
+  // src/components/AdSlot.astro). Left empty until real slot IDs exist:
+  // AdSlot renders nothing for an empty string, so this is a safe no-op
+  // rather than a broken ad tag until these are filled in.
+  adSlots: {
+    articleSidebar: "",
+    articleInline: "",
+  } as Record<string, string>,
 } as const;
