@@ -115,7 +115,16 @@ export const siteConfig = {
   // ad_personalization denied, so this serves non-personalized ads only
   // until a real Consent Management Platform exists for EEA/UK/Swiss
   // visitors.
-  adsensePublisherId: "pub-2225877475261768",
+  //
+  // Must keep the "ca-" prefix — confirmed live in the AdSense dashboard
+  // (site verification step, 2026-08-11): the account's own generated
+  // snippet uses `client=ca-pub-2225877475261768`, but this value was
+  // missing that prefix, so the deployed loader script was requesting
+  // `client=pub-2225877475261768` instead — the likely reason the site
+  // was still stuck on "Requires review" and no real ad creative was
+  // ever seen rendering into the Auto Ads slot despite the script
+  // loading fine.
+  adsensePublisherId: "ca-pub-2225877475261768",
 
   // Manual AdSense ad-unit slot IDs (Ads -> By ad unit -> Display ads in
   // the AdSense dashboard, not the Auto Ads toggle) — replaces the

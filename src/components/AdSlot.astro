@@ -25,7 +25,7 @@ const {
   label = "Advertisement",
   class: className,
 } = Astro.props;
-const adClient = `ca-${siteConfig.adsensePublisherId}`;
+const adClient = siteConfig.adsensePublisherId;
 ---
 
 {
