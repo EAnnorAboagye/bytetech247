@@ -129,52 +129,52 @@ export const siteConfig = {
   // Manual AdSense ad-unit slot IDs (Ads -> By ad unit -> Display ads in
   // the AdSense dashboard, not the Auto Ads toggle) — replaces the
   // zero-control Auto Ads placement with fixed, CLS-safe positions (see
-  // src/components/AdSlot.astro). Left empty until real slot IDs exist:
-  // AdSlot renders nothing for an empty string, so this is a safe no-op
-  // rather than a broken ad tag until these are filled in.
-  // Real manual ad-unit slot IDs, created 2026-08-11 in the AdSense
-  // dashboard (Ads > By ad unit > Display ads, all "Responsive" size to
-  // match the data-ad-format="auto" / data-full-width-responsive="true"
-  // markup AdSlot.astro and rehype-in-article-ads.mjs already emit).
-  // Six units cover the 17 named positions below — one per genuinely
-  // distinct ad *shape*/context (header leaderboard, in-content break,
-  // sidebar skyscraper, post-content break), not one per position, so
-  // AdSense's own ad-unit report stays a meaningful before/after/zone
-  // comparison instead of 17 near-duplicate rows. Reusing the same slot
-  // ID in multiple DOM positions on one page is standard and fully
-  // supported by AdSense — the position is set by where the code sits on
-  // the page, not by the slot ID itself.
+  // src/components/AdSlot.astro). Left empty until the site is actually
+  // connected/approved in AdSense: AdSlot renders nothing for an empty
+  // string, so this is a safe no-op rather than a broken ad tag.
+  //
+  // Six real ad units already exist in the AdSense dashboard (created
+  // 2026-08-11 — Homepage Header 6454528989, Homepage In Content
+  // 1640471997, Article Header 3453227057, Article Sidebar 4574737038,
+  // Article In Content 3070083670, Article Post Content 6626185302; see
+  // the mapping in the 2026-08-11 commit that first wired these in for
+  // which key gets which unit). They were live in this config for a
+  // short window that same day and measurably wrecked the site's real
+  // performance — Lighthouse CI mobile caught a performance score of
+  // 0.35 (was passing before), LCP 5.6s (budget: 3s), TBT 3.1s, with
+  // Google/Doubleclick ad-serving scripts alone responsible for ~1.25s
+  // of that blocking time — because the site wasn't connected/approved
+  // in AdSense yet, so all 8 real ad requests per page were pure
+  // overhead with no chance of actually filling. Re-enable these same
+  // slot IDs (they don't need to be recreated) once the site shows
+  // connected/approved in the AdSense dashboard, and re-run Lighthouse
+  // before shipping to confirm the cost is acceptable once ads can
+  // actually fill.
   adSlots: {
     // Sidebar tower, under the desktop TOC (article pages only).
-    articleSidebar: "4574737038", // Article - Sidebar
+    articleSidebar: "",
     // Homepage placements (index.astro): one after the header/before the
     // hero, one after the hero, one after the featured/secondary grid,
     // one after Recent, and one after each of the four category
     // sections — the exact layout requested 2026-08-11.
-    homepageHeader: "6454528989", // Homepage - Header
-    homepageAfterHero: "1640471997", // Homepage - In Content
-    homepageAfterFeatured: "1640471997", // Homepage - In Content
-    homepageAfterRecent: "1640471997", // Homepage - In Content
-    homepageAfterDevTools: "1640471997", // Homepage - In Content
-    homepageAfterDataAutomation: "1640471997", // Homepage - In Content
-    homepageAfterAiProductivity: "1640471997", // Homepage - In Content
-    homepageAfterGuidesFixes: "1640471997", // Homepage - In Content
+    homepageHeader: "",
+    homepageAfterHero: "",
+    homepageAfterFeatured: "",
+    homepageAfterRecent: "",
+    homepageAfterDevTools: "",
+    homepageAfterDataAutomation: "",
+    homepageAfterAiProductivity: "",
+    homepageAfterGuidesFixes: "",
     // Article page placements ([category]/[slug].astro), in reading
-    // order — the exact layout requested 2026-08-11. Header gets its own
-    // unit; the four in-reading-flow breaks (after cover image, after
-    // pillar/cluster, after Quick Answer, alternating H2s) share "Article
-    // - In Content"; the three post-content breaks (before author bio,
-    // after tags, before recent) share "Article - Post Content" since
-    // readers who reach that zone are a distinct, highly-engaged segment
-    // worth tracking separately from mid-read breaks.
-    articleHeader: "3453227057", // Article - Header
-    articleAfterImage: "3070083670", // Article - In Content
-    articleAfterPillarCluster: "3070083670", // Article - In Content
-    articleAfterQuickAnswer: "3070083670", // Article - In Content
-    articleH2: "3070083670", // Article - In Content
-    articleBeforeAuthorBio: "6626185302", // Article - Post Content
-    articleAfterTags: "6626185302", // Article - Post Content
-    articleBeforeRecent: "6626185302", // Article - Post Content
+    // order — the exact layout requested 2026-08-11.
+    articleHeader: "",
+    articleAfterImage: "",
+    articleAfterPillarCluster: "",
+    articleAfterQuickAnswer: "",
+    articleH2: "",
+    articleBeforeAuthorBio: "",
+    articleAfterTags: "",
+    articleBeforeRecent: "",
   } as Record<string, string>,
 } as const;
 
