@@ -144,6 +144,13 @@ const nextInSeries =
   showReadingProgress
 >
   <div class="post-layout">
+    <AdSlot
+      slot={siteConfig.adSlots.articleHeader}
+      minHeight="100px"
+      label="Advertisement"
+      class="post-header-ad"
+    />
+
     <article class="post-article">
       <nav aria-label="Breadcrumb" class="breadcrumb">
         <ol class="breadcrumb__list">
@@ -197,43 +204,73 @@ const nextInSeries =
 
       <TOCSidebar headings={headings} variant="inline" />
 
+      <AdSlot
+        slot={siteConfig.adSlots.articleAfterImage}
+        minHeight="250px"
+        label="Advertisement"
+        class="post-ad"
+      />
+
       {
         seriesPosts.length > 1 && (
-          <nav aria-label="Series progress" class="series-nav">
-            <p class="series-nav__title">
-              {post.data.series} ({seriesIndex + 1} of {seriesPosts.length})
-            </p>
-            <ol class="series-nav__list">
-              {seriesPosts.map((seriesPost, i) => (
-                <li class:list={{ "is-current": seriesPost.id === post.id }}>
-                  {seriesPost.id === post.id ? (
-                    <span>
-                      {i + 1}. {seriesPost.data.title}
-                    </span>
-                  ) : (
-                    <a href={`/${seriesPost.data.category}/${seriesPost.id}/`}>
-                      {i + 1}. {seriesPost.data.title}
-                    </a>
-                  )}
-                </li>
-              ))}
-            </ol>
-          </nav>
+          <>
+            <nav aria-label="Series progress" class="series-nav">
+              <p class="series-nav__title">
+                {post.data.series} ({seriesIndex + 1} of {seriesPosts.length})
+              </p>
+              <ol class="series-nav__list">
+                {seriesPosts.map((seriesPost, i) => (
+                  <li class:list={{ "is-current": seriesPost.id === post.id }}>
+                    {seriesPost.id === post.id ? (
+                      <span>
+                        {i + 1}. {seriesPost.data.title}
+                      </span>
+                    ) : (
+                      <a
+                        href={`/${seriesPost.data.category}/${seriesPost.id}/`}
+                      >
+                        {i + 1}. {seriesPost.data.title}
+                      </a>
+                    )}
+                  </li>
+                ))}
+              </ol>
+            </nav>
+
+            {/* Pillar/cluster ad only exists when the pillar/cluster nav
+                 above actually rendered — same automatic-detection
+                 principle as the Quick Answer / H2 ads: no series, no
+                 slot, not a hidden empty box. */}
+            <AdSlot
+              slot={siteConfig.adSlots.articleAfterPillarCluster}
+              minHeight="250px"
+              label="Advertisement"
+              class="post-ad"
+            />
+          </>
         )
       }
 
+      {
+        /* Quick Answer and every-other-H2 ads are inserted *inside* this
+           block by the rehype-in-article-ads.mjs pipeline (astro.config.mjs)
+           — there's no Astro-level way to place a component mid-way
+           through compiled MDX output, so those two positions emit the
+           same .ad-slot markup as raw HTML instead of a real <AdSlot />
+           instance. See that file's own comment for why. */
+      }
       <div class="article-content">
         <Content components={{ Figure, Callout, CodeTabs, Benchmark }} />
       </div>
 
+      <FaqSection faq={post.data.faq} />
+
       <AdSlot
-        slot={siteConfig.adSlots.articleInline}
+        slot={siteConfig.adSlots.articleBeforeAuthorBio}
         minHeight="250px"
         label="Advertisement"
-        class="post-inline-ad"
+        class="post-ad"
       />
-
-      <FaqSection faq={post.data.faq} />
 
       <div class="post-author">
         <AuthorBio />
@@ -272,27 +309,43 @@ const nextInSeries =
 
       {
         relatedPosts.length > 0 && (
-          <section aria-label="Related posts" class="related-posts">
-            <h2>Related posts</h2>
-            <Grid minItemWidth="16rem" space="4" class="related-posts__grid">
-              {relatedPosts.map((related) => (
-                <PostCard post={related} />
-              ))}
-            </Grid>
-          </section>
+          <>
+            <AdSlot
+              slot={siteConfig.adSlots.articleAfterTags}
+              minHeight="250px"
+              label="Advertisement"
+              class="post-ad"
+            />
+            <section aria-label="Related posts" class="related-posts">
+              <h2>Related posts</h2>
+              <Grid minItemWidth="16rem" space="4" class="related-posts__grid">
+                {relatedPosts.map((related) => (
+                  <PostCard post={related} />
+                ))}
+              </Grid>
+            </section>
+          </>
         )
       }
 
       {
         recentPosts.length > 0 && (
-          <section aria-label="Recent posts" class="recent-posts">
-            <h2>Recent posts</h2>
-            <Grid minItemWidth="16rem" space="4" class="recent-posts__grid">
-              {recentPosts.map((recent) => (
-                <PostCard post={recent} />
-              ))}
-            </Grid>
-          </section>
+          <>
+            <AdSlot
+              slot={siteConfig.adSlots.articleBeforeRecent}
+              minHeight="250px"
+              label="Advertisement"
+              class="post-ad"
+            />
+            <section aria-label="Recent posts" class="recent-posts">
+              <h2>Recent posts</h2>
+              <Grid minItemWidth="16rem" space="4" class="recent-posts__grid">
+                {recentPosts.map((recent) => (
+                  <PostCard post={recent} />
+                ))}
+              </Grid>
+            </section>
+          </>
         )
       }
     </article>
@@ -364,6 +417,40 @@ const nextInSeries =
     }
   }
 
+  /*
+   * Reading-column width — confirmed live: with no cap of its own, the
+   * article column only ever inherited .post-layout's 72rem/16rem-sidebar
+   * math, which works out to roughly 848px wide at a 1440px viewport —
+   * close to 100 characters per line at this template's own body font
+   * size, well past the ~65-75ch a line of prose stays comfortable to
+   * read at before eyes start losing their place jumping back to the
+   * left edge. Only matters at wider viewports; mobile/tablet are
+   * already narrower than this cap, so nothing changes for them.
+   *
+   * Applied to everything in the article column *except* the
+   * related/recent-posts card grids, which still want the full column
+   * width to lay out multiple cards per row — a single comfortable
+   * reading measure for the parts a reader actually reads, full width
+   * for the parts a reader scans.
+   */
+  .breadcrumb,
+  h1,
+  .post-meta,
+  :global(.post-share),
+  .post-markdown-link,
+  .post-cover,
+  .post-cover-credit,
+  :global(.toc-inline),
+  .series-nav,
+  .article-content,
+  :global(.faq-section),
+  .post-author,
+  .post-tags,
+  .series-prev-next,
+  :global(.post-ad) {
+    max-width: 46rem;
+  }
+
   /* Below 1024px the grid collapses to one column, which used to leave
      the sidebar TOC stranded at the bottom of the page (after related
      posts) — the inline <details> variant above replaces it there
@@ -382,8 +469,32 @@ const nextInSeries =
     margin-top: calc(var(--spacing) * 6);
   }
 
-  :global(.post-inline-ad) {
+  /* Every AdSlot instance in the article flow (after image, after
+     pillar/cluster, before author bio, after tags, before recent) shares
+     this one spacing rule — same margin whichever position it's in. */
+  :global(.post-ad) {
     margin: calc(var(--spacing) * 8) 0;
+  }
+
+  /* The header ad spans the full .post-layout grid width (article column
+     + sidebar column combined), not just the article track it would
+     otherwise land in as the grid's first child — a leaderboard reads
+     as a full-width banner, not a column-width box. grid-column: 1 / -1
+     only actually spans two tracks once the sidebar column exists
+     (>=64rem); below that .post-layout is a single column already, so
+     this is a no-op there, not a conditional rule. */
+  :global(.post-header-ad) {
+    grid-column: 1 / -1;
+    margin: 0 0 calc(var(--spacing) * 2);
+  }
+
+  /* The Quick Answer / every-other-H2 ads (rehype-in-article-ads.mjs)
+     are raw .ad-slot markup inserted directly into .article-content's
+     compiled MDX — same spacing as .post-ad, scoped through
+     .article-content so it doesn't need its own :global(.post-ad)
+     duplicate selector. */
+  .article-content :global(.ad-slot) {
+    margin: 2em 0;
   }
 
   @media (min-width: 64rem) {

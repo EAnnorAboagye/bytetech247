@@ -385,6 +385,42 @@
   [data-category="guides-fixes"] {
     --card-accent: var(--category-accent-guides-fixes);
   }
+
+  /*
+   * AdSlot's markup — global, not scoped inside AdSlot.astro, because
+   * this same class pair also has to style ad markup inserted directly
+   * by the in-article rehype plugins (rehype-quick-answer.mjs,
+   * rehype-in-article-ads.mjs), which emit raw HTML into the compiled
+   * MDX tree at build time, outside Astro's component-scoping system
+   * entirely — there's no data-astro-cid attribute for a scoped rule to
+   * match against on that markup. One definition here covers both the
+   * Astro-rendered instances (homepage, sidebar) and the rehype-
+   * inserted ones (in-article) identically.
+   */
+  .ad-slot {
+    min-height: var(--ad-slot-min-height);
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--spacing) * 1);
+    padding: calc(var(--spacing) * 2);
+    border: 1px solid var(--color-border);
+    border-radius: 0.5rem;
+    background-color: var(--color-bg-subtle);
+  }
+
+  .ad-slot__label {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-fg-muted);
+    user-select: none;
+  }
+
+  .ad-slot ins {
+    flex: 1;
+  }
 }
 
 @layer overrides {

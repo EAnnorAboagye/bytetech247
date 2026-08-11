@@ -1,8 +1,7 @@
 ---
 // Manual, CLS-safe ad placement — replaces relying on Auto Ads (which
-// injects wherever Google decides, with no reserved space) for the two
-// placements that actually earn a fixed spot: the article sidebar, under
-// the TOC, and one in-article slot. Renders nothing if no slot ID is
+// injects wherever Google decides, with no reserved space) for fixed
+// homepage/article/sidebar spots. Renders nothing if no slot ID is
 // configured in src/config.ts (siteConfig.adSlots) — a missing slot ID
 // is a safe no-op, not a broken <ins> tag with an empty data-ad-slot.
 //
@@ -10,6 +9,15 @@
 // before the AdSense script has run, so the layout never shifts once the
 // creative (or nothing, if unfilled) loads in — the one part of "premium
 // ad placement" that's also a real Core Web Vitals (CLS) fix.
+//
+// .ad-slot/.ad-slot__label styling and the adsbygoogle activation script
+// both live globally now (global.css's `components` layer, and
+// BaseLayout.astro respectively) instead of in this component's own
+// scoped <style>/<script> — the in-article rehype plugins
+// (rehype-quick-answer.mjs, rehype-in-article-ads.mjs) emit this same
+// markup shape directly into the compiled MDX tree, outside Astro's
+// component-scoping system, and need to match this component's styling
+// exactly rather than duplicating it.
 import { siteConfig } from "../config";
 
 interface Props {
@@ -46,65 +54,3 @@ const adClient = siteConfig.adsensePublisherId;
     </div>
   )
 }
-
-<style>
-  .ad-slot {
-    min-height: var(--ad-slot-min-height);
-    display: flex;
-    flex-direction: column;
-    gap: calc(var(--spacing) * 1);
-    padding: calc(var(--spacing) * 2);
-    border: 1px solid var(--color-border);
-    border-radius: 0.5rem;
-    background-color: var(--color-bg-subtle);
-  }
-
-  .ad-slot__label {
-    margin: 0;
-    font-family: var(--font-mono);
-    font-size: var(--text-xs);
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--color-fg-muted);
-    user-select: none;
-  }
-
-  .ad-slot ins {
-    flex: 1;
-  }
-</style>
-
-<script is:inline>
-  // is:inline — window.adsbygoogle is an untyped third-party global with
-  // no ambient declaration in this project; a normal processed <script>
-  // here would fail `astro check`. Same fix BaseLayout.astro's gtag setup
-  // already uses for the same reason (see its own comment on that block).
-  //
-  // Deliberately NOT nested inside the `slot &&` conditional above —
-  // prettier-plugin-astro's formatter genuinely crashes on a <script>
-  // tag nested inside a conditional JSX expression (confirmed live: the
-  // Astro compiler itself handles it fine, `astro build` never
-  // complained, only `prettier --check` did). Kept as an always-present,
-  // top-level script instead: with no configured slot there's no
-  // `ins.adsbygoogle` on the page, so the querySelectorAll below simply
-  // finds nothing and the loop body never runs — a functional no-op,
-  // even though the (empty) script tag itself is still in the page.
-  //
-  // One delegated pass per navigation covers every AdSlot instance on
-  // the page (sidebar + in-article), same convention as this site's
-  // other shared component scripts (Header.astro's dropdown-close, etc.)
-  // rather than one inline push-script copy per instance.
-  document.addEventListener("astro:page-load", () => {
-    const unfilled = document.querySelectorAll(
-      "ins.adsbygoogle:not([data-adsbygoogle-status])",
-    );
-    for (let i = 0; i < unfilled.length; i++) {
-      try {
-        (window.adsbygoogle = window.adsbygoogle || []).push({});
-      } catch {
-        // AdSense script blocked (ad blocker, offline, not yet approved) —
-        // the reserved min-height above keeps layout stable either way.
-      }
-    }
-  });
-</script>

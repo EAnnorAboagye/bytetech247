@@ -256,6 +256,31 @@ const jsonLdBlocks = [
       async
       src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${siteConfig.adsensePublisherId}`}
       crossorigin="anonymous"></script>
+    <!-- Activates every manually-placed ad slot on the page (AdSlot.astro
+         instances, plus the raw <ins class="adsbygoogle"> markup the
+         in-article rehype plugins insert directly into compiled MDX —
+         see rehype-quick-answer.mjs and rehype-in-article-ads.mjs) — one
+         delegated pass here instead of a copy of this same script
+         per-component-instance. is:inline: window.adsbygoogle is an
+         untyped third-party global with no ambient declaration in this
+         project; a normal processed <script> here would fail
+         `astro check`, same reasoning as the gtag setup above. -->
+    <script is:inline>
+      document.addEventListener("astro:page-load", () => {
+        const unfilled = document.querySelectorAll(
+          "ins.adsbygoogle:not([data-adsbygoogle-status])",
+        );
+        for (let i = 0; i < unfilled.length; i++) {
+          try {
+            (window.adsbygoogle = window.adsbygoogle || []).push({});
+          } catch {
+            // AdSense script blocked (ad blocker, offline, not yet
+            // approved) — every slot's reserved min-height keeps layout
+            // stable either way.
+          }
+        }
+      });
+    </script>
     <!-- Backup ownership-verification method alongside the DNS TXT record
          already in place (Cloudflare DNS) — Google Search Console's
          "additional verification methods" page for

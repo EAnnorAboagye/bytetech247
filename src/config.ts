@@ -133,8 +133,8 @@ export const siteConfig = {
   // AdSlot renders nothing for an empty string, so this is a safe no-op
   // rather than a broken ad tag until these are filled in.
   adSlots: {
+    // Sidebar tower, under the desktop TOC (article pages only).
     articleSidebar: "",
-    articleInline: "",
     // Homepage placements (index.astro): one after the header/before the
     // hero, one after the hero, one after the featured/secondary grid,
     // one after Recent, and one after each of the four category
@@ -149,6 +149,24 @@ export const siteConfig = {
     homepageAfterDataAutomation: "",
     homepageAfterAiProductivity: "",
     homepageAfterGuidesFixes: "",
+    // Article page placements ([category]/[slug].astro), in reading
+    // order — the exact layout requested 2026-08-11. Replaces the
+    // earlier single mid-article slot with the full sequence: header,
+    // after the cover image, after the series/pillar-cluster nav, after
+    // Quick Answer, then articleH2 — one shared slot ID reused before
+    // every *other* qualifying H2 in the body (2nd, 4th, 6th...), not
+    // literally every one, to stay well under Google AdSense's ad-density
+    // guidance on long posts — then before the author bio, after the tag
+    // list (before related posts), and before recent posts. No slot after
+    // recent posts or anywhere in the footer, on either template.
+    articleHeader: "",
+    articleAfterImage: "",
+    articleAfterPillarCluster: "",
+    articleAfterQuickAnswer: "",
+    articleH2: "",
+    articleBeforeAuthorBio: "",
+    articleAfterTags: "",
+    articleBeforeRecent: "",
   } as Record<string, string>,
 } as const;
 

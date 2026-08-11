@@ -13,6 +13,8 @@ import {
   rehypeCodeBlockChrome,
 } from "./src/build/shiki-plugins.mjs";
 import { rehypeQuickAnswer } from "./src/build/rehype-quick-answer.mjs";
+import { rehypeInArticleAds } from "./src/build/rehype-in-article-ads.mjs";
+import { siteConfig } from "./src/config.ts";
 
 // GFM tables don't emit scope="col" on <th> by default — Phase 3 requires
 // it for accessibility/AI-GEO parsing of tabular content. GFM only ever
@@ -57,6 +59,16 @@ export default defineConfig({
       rehypeTableHeaderScope,
       rehypeCodeBlockChrome,
       rehypeQuickAnswer,
+      // Must run after rehypeQuickAnswer — see rehype-in-article-ads.mjs's
+      // own comment for why the ordering is load-bearing, not incidental.
+      [
+        rehypeInArticleAds,
+        {
+          adClient: siteConfig.adsensePublisherId,
+          afterQuickAnswerSlot: siteConfig.adSlots.articleAfterQuickAnswer,
+          h2Slot: siteConfig.adSlots.articleH2,
+        },
+      ],
     ],
   },
   vite: {
