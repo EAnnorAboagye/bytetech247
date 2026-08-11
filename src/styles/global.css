@@ -36,7 +36,8 @@
    * alpha than light mode to be visible at all, not just an inverted copy.
    */
   --shadow-card: 0 1px 2px rgb(0 0 0 / 0.04), 0 8px 20px rgb(0 0 0 / 0.06);
-  --shadow-card-hover: 0 2px 6px rgb(0 0 0 / 0.07), 0 16px 32px rgb(0 0 0 / 0.1);
+  --shadow-card-hover:
+    0 2px 6px rgb(0 0 0 / 0.07), 0 16px 32px rgb(0 0 0 / 0.1);
 
   /*
    * Per-category accents — same lightness/chroma recipe as --color-accent
