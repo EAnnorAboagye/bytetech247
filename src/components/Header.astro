@@ -426,7 +426,7 @@ const topTagsByCategory = getTopTagsByCategory(posts);
   // it), not the summary alone, so moving the pointer from trigger to
   // panel never registers as "left" in between.
   const hoverCapable = window.matchMedia("(hover: hover) and (pointer: fine)");
-  let hoverNavCloseTimers: WeakMap<
+  const hoverNavCloseTimers: WeakMap<
     Element,
     ReturnType<typeof setTimeout>
   > = new WeakMap();
