@@ -28,6 +28,37 @@ export function getCategoryName(slug: string): string {
   return CATEGORY_NAMES[slug as CategorySlug] ?? slug;
 }
 
+// /tools/ section, added 2026-08-11 — same static-list shape as
+// CATEGORY_SLUGS/CATEGORIES above, one entry per tool. Client-side-only
+// interactive utilities, each targeting a specific researched SEO
+// opportunity; see the AI Token Counter plan for the research behind
+// tool #1. Deliberately a plain array here, not a content collection —
+// 5 items total, no per-item MDX body, exactly what CATEGORIES already
+// covers for the 4 content categories.
+export const TOOL_SLUGS = ["ai-token-counter"] as const;
+
+export type ToolSlug = (typeof TOOL_SLUGS)[number];
+
+const TOOL_NAMES: Record<ToolSlug, string> = {
+  "ai-token-counter": "AI Token Counter",
+};
+
+const TOOL_DESCRIPTIONS: Record<ToolSlug, string> = {
+  "ai-token-counter":
+    "Count tokens for GPT, Claude, and Gemini prompts — exact for GPT, clearly-labeled estimates for Claude and Gemini. Runs entirely in your browser.",
+};
+
+export const TOOLS: { slug: ToolSlug; name: string; description: string }[] =
+  TOOL_SLUGS.map((slug) => ({
+    slug,
+    name: TOOL_NAMES[slug],
+    description: TOOL_DESCRIPTIONS[slug],
+  }));
+
+export function getToolName(slug: string): string {
+  return TOOL_NAMES[slug as ToolSlug] ?? slug;
+}
+
 export const siteConfig = {
   name: "ByteTech247",
   url: "https://bytetech247.com",
@@ -176,6 +207,11 @@ export const siteConfig = {
     articleBeforeAuthorBio: "",
     articleAfterTags: "",
     articleBeforeRecent: "",
+    // /tools/ pages (e.g. ai-token-counter.astro) — same empty-until-
+    // reconnected convention as every key above.
+    toolsAfterIntro: "",
+    toolsAfterWidget: "",
+    toolsBeforeFaq: "",
   } as Record<string, string>,
 } as const;
 

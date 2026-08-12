@@ -5,14 +5,15 @@
 // which one is visible beyond that split.
 //
 // Order (left to right / top to bottom): Home, each category (own
-// tag-dropdown), then — vertical (mobile/tablet hamburger) only — About,
-// Contact, Privacy (dropdown listing every legal page). The horizontal
-// (desktop) nav deliberately stops at the categories: About/Contact/every
-// legal page are already one click away in the footer and already listed
-// in the command palette's static-page jump list (CommandPalette.astro),
-// so the wide-viewport nav doesn't need to duplicate them — that's also
-// what was overflowing it (see build-spec.md §10). Mobile keeps the full
-// list since there's no width constraint forcing a choice.
+// tag-dropdown), Tools (own dropdown, added 2026-08-11), then — vertical
+// (mobile/tablet hamburger) only — About, Contact, Privacy (dropdown
+// listing every legal page). The horizontal (desktop) nav deliberately
+// stops at Tools: About/Contact/every legal page are already one click
+// away in the footer and already listed in the command palette's
+// static-page jump list (CommandPalette.astro), so the wide-viewport nav
+// doesn't need to duplicate them — that's also what was overflowing it
+// (see build-spec.md §10). Mobile keeps the full list since there's no
+// width constraint forcing a choice.
 // The category name and "Privacy" label in <summary> are deliberately
 // plain text, not a nested <a> — nesting an interactive link inside the
 // native disclosure trigger is a real accessibility anti-pattern
@@ -25,7 +26,12 @@
 // script in Header.astro, not locally — one listener for every dropdown
 // on the page (including the mobile menu toggle) rather than one per
 // instance.
-import { CATEGORIES, getCategoryName, type CategorySlug } from "../config";
+import {
+  CATEGORIES,
+  getCategoryName,
+  TOOLS,
+  type CategorySlug,
+} from "../config";
 import { slugifyTag } from "../lib/taxonomy";
 
 interface Props {
@@ -77,6 +83,31 @@ const legalLinks = [
       </li>
     ))
   }
+
+  <li>
+    <details class="primary-nav__dropdown">
+      <summary>
+        Tools <span aria-hidden="true">&#9662;</span>
+      </summary>
+      <div class="primary-nav__panel">
+        <ul class="primary-nav__tags">
+          {
+            TOOLS.map((tool) => (
+              <li>
+                <a href={`/tools/${tool.slug}/`} class="primary-nav__tag">
+                  {tool.name}
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+        <a href="/tools/" class="primary-nav__view-all">
+          View all Tools
+          <span aria-hidden="true">&rarr;</span>
+        </a>
+      </div>
+    </details>
+  </li>
 
   {
     variant === "vertical" && (

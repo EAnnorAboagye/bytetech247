@@ -1,6 +1,6 @@
 import type { APIRoute } from "astro";
 import { getCollection } from "astro:content";
-import { siteConfig, CATEGORIES } from "../config";
+import { siteConfig, CATEGORIES, TOOLS } from "../config";
 import { postUrl } from "../lib/rss";
 
 // Auto-generated at build time from the content collection (build-spec.md
@@ -21,6 +21,14 @@ export const GET: APIRoute = async () => {
   lines.push("");
   for (const category of CATEGORIES) {
     lines.push(`- [${category.name}](${siteConfig.url}/${category.slug}/)`);
+  }
+  lines.push("");
+  lines.push("## Tools");
+  lines.push("");
+  for (const tool of TOOLS) {
+    lines.push(
+      `- [${tool.name}](${siteConfig.url}/tools/${tool.slug}/): ${tool.description}`,
+    );
   }
   lines.push("");
   lines.push("## Posts");

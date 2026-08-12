@@ -1,6 +1,6 @@
 import type { APIRoute } from "astro";
 import { getCollection } from "astro:content";
-import { siteConfig, CATEGORIES } from "../config";
+import { siteConfig, CATEGORIES, TOOLS } from "../config";
 import { postUrl } from "../lib/rss";
 import { getLastVerifiedDate } from "../lib/last-verified";
 
@@ -24,6 +24,7 @@ import { getLastVerifiedDate } from "../lib/last-verified";
 // is a known Search Console "Sitemap contains noindex" warning.
 const STATIC_PATHS: { path: string; file: string }[] = [
   { path: "/", file: "src/pages/index.astro" },
+  { path: "/tools/", file: "src/pages/tools/index.astro" },
 ];
 
 export const GET: APIRoute = async () => {
@@ -57,6 +58,12 @@ export const GET: APIRoute = async () => {
         lastmod: lastmod?.toISOString(),
       };
     }),
+    ...TOOLS.map((tool) => ({
+      loc: `${siteConfig.url}/tools/${tool.slug}/`,
+      lastmod: getLastVerifiedDate(
+        `src/pages/tools/${tool.slug}.astro`,
+      )?.toISOString(),
+    })),
     ...posts.map((post) => ({
       loc: postUrl(post),
       lastmod: post.data.date.toISOString(),

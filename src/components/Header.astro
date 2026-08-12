@@ -438,7 +438,8 @@ const topTagsByCategory = getTopTagsByCategory(posts);
       ".primary-nav--horizontal > li",
     )) {
       const details = li.querySelector(":scope > details");
-      if (!details) continue;
+      const summary = details?.querySelector(":scope > summary");
+      if (!details || !summary) continue;
 
       li.addEventListener("mouseenter", () => {
         const pending = hoverNavCloseTimers.get(li);
@@ -449,6 +450,20 @@ const topTagsByCategory = getTopTagsByCategory(posts);
       li.addEventListener("mouseleave", () => {
         const timer = setTimeout(() => details.removeAttribute("open"), 150);
         hoverNavCloseTimers.set(li, timer);
+      });
+
+      // A real mouse click is preceded by its own mousemove/mouseenter,
+      // which the listener above already used to force this open — so by
+      // the time the click itself lands, <details>'s native toggle-on-
+      // click sees "already open" and closes it right back, one gesture
+      // after opening it (confirmed live via Playwright, which — unlike
+      // a synthetic .click() with no mouse movement — simulates the real
+      // hover-then-click sequence a physical mouse produces). Preventing
+      // default only when already open cancels just that native toggle;
+      // a click while genuinely closed (keyboard, touch, or mouse after
+      // mouseleave already closed it) still opens normally.
+      summary.addEventListener("click", (event) => {
+        if (details.hasAttribute("open")) event.preventDefault();
       });
     }
   }

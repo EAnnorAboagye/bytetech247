@@ -1,0 +1,252 @@
+---
+// First tool in the /tools/ section (see the AI Token Counter plan) —
+// counts tokens for GPT/Claude/Gemini prompts entirely client-side. Real
+// tiktoken-based exact count for GPT-3.5/GPT-4 (cl100k_base); Claude and
+// Gemini have no public client-side tokenizer, so those stay clearly-
+// labeled estimates (src/lib/token-estimate.ts) — see
+// TokenCounterWidget.astro for the interactive part, this file is the
+// page chrome (breadcrumb, intro, methodology, comparison table, FAQ).
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import LastVerified from "../../components/LastVerified.astro";
+import FaqSection from "../../components/FaqSection.astro";
+import AdSlot from "../../components/AdSlot.astro";
+import TokenCounterWidget from "../../components/TokenCounterWidget.astro";
+import { siteConfig, getToolName } from "../../config";
+import { getLastVerifiedDate } from "../../lib/last-verified";
+import {
+  webApplicationJsonLd,
+  breadcrumbJsonLd,
+  faqJsonLd,
+  absoluteUrl,
+} from "../../lib/json-ld";
+
+const toolName = getToolName("ai-token-counter");
+const description =
+  "Count tokens for GPT, Claude, and Gemini prompts instantly in your browser. Exact counts for GPT-3.5/GPT-4 via OpenAI's own tiktoken; clearly-labeled estimates for Claude and Gemini.";
+const pageUrl = absoluteUrl("/tools/ai-token-counter/");
+const lastVerifiedDate = getLastVerifiedDate(
+  "src/pages/tools/ai-token-counter.astro",
+);
+
+const faq = [
+  {
+    question: "Is the GPT token count exact?",
+    answer:
+      "For GPT-3.5 and GPT-4 (cl100k_base encoding), yes — it uses OpenAI's own tiktoken algorithm, the same tokenizer OpenAI's API uses to bill and enforce context limits for those models, running entirely in your browser. Newer GPT-4o-and-later models use a different encoding (o200k_base) that this tool doesn't count against yet — see the comparison table below.",
+  },
+  {
+    question: "Why are the Claude and Gemini counts estimates, not exact?",
+    answer:
+      "Neither Anthropic nor Google publishes a client-side tokenizer — getting an exact count for those models requires calling their own server-side API. This tool stays fully client-side (your text never leaves your browser), so Claude and Gemini counts use a character-based estimate instead: about 3.5 characters per token for Claude (Anthropic's own published guidance) and about 4 for Gemini (a widely-used general estimate). Real counts can differ by roughly 10-20%.",
+  },
+  {
+    question: "Does my text get sent anywhere?",
+    answer:
+      "No. All counting happens locally in your browser. Nothing you type or paste is uploaded, logged, or stored anywhere.",
+  },
+  {
+    question: "What's a token, exactly?",
+    answer:
+      "A token is the unit AI models actually process — usually a word, part of a word, or a punctuation mark, not exactly one character and not exactly one whole word. API pricing and context-window limits are measured in tokens, not characters or words, which is why a tool like this one is useful before you send a prompt.",
+  },
+  {
+    question:
+      "Why does the same text produce different token counts for different models?",
+    answer:
+      "Each model family uses its own tokenizer, trained on its own vocabulary. GPT's, Claude's, and Gemini's tokenizers all split the same sentence differently, so token counts — and therefore cost and context usage — aren't directly comparable across providers without checking each one separately.",
+  },
+];
+
+const breadcrumbItems = [
+  { name: "Home", url: siteConfig.url },
+  { name: "Tools", url: absoluteUrl("/tools/") },
+  { name: toolName, url: pageUrl },
+];
+
+const pageJsonLd = [
+  webApplicationJsonLd({ name: toolName, description, url: pageUrl }),
+  breadcrumbJsonLd(breadcrumbItems),
+  ...(faq.length > 0 ? [faqJsonLd(faq)] : []),
+];
+---
+
+<BaseLayout
+  title={`${toolName} — ${siteConfig.name}`}
+  description={description}
+  jsonLd={pageJsonLd}
+>
+  <article class="legal tool-page">
+    <nav aria-label="Breadcrumb" class="breadcrumb">
+      <ol class="breadcrumb__list">
+        <li><a href="/">Home</a></li>
+        <li><a href="/tools/">Tools</a></li>
+        <li aria-current="page">{toolName}</li>
+      </ol>
+    </nav>
+
+    <h1>{toolName}</h1>
+    <p class="tool-page__intro">
+      Count tokens for GPT, Claude, and Gemini prompts at once. The GPT count is
+      exact — computed with OpenAI's real tokenizer, right in your browser.
+      Claude and Gemini have no public client-side tokenizer, so those two are
+      clearly-labeled estimates, not exact counts.
+    </p>
+    <LastVerified date={lastVerifiedDate} />
+
+    <TokenCounterWidget />
+
+    <AdSlot
+      adSlot={siteConfig.adSlots.toolsAfterWidget}
+      minHeight="250px"
+      label="Advertisement"
+    />
+
+    <h2>How this works</h2>
+    <p>
+      The GPT count uses <a
+        href="https://github.com/openai/tiktoken"
+        rel="noopener">tiktoken</a
+      >, OpenAI's own byte-pair-encoding tokenizer, via the pure-JavaScript{" "}
+      <code>js-tiktoken</code> port — the same algorithm OpenAI's API itself uses,
+      running locally in your browser rather than on a server. That's what "Exact"
+      means on that card.
+    </p>
+    <p>
+      Claude and Gemini don't have an equivalent public tokenizer you can run
+      client-side — getting a byte-for-byte accurate count for either one means
+      calling Anthropic's or Google's own API with your text, which this tool
+      deliberately doesn't do. Instead, those two cards show a character-based
+      estimate: text length divided by roughly 3.5 for Claude and roughly 4 for
+      Gemini. It's a genuinely useful approximation, not a precise count — treat
+      it as a ballpark, not a number to bill against.
+    </p>
+
+    <h2>Model &amp; encoding comparison</h2>
+    <div class="tool-page__table-wrap">
+      <table class="tool-page__table">
+        <thead>
+          <tr>
+            <th scope="col">Model family</th>
+            <th scope="col">Provider</th>
+            <th scope="col">Tokenizer / method</th>
+            <th scope="col">Count type</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>GPT-3.5, GPT-4, GPT-4 Turbo</td>
+            <td>OpenAI</td>
+            <td>cl100k_base (tiktoken)</td>
+            <td>Exact</td>
+          </tr>
+          <tr>
+            <td>GPT-4o and newer</td>
+            <td>OpenAI</td>
+            <td>o200k_base (tiktoken)</td>
+            <td>Not yet supported here</td>
+          </tr>
+          <tr>
+            <td>Claude 3, Claude 4 family</td>
+            <td>Anthropic</td>
+            <td>Character estimate (~3.5 chars/token)</td>
+            <td>Estimated</td>
+          </tr>
+          <tr>
+            <td>Gemini 1.5, Gemini 2.x family</td>
+            <td>Google</td>
+            <td>Character estimate (~4 chars/token)</td>
+            <td>Estimated</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="tool-page__table-note">
+      This table is tied to the "Last verified" date above, not a
+      manually-remembered timestamp — check that date to see how current it is.
+    </p>
+
+    <AdSlot
+      adSlot={siteConfig.adSlots.toolsBeforeFaq}
+      minHeight="250px"
+      label="Advertisement"
+    />
+
+    <FaqSection faq={faq} />
+  </article>
+</BaseLayout>
+
+<style>
+  .breadcrumb {
+    margin: calc(var(--spacing) * 2) 0;
+  }
+
+  .breadcrumb__list {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: calc(var(--spacing) * 0.5);
+    margin: 0;
+    padding: 0;
+    font-size: var(--text-xs);
+    color: var(--color-fg-muted);
+  }
+
+  .breadcrumb__list li:not(:last-child)::after {
+    content: "/";
+    margin-left: calc(var(--spacing) * 0.5);
+    color: var(--color-border);
+  }
+
+  .breadcrumb__list a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+    color: var(--color-fg-muted);
+    text-decoration: none;
+  }
+
+  .breadcrumb__list a:hover {
+    color: var(--color-accent);
+  }
+
+  .breadcrumb__list li[aria-current="page"] {
+    color: var(--color-fg);
+  }
+
+  .tool-page__intro {
+    color: var(--color-fg-muted);
+  }
+
+  :global(.tool-page :is(h1, .tool-page__intro, .token-counter)) {
+    margin-top: calc(var(--spacing) * 3);
+  }
+
+  .tool-page__table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin: calc(var(--spacing) * 4) 0 calc(var(--spacing) * 1);
+  }
+
+  .tool-page__table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--text-sm);
+  }
+
+  .tool-page__table th,
+  .tool-page__table td {
+    border: 1px solid var(--color-border);
+    padding: var(--spacing) calc(var(--spacing) * 2);
+    text-align: left;
+  }
+
+  .tool-page__table tbody tr:nth-child(even) {
+    background-color: var(--color-bg-subtle);
+  }
+
+  .tool-page__table-note {
+    font-size: var(--text-xs);
+    color: var(--color-fg-muted);
+  }
+</style>

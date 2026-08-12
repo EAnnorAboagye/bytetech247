@@ -171,6 +171,33 @@ export function itemListJsonLd(urls: string[]): JsonLdObject {
   };
 }
 
+/**
+ * WebApplication block for a /tools/ page — added for the AI Token
+ * Counter but shared by design across every future tool, since all of
+ * them are the same schema.org shape: a free, client-side utility. `url`
+ * should already be absolute.
+ */
+export function webApplicationJsonLd(opts: {
+  name: string;
+  description: string;
+  url: string;
+}): JsonLdObject {
+  return {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    name: opts.name,
+    description: opts.description,
+    url: opts.url,
+    applicationCategory: "DeveloperApplication",
+    operatingSystem: "Any (web-based)",
+    offers: {
+      "@type": "Offer",
+      price: "0",
+      priceCurrency: "USD",
+    },
+  };
+}
+
 export function breadcrumbJsonLd(
   items: { name: string; url: string }[],
 ): JsonLdObject {

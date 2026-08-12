@@ -1,0 +1,286 @@
+---
+// The AI Token Counter's interactive core (build-spec.md-style: self-
+// contained, own markup/style/script, matching CommandPalette.astro's and
+// TOCSidebar.astro's shape). GPT uses OpenAI's real tiktoken algorithm
+// running client-side (js-tiktoken — a pure-JS port with no WASM/eval, the
+// only tokenizer library choice compatible with this site's CSP, which
+// has no unsafe-eval/wasm-unsafe-eval/worker-src — see worker/index.ts's
+// cspFor()); Claude and Gemini have no public client-side tokenizer, so
+// those are clearly-labeled character-based estimates
+// (src/lib/token-estimate.ts), never presented with the same "Exact"
+// badge as the GPT count.
+import Badge from "./Badge.astro";
+---
+
+<div class="token-counter" data-token-counter>
+  <label for="token-counter-input" class="token-counter__label">
+    Paste or type your text
+  </label>
+  <textarea
+    id="token-counter-input"
+    class="token-counter__input"
+    rows="8"
+    placeholder="Paste your prompt here…"
+    spellcheck="false"
+    data-token-counter-input></textarea>
+  <p class="token-counter__meta">
+    <span data-char-count>0</span> characters
+  </p>
+
+  <div class="token-counter__results">
+    <div class="token-counter__card" data-provider="gpt">
+      <div class="token-counter__card-head">
+        <span class="token-counter__provider">GPT-3.5 / GPT-4</span>
+        <Badge intent="accent">Exact</Badge>
+      </div>
+      <p class="token-counter__count" data-count>0</p>
+      <p class="token-counter__note">tokens · OpenAI tiktoken (cl100k_base)</p>
+      <button
+        type="button"
+        class="token-counter__count-anyway"
+        data-count-anyway
+        hidden
+      >
+        Text is long — count anyway
+      </button>
+    </div>
+
+    <div class="token-counter__card" data-provider="claude">
+      <div class="token-counter__card-head">
+        <span class="token-counter__provider">Claude</span>
+        <Badge intent="neutral">Estimated</Badge>
+      </div>
+      <p class="token-counter__count" data-count>0</p>
+      <p class="token-counter__note">tokens · ~3.5 characters per token</p>
+    </div>
+
+    <div class="token-counter__card" data-provider="gemini">
+      <div class="token-counter__card-head">
+        <span class="token-counter__provider">Gemini</span>
+        <Badge intent="neutral">Estimated</Badge>
+      </div>
+      <p class="token-counter__count" data-count>0</p>
+      <p class="token-counter__note">tokens · ~4 characters per token</p>
+    </div>
+  </div>
+</div>
+
+<style>
+  .token-counter {
+    border: 1px solid var(--color-border);
+    border-radius: 0.75rem;
+    padding: calc(var(--spacing) * 4);
+    background-color: var(--color-bg-subtle);
+  }
+
+  .token-counter__label {
+    display: block;
+    font-weight: 600;
+    font-size: var(--text-sm);
+    color: var(--color-fg);
+    margin-bottom: calc(var(--spacing) * 1.5);
+  }
+
+  .token-counter__input {
+    width: 100%;
+    min-height: 10rem;
+    padding: calc(var(--spacing) * 2);
+    border: 1px solid var(--color-border);
+    border-radius: 0.5rem;
+    background-color: var(--color-bg);
+    color: var(--color-fg);
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    line-height: 1.6;
+    resize: vertical;
+  }
+
+  .token-counter__input:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+
+  .token-counter__meta {
+    margin: calc(var(--spacing) * 1.5) 0 0;
+    font-size: var(--text-xs);
+    color: var(--color-fg-muted);
+  }
+
+  .token-counter__results {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+    gap: calc(var(--spacing) * 3);
+    margin-top: calc(var(--spacing) * 4);
+  }
+
+  .token-counter__card {
+    border: 1px solid var(--color-border);
+    border-radius: 0.5rem;
+    padding: calc(var(--spacing) * 3);
+    background-color: var(--color-bg);
+  }
+
+  .token-counter__card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: calc(var(--spacing) * 1);
+  }
+
+  .token-counter__provider {
+    font-weight: 600;
+    color: var(--color-fg);
+  }
+
+  .token-counter__count {
+    margin: calc(var(--spacing) * 2) 0 0;
+    font-family: var(--font-mono);
+    font-size: var(--text-2xl);
+    font-weight: 700;
+    color: var(--color-fg);
+    /* Reserves room for a comma-formatted 6-digit count so the card
+       doesn't visibly reflow between "0" and a real result. */
+    min-height: 1.2em;
+  }
+
+  .token-counter__note {
+    margin: calc(var(--spacing) * 0.5) 0 0;
+    font-size: var(--text-xs);
+    color: var(--color-fg-muted);
+  }
+
+  .token-counter__count-anyway {
+    margin-top: calc(var(--spacing) * 2);
+    padding: calc(var(--spacing) * 1) calc(var(--spacing) * 2);
+    border: 1px solid var(--color-accent);
+    border-radius: 0.375rem;
+    background: none;
+    color: var(--color-accent);
+    font-size: var(--text-xs);
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .token-counter__count-anyway:hover {
+    background-color: var(--color-accent);
+    color: var(--color-accent-fg);
+  }
+</style>
+
+<script>
+  import type { Tiktoken } from "js-tiktoken/lite";
+  import {
+    estimateClaudeTokens,
+    estimateGeminiTokens,
+  } from "../lib/token-estimate";
+
+  // Above this length, live BPE encoding pauses and a manual "count
+  // anyway" affordance takes over instead — protects the main thread from
+  // a huge paste, since there's no Web Worker here (the site's CSP has no
+  // worker-src/blob: directive; see the component doc comment above).
+  // Claude/Gemini estimates stay live regardless of length — they're O(1)
+  // arithmetic on text.length, not a real encoding pass.
+  const INPUT_LENGTH_CAP = 20_000;
+  const DEBOUNCE_MS = 200;
+
+  // Loaded once, memoized across soft (view-transition) navigations
+  // within the same browser session — only the DOM listeners in
+  // setupTokenCounter() need re-attaching per navigation, not the
+  // tokenizer itself. Same caching shape as CommandPalette.astro's
+  // pagefindPromise.
+  let tiktokenPromise: Promise<Tiktoken> | null = null;
+  function loadTiktoken(): Promise<Tiktoken> {
+    if (!tiktokenPromise) {
+      tiktokenPromise = Promise.all([
+        import("js-tiktoken/lite"),
+        import("js-tiktoken/ranks/cl100k_base"),
+      ]).then(([{ Tiktoken }, { default: rank }]) => new Tiktoken(rank));
+    }
+    return tiktokenPromise;
+  }
+
+  function setupTokenCounter() {
+    const root = document.querySelector<HTMLElement>("[data-token-counter]");
+    if (!root) return;
+
+    const textarea = root.querySelector<HTMLTextAreaElement>(
+      "[data-token-counter-input]",
+    );
+    const charCountEl = root.querySelector<HTMLElement>("[data-char-count]");
+    const gptCard = root.querySelector<HTMLElement>('[data-provider="gpt"]');
+    const claudeCard = root.querySelector<HTMLElement>(
+      '[data-provider="claude"]',
+    );
+    const geminiCard = root.querySelector<HTMLElement>(
+      '[data-provider="gemini"]',
+    );
+    if (!textarea || !charCountEl || !gptCard || !claudeCard || !geminiCard)
+      return;
+
+    const gptCount = gptCard.querySelector<HTMLElement>("[data-count]");
+    const gptCountAnyway = gptCard.querySelector<HTMLButtonElement>(
+      "[data-count-anyway]",
+    );
+    const claudeCount = claudeCard.querySelector<HTMLElement>("[data-count]");
+    const geminiCount = geminiCard.querySelector<HTMLElement>("[data-count]");
+    if (!gptCount || !gptCountAnyway || !claudeCount || !geminiCount) return;
+
+    function updateEstimates(text: string) {
+      claudeCount!.textContent = estimateClaudeTokens(text).toLocaleString();
+      geminiCount!.textContent = estimateGeminiTokens(text).toLocaleString();
+    }
+
+    async function updateGptCount(text: string, force = false) {
+      if (text.length === 0) {
+        gptCount!.textContent = "0";
+        gptCountAnyway!.hidden = true;
+        return;
+      }
+      if (text.length > INPUT_LENGTH_CAP && !force) {
+        gptCount!.textContent = "—";
+        gptCountAnyway!.hidden = false;
+        return;
+      }
+      gptCountAnyway!.hidden = true;
+      gptCount!.textContent = "…";
+      try {
+        const tokenizer = await loadTiktoken();
+        // A newer input may have landed while this was in flight — don't
+        // overwrite its result with a stale one.
+        if (textarea!.value !== text) return;
+        gptCount!.textContent = tokenizer.encode(text).length.toLocaleString();
+      } catch {
+        tiktokenPromise = null;
+        if (textarea!.value === text) gptCount!.textContent = "Unavailable";
+      }
+    }
+
+    let debounceHandle: ReturnType<typeof setTimeout> | undefined;
+    function handleInput() {
+      const text = textarea!.value;
+      charCountEl!.textContent = text.length.toLocaleString();
+      updateEstimates(text);
+      clearTimeout(debounceHandle);
+      debounceHandle = setTimeout(() => void updateGptCount(text), DEBOUNCE_MS);
+    }
+
+    textarea.addEventListener("input", handleInput);
+    gptCountAnyway.addEventListener("click", () => {
+      void updateGptCount(textarea.value, true);
+    });
+
+    // Restore results for whatever's already in the textarea (e.g.
+    // browser form-autofill on back-navigation) rather than showing
+    // stale zeros next to real text.
+    if (textarea.value) handleInput();
+  }
+
+  // This widget's own DOM nodes (textarea, result cards) get replaced on
+  // client-side navigation to/from this page — unlike CommandPalette,
+  // whose listeners attach to `document` and survive navigations, this
+  // needs the same re-arm-per-navigation pattern as TOCSidebar's
+  // setupScrollSpy. tiktokenPromise itself stays outside this function so
+  // an already-loaded tokenizer isn't re-fetched on a soft navigation
+  // back to this page.
+  document.addEventListener("astro:page-load", setupTokenCounter);
+</script>

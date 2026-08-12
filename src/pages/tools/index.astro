@@ -1,0 +1,85 @@
+---
+// /tools/ hub — lists every published tool (currently just the AI Token
+// Counter; see the plan for the other 4, added one at a time). Plain
+// listing page, same shape as [category]/index.astro: no prose treatment
+// needed, just a heading and a card grid.
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import Grid from "../../components/layout/Grid.astro";
+import Card from "../../components/Card.astro";
+import { TOOLS } from "../../config";
+---
+
+<BaseLayout
+  title="Tools"
+  description="Free, client-side developer tools — no sign-up, nothing leaves your browser."
+>
+  <p><a href="/" class="home-link">Home</a></p>
+  <h1>Tools</h1>
+  <p class="tools-intro">
+    Free, client-side utilities — no sign-up, no server round-trip. Your input
+    never leaves your browser.
+  </p>
+
+  <Grid minItemWidth="18rem" space="4" class="tools-grid">
+    {
+      TOOLS.map((tool) => (
+        <Card as="article" padding="md" class="tool-index-card">
+          <a href={`/tools/${tool.slug}/`} class="tool-index-card__link">
+            <h2 class="tool-index-card__title">{tool.name}</h2>
+            <p class="tool-index-card__description">{tool.description}</p>
+            <span class="tool-index-card__cta">
+              Open tool <span aria-hidden="true">&rarr;</span>
+            </span>
+          </a>
+        </Card>
+      ))
+    }
+  </Grid>
+</BaseLayout>
+
+<style>
+  .home-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+  }
+
+  .tools-intro {
+    max-width: 40rem;
+    margin-top: calc(var(--spacing) * 2);
+    color: var(--color-fg-muted);
+    line-height: 1.7;
+  }
+
+  :global(.tools-grid) {
+    margin-top: calc(var(--spacing) * 6);
+  }
+
+  .tool-index-card__link {
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--spacing) * 1.5);
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .tool-index-card__title {
+    font-size: var(--text-lg);
+    color: var(--color-fg);
+  }
+
+  .tool-index-card__description {
+    font-size: var(--text-sm);
+    color: var(--color-fg-muted);
+  }
+
+  .tool-index-card__cta {
+    display: inline-flex;
+    align-items: center;
+    gap: calc(var(--spacing) * 0.5);
+    min-height: 24px;
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--color-accent);
+  }
+</style>

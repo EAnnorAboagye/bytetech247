@@ -1,9 +1,10 @@
 ---
-// build-spec.md §10 — five columns on desktop, collapses to a stacked list
+// build-spec.md §10 — six columns on desktop, collapses to a stacked list
 // on mobile (handled here by the Grid primitive's auto-fit reflow, no extra
-// breakpoint logic needed). Identical on every route.
+// breakpoint logic needed). Identical on every route. Tools column added
+// 2026-08-11 alongside the /tools/ section.
 import { siFacebook, siInstagram, siTiktok, siX } from "simple-icons";
-import { siteConfig, CATEGORIES } from "../config";
+import { siteConfig, CATEGORIES, TOOLS } from "../config";
 import Grid from "./layout/Grid.astro";
 import Stack from "./layout/Stack.astro";
 
@@ -64,6 +65,19 @@ const SOCIAL_LABELS: Record<string, string> = {
             CATEGORIES.map((category) => (
               <li>
                 <a href={`/${category.slug}/`}>{category.name}</a>
+              </li>
+            ))
+          }
+        </ul>
+      </Stack>
+
+      <Stack space="2" as="nav" aria-label="Tools">
+        <p class="site-footer__heading">Tools</p>
+        <ul class="site-footer__list">
+          {
+            TOOLS.map((tool) => (
+              <li>
+                <a href={`/tools/${tool.slug}/`}>{tool.name}</a>
               </li>
             ))
           }

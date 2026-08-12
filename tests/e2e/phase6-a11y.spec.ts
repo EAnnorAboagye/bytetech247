@@ -10,6 +10,8 @@ const routes = [
   "/ai-productivity/",
   "/guides-fixes/",
   "/dev-tools/git-worktrees-parallel-feature-development/",
+  "/tools/",
+  "/tools/ai-token-counter/",
   "/about/",
   "/contact/",
   "/privacy/",
