@@ -106,8 +106,8 @@ Status values: pending (researched, not yet approved) -> approved (user greenlit
 
 **The 2026 LLM Token & Pricing Reset: GPT-5.6, Claude Opus 4.8, Gemini 3.6**
 
-- Status: pending
-- Slug: -
+- Status: written (2026-08-12)
+- Slug: 2026-llm-token-pricing-reset
 - Why pillar: Researched for, and built to interlink with, the newly-shipped `/tools/ai-token-counter/` page. Within the last ~90 days (research date 2026-08-11), all three major LLM providers shipped structural changes to context windows, tokenization, caching economics, or model lifecycle that directly change how many tokens a given prompt costs and what it's worth doing about it: GPT-5.6 went GA with a new 1.05M-token context window and an overhauled (no-longer-free) prompt-caching model; a wave of legacy OpenAI model IDs (gpt-4, o1, o4-mini) hit their real October 23, 2026 shutdown date; Claude Opus 4.8 shipped alongside a tokenizer (inherited from 4.7) that counts up to ~35% more tokens for the same input than pre-4.7 models, plus real breaking API-parameter changes; and Gemini 3.6 Flash launched with a meaningfully different token/cost profile than its predecessor. No existing post on this site covers token counting, context windows, or cross-provider pricing (confirmed against `src/content/blog/*/index.mdx` — the only ai-productivity content today is the MCP protocol pillar and a general prompting-technique guide), so there's no collision, and every cluster below is exactly the kind of "did my token math just change" question the token counter tool answers directly.
 - Series: `2026-llm-token-pricing-reset`
 - seriesOrder: continues the category's sequence at 11 (Pillar 1 used 1-10)
