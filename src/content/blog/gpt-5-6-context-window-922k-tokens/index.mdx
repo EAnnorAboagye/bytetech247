@@ -1,0 +1,56 @@
+---
+title: "GPT-5.6's Context Window: 922K In, 128K Out Tokens"
+description: "GPT-5.6 shipped a ~1.05M-token context window (922K input, 128K output) on the o200k_base encoding. What changes for existing integrations."
+date: 2026-08-12
+category: ai-productivity
+tags: ["tokens", "gpt", "context-windows", "openai"]
+relatedSlugs:
+  [
+    "2026-llm-token-pricing-reset",
+    "same-prompt-different-bill-gpt-claude-gemini",
+  ]
+series: "2026-llm-token-pricing-reset"
+seriesOrder: 11
+coverImage: "./cover.png"
+coverImageAlt: "A dark comparison-matrix style cover reading GPT-5.6's Context Window, 922K input and 128K output tokens on o200k_base, listing three row summaries: old context window 128K to 200K tokens, new context window about 1.05M tokens, and this site's token counter not yet supporting o200k_base"
+faq:
+  - question: "Does GPT-5.6 replace GPT-4 outright?"
+    answer: "For most integrations, yes, and on a real deadline. OpenAI's own deprecations page lists gpt-4, o1, and o4-mini shutting down October 23, 2026, with gpt-5.6-sol and gpt-5.6-terra as the named replacements. Migrating early means re-checking both your context-window assumptions and your token counts against the new o200k_base encoding, not just swapping the model string."
+  - question: "Can I keep using cl100k_base-based token counts for GPT-5.6 prompts?"
+    answer: "No, not accurately. GPT-5.6 uses the o200k_base encoding, the same one GPT-4o introduced, and token counts under cl100k_base and o200k_base differ for the same text. This site's own AI Token Counter currently implements cl100k_base only, which is accurate for GPT-3.5 and GPT-4-family models but not for GPT-5.6, a limitation disclosed directly on the tool's own comparison table."
+---
+
+## Quick Answer
+
+GPT-5.6 reached general availability with a context window reported at roughly 1.05M tokens: up to 922K input tokens and 128K output tokens. It uses the `o200k_base` encoding, not the older `cl100k_base` encoding GPT-3.5 and GPT-4 used. Re-check any chunking logic sized for a smaller window, and any token counter tied to the old encoding.
+
+## What's actually changing
+
+GPT-5.6 (the Sol, Terra, and Luna variants) reached general availability on 2026-07-09 with a context window aggregated across multiple 2026 model-tracking sources at roughly 1.05M tokens, split into up to 922K input tokens and 128K output tokens. That figure is paraphrased from third-party tracking, not confirmed against OpenAI's own primary announcement post directly, and is stated honestly as such here.
+
+What is more mechanically certain: GPT-5.6 shares the `o200k_base` encoding that GPT-4o introduced, not the `cl100k_base` encoding that GPT-3.5 and the GPT-4 family used. A prompt that tokenizes to a given count under `cl100k_base` does not tokenize to the same count under `o200k_base`. Any system that estimates cost or truncates input based on a `cl100k_base` count will be wrong for GPT-5.6 calls specifically.
+
+## Structural Comparison Matrix
+
+| Operational Aspect                   | Before (GPT-4 family) | After (GPT-5.6)                         |
+| :----------------------------------- | :-------------------- | :-------------------------------------- |
+| **Context window**                   | 128K-200K tokens      | ~1.05M tokens (922K input, 128K output) |
+| **Tokenizer encoding**               | `cl100k_base`         | `o200k_base`                            |
+| **Chunking/summarization threshold** | Sized for ~128K       | Needs re-sizing for a near-1M window    |
+
+## Fix it: re-check chunking logic and token counting
+
+A near-1M context window changes the entire "when do I need to chunk or summarize" calculus for any integration built against the smaller GPT-4-family windows. Code that split documents into 100K-token chunks to stay under an older limit may no longer need to split at all, which is a real architecture simplification, not just a bigger number to note.
+
+The encoding change matters just as much for cost estimation. If your integration counts tokens client-side before sending a request, whether to enforce a budget or warn a user, that logic needs an `o200k_base`-aware tokenizer for GPT-5.6 calls specifically. This site's own [AI Token Counter](/tools/ai-token-counter/) currently implements `cl100k_base` only, accurate for GPT-3.5 and GPT-4-family models but not for GPT-5.6, and that limitation is disclosed directly on the tool's own comparison table rather than left for a reader to discover after the fact.
+
+<Callout type="info" title="Same window, different bill">
+  A bigger context window does not mean cheaper calls. See [Same Prompt,
+  Different
+  Bill](/ai-productivity/same-prompt-different-bill-gpt-claude-gemini/) for how
+  GPT-5.6's pricing and caching changes interact with this larger window.
+</Callout>
+
+## Confirmed version
+
+The `o200k_base` encoding and the shared GPT-4o lineage are well-documented technical facts. The specific 922K input / 128K output split is paraphrased, aggregated from 2026 model-tracking sources (including Wikipedia's GPT-5.6 entry and wavespeed.ai's release-date tracking), general-availability date 2026-07-09, not confirmed against OpenAI's own announcement post directly. Browse more coverage in the [AI Productivity](/ai-productivity) archive, or start from [The 2026 LLM Token & Pricing Reset](/ai-productivity/2026-llm-token-pricing-reset/) hub.

@@ -1,0 +1,57 @@
+---
+title: "Claude's New Tokenizer Counts Up to 35% More"
+description: "Claude Opus 4.7's tokenizer reportedly counts up to 35% more tokens for the same text. Anthropic's own GA changelog doesn't confirm it."
+date: 2026-08-12
+category: ai-productivity
+tags: ["tokens", "claude", "anthropic", "llm-pricing"]
+relatedSlugs:
+  [
+    "2026-llm-token-pricing-reset",
+    "claude-opus-4-8-fast-mode-pricing",
+    "same-prompt-different-bill-gpt-claude-gemini",
+  ]
+series: "2026-llm-token-pricing-reset"
+seriesOrder: 16
+coverImage: "./cover.png"
+coverImageAlt: "A dark comparison-matrix style cover reading Claude's New Tokenizer Counts Up to 35% More, listing three row summaries: tokens for identical text up to 35% more reported, Anthropic's own GA changelog does not mention this change, and effective cost per prompt is higher if the claim holds even at an unchanged price per token"
+faq:
+  - question: "Why would Anthropic not mention a change this significant in its own changelog?"
+    answer: "That's genuinely unknown, and worth stating plainly rather than guessing at Anthropic's reasoning. It's possible the reported figure is overstated, measured under specific conditions that don't generalize, or simply not something Anthropic's GA changelog format covers. The honest position is that this claim is reported by third-party technical coverage and not confirmed by Anthropic directly, not that it's confirmed false either."
+  - question: "How can I check this myself instead of trusting either source?"
+    answer: "The most reliable check is a real API call: compare the input_tokens field in a Claude Messages API response against what the same text produced under an older model, if you have that baseline. This site's own AI Token Counter estimates Claude tokens from character count, since Anthropic doesn't publish a client-side tokenizer, so it can't independently confirm the 35% figure either. It's a clearly labeled estimate, not a substitute for the real API response."
+---
+
+## Quick Answer
+
+Third-party technical coverage reports that Opus 4.7's tokenizer counts up to roughly 35% more tokens for the same input text than pre-4.7 models. Anthropic's own official GA changelog does not mention a tokenizer change at all. Same price per token does not mean same cost per prompt if the token count itself went up; verify against your own prompts.
+
+## What's actually changing
+
+Third-party technical coverage (byteiota.com, developersdigest.tech) reports that Claude Opus 4.7 shipped an updated tokenizer counting roughly 1.0 to 1.35 times as many tokens, up to about 35% more, for the same input text compared to the tokenizer pre-4.7 models used.
+
+That claim is explicitly not confirmed by Anthropic's own materials. A direct fetch of Anthropic's official GitHub changelog announcing Opus 4.7's general availability (github.blog/changelog/2026-04-16-claude-opus-4-7-is-generally-available, dated 2026-04-16) contains no mention of a tokenizer or token-count change anywhere, only general performance claims. Stating that gap plainly matters more here than almost anywhere else in this series: a wrong number repeated with confidence does more damage than an honest "unconfirmed."
+
+## Structural Comparison Matrix
+
+| Operational Aspect                                | Pre-4.7 tokenizer | Opus 4.7+ tokenizer                       |
+| :------------------------------------------------ | :---------------- | :---------------------------------------- |
+| **Tokens for identical text**                     | Baseline          | Up to ~35% more (reported, not confirmed) |
+| **Anthropic's own GA changelog mentions this**    | N/A               | No                                        |
+| **Effective cost per prompt at unchanged $/MTok** | Baseline          | Higher, if the reported figure holds      |
+
+## Why this matters even if the price sheet looks unchanged
+
+[Claude Opus 4.8 kept the same base price as Opus 4.7](/ai-productivity/claude-opus-4-8-fast-mode-pricing/), and Opus 4.8 inherited this same tokenizer unchanged, confirmed still in effect as of the 4.8 launch on 2026-05-28. That combination is exactly the trap a sticker-price comparison misses: a rate card that looks identical to the previous version can still produce a higher bill, if the same text is quietly tokenizing to a larger number under the hood.
+
+<Callout type="info" title="Verify with a real call, not an estimate">
+  This site's own <a href="/tools/ai-token-counter/">AI Token Counter</a>
+  labels its Claude count as an estimate, not an exact figure, because Anthropic
+  doesn't publish a client-side tokenizer. If the 35% claim matters to your
+  budget, compare the <code>input_tokens</code> field in a real Messages API
+  response against your own prior numbers rather than relying on any estimate,
+  including this site's.
+</Callout>
+
+## Confirmed version
+
+The 35% figure is sourced to byteiota.com and developersdigest.tech's technical coverage of Opus 4.7, not Anthropic directly. The 2026-04-16 GA date is confirmed via GitHub's official changelog, which does **not** itself mention the tokenizer change. Persistence into Opus 4.8 is per finout.io's 2026-05-28 coverage. Browse more coverage in the [AI Productivity](/ai-productivity) archive, or start from [The 2026 LLM Token & Pricing Reset](/ai-productivity/2026-llm-token-pricing-reset/) hub.

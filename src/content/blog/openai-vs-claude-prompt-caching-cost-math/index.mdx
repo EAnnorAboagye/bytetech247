@@ -1,0 +1,58 @@
+---
+title: "OpenAI vs Claude: Prompt Caching Cost Math in 2026"
+description: "OpenAI now charges a 1.25x premium on cache writes; Anthropic doesn't. How the two providers' caching economics actually compare in 2026."
+date: 2026-08-12
+category: ai-productivity
+tags: ["tokens", "gpt", "claude", "prompt-caching"]
+relatedSlugs:
+  [
+    "2026-llm-token-pricing-reset",
+    "gpt-5-6-prompt-cache-write-premium",
+    "openai-prompt-cache-24-hour-retention",
+  ]
+series: "2026-llm-token-pricing-reset"
+seriesOrder: 19
+coverImage: "./cover.png"
+coverImageAlt: "A dark comparison-matrix style cover reading OpenAI vs Claude, Prompt Caching Cost Math in 2026, listing three row summaries: cache write cost a 1.25x premium for OpenAI versus no documented write premium for Anthropic, cache read discount roughly 90% off for both, and minimum cache lifetime 30 minutes for OpenAI with Anthropic not part of the sourced figures"
+faq:
+  - question: "Does this mean Anthropic's caching is always cheaper than OpenAI's?"
+    answer: "Not necessarily. OpenAI's write premium is only a real cost disadvantage if a cached prefix isn't reused enough times to amortize it. For a prefix reused many times before it expires, the read-side discount dominates the math regardless of provider. The write premium mainly changes the calculus for prefixes cached once and reused rarely."
+  - question: "Where can I verify these caching numbers myself?"
+    answer: "Check each provider's own current pricing and caching documentation directly. The comparison here is sourced to third-party cost-math coverage (ofox.ai), not each provider's primary pricing page, specifically because caching terms and rates are exactly the kind of detail that changes without much fanfare. Treat this post as a starting framework, not a final number to budget against."
+---
+
+## Quick Answer
+
+OpenAI's GPT-5.6 caching charges a 1.25x premium on cache writes, with roughly a 90% discount on reads. Anthropic's Claude caching offers a comparable read discount with no documented separate write premium. The two are no longer comparable on a single discount percentage; model both the write and read cost before picking a provider based on caching.
+
+## What's actually changing
+
+This is a synthesis cluster, not a single dated announcement: it pulls together [GPT-5.6's new caching structure](/ai-productivity/gpt-5-6-prompt-cache-write-premium/) and Anthropic's existing caching structure to compare the two directly, drawing on third-party cost-math coverage (ofox.ai) rather than either provider's primary pricing page.
+
+OpenAI's GPT-5.6 requires explicit cache breakpoints and charges a reported 1.25x premium on the first write to a breakpoint, while reads against an established cache entry get roughly a 90% discount off the standard input rate. Anthropic's Claude caching structure offers a comparable read-side discount, up to roughly 90% off cached input, without a separate documented write premium. That difference is the whole point of this comparison: a single "discount percentage" no longer describes either provider's caching economics on its own.
+
+## Structural Comparison Matrix
+
+| Caching Dimension          | OpenAI (GPT-5.6)         | Anthropic (Claude)                                          |
+| :------------------------- | :----------------------- | :---------------------------------------------------------- |
+| **Cache write cost**       | 1.25x premium (reported) | No separate write premium documented                        |
+| **Cache read discount**    | ~90% off (reported)      | Up to ~90% off, per Anthropic's published caching structure |
+| **Minimum cache lifetime** | 30 minutes (reported)    | Not part of the sourced figures for this post               |
+
+## Fix it: model the write side, not just the read discount
+
+Picking a provider based on caching-friendliness used to be a simple read-discount comparison. It no longer is. OpenAI's write premium means the real cost of caching a given prefix depends on how many times it gets reused before expiring: reuse it enough times and the write premium is a rounding error against the accumulated read savings; reuse it once or twice and the premium may cost more than caching saved.
+
+Anthropic's caching, without a documented write premium, has a simpler cost model for low-reuse cases specifically. For high-reuse workloads, both providers' read-side discounts land in a similar range, so the provider choice comes down to other factors, not caching cost alone.
+
+<Callout type="info" title="Two related pieces of this reset">
+  See [GPT-5.6 Ends Free Prompt-Cache
+  Writes](/ai-productivity/gpt-5-6-prompt-cache-write-premium/) and [OpenAI
+  Extends Prompt Cache Retention to 24
+  Hours](/ai-productivity/openai-prompt-cache-24-hour-retention/) for the two
+  OpenAI-side changes this comparison draws on.
+</Callout>
+
+## Confirmed version
+
+Sourced to ofox.ai's prompt-caching cost-math coverage, 2026, drawing on the OpenAI-side facts covered in this series (2026-05-28 through 2026-07-09 sourcing) and Anthropic's published caching structure. Not each provider's own primary pricing documentation directly. Browse more coverage in the [AI Productivity](/ai-productivity) archive, or start from [The 2026 LLM Token & Pricing Reset](/ai-productivity/2026-llm-token-pricing-reset/) hub.

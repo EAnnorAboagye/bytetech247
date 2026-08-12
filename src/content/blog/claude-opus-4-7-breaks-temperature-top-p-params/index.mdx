@@ -1,0 +1,49 @@
+---
+title: "Claude Opus 4.7 Breaks temperature and top_p Params"
+description: "Claude Opus 4.7 returns HTTP 400 for temperature, top_p, top_k, and budget_tokens in some configurations. What changed and how to fix it."
+date: 2026-08-12
+category: ai-productivity
+tags: ["claude", "anthropic", "api"]
+relatedSlugs:
+  [
+    "2026-llm-token-pricing-reset",
+    "claudes-tokenizer-counts-up-to-35-percent-more",
+  ]
+series: "2026-llm-token-pricing-reset"
+seriesOrder: 17
+coverImage: "./cover.png"
+coverImageAlt: "A dark comparison-matrix style cover reading Claude Opus 4.7 Breaks temperature and top_p Params, listing three row summaries: temperature top_p and top_k together previously accepted, now reported to return HTTP 400 in some configurations, budget_tokens likewise reported to return HTTP 400, and Anthropic's own GA changelog does not mention this"
+faq:
+  - question: "Does this affect every call that sets temperature?"
+    answer: "That's not independently confirmed. The report describes HTTP 400 responses in some configurations, likely when certain parameters are combined, rather than every call that sets temperature alone. If you're debugging a real failure, isolate which parameter combination triggers it in your own testing rather than assuming the broadest possible interpretation."
+  - question: "What should I do if my code breaks after upgrading to Opus 4.7?"
+    answer: "Check whether your request combines temperature, top_p, top_k, or budget_tokens, since that combination is the one reported to trigger HTTP 400 errors. Remove or isolate them one at a time against a test call to identify which parameter or combination your specific integration is hitting, since the exact trigger conditions aren't confirmed in Anthropic's own documentation."
+---
+
+## Quick Answer
+
+Third-party technical coverage reports that Claude Opus 4.7 introduced a breaking change: passing `temperature`, `top_p`, `top_k`, or `budget_tokens` together in some configurations now returns an HTTP 400 error instead of a response. Anthropic's own GA changelog doesn't confirm this. If a previously-working call suddenly errors after upgrading, check these parameters first.
+
+## What's actually changing
+
+Third-party technical coverage of Opus 4.7, the same source cluster reporting the tokenizer change covered separately in this series, reports that certain sampling parameters now trigger HTTP 400 errors under some configurations: `temperature`, `top_p`, `top_k`, and `budget_tokens`. Previously valid combinations of these parameters are reported to fail outright rather than degrade gracefully or get silently ignored.
+
+As with the tokenizer claim, this is explicitly not confirmed by Anthropic's own official GA changelog for Opus 4.7 (2026-04-16), which does not mention this behavior. Treat the exact trigger conditions as reported, not verified, and confirm against your own test calls before assuming a specific parameter combination is the cause.
+
+## Structural Comparison Matrix
+
+| Operational Aspect                             | Opus 4.6 and earlier | Opus 4.7+                                          |
+| :--------------------------------------------- | :------------------- | :------------------------------------------------- |
+| **`temperature` / `top_p` / `top_k` together** | Accepted             | Reported to return HTTP 400 in some configurations |
+| **`budget_tokens`**                            | Accepted             | Reported to return HTTP 400 in some configurations |
+| **Anthropic's own GA changelog**               | N/A                  | Does not mention this behavior                     |
+
+## Fix it: isolate the failing parameter combination
+
+If a request that worked before an Opus 4.7 upgrade now returns HTTP 400, the fastest path is elimination, not guessing. Strip `temperature`, `top_p`, `top_k`, and `budget_tokens` down to the minimum your call actually needs, then add them back one at a time against a real test request until the error reappears. That isolates the specific combination your integration is hitting, since the reported behavior is not confirmed to be identical across every configuration.
+
+Once identified, the fix is usually straightforward: drop the redundant parameter rather than fight the error. Sending both `temperature` and `top_p` on the same request was already redundant in most sampling setups, since both control the same underlying randomness in different ways; picking one instead of both often resolves the error without changing the model's actual output behavior much.
+
+## Confirmed version
+
+Sourced from the same third-party technical coverage of Opus 4.7 that reports the tokenizer change, not Anthropic's own materials directly. GA date 2026-04-16 confirmed via GitHub's official changelog, which does not itself confirm this specific claim. Browse more coverage in the [AI Productivity](/ai-productivity) archive, or start from [The 2026 LLM Token & Pricing Reset](/ai-productivity/2026-llm-token-pricing-reset/) hub.

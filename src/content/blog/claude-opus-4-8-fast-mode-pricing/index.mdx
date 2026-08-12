@@ -1,0 +1,57 @@
+---
+title: "Claude Opus 4.8: Same Price, Cheaper Fast Mode"
+description: "Claude Opus 4.8 kept base pricing at $5/$25 per MTok but cut Fast Mode from $30/$150 to $10/$50. What that means for latency-sensitive calls."
+date: 2026-08-12
+category: ai-productivity
+tags: ["tokens", "claude", "anthropic", "llm-pricing"]
+relatedSlugs:
+  [
+    "2026-llm-token-pricing-reset",
+    "claudes-tokenizer-counts-up-to-35-percent-more",
+  ]
+series: "2026-llm-token-pricing-reset"
+seriesOrder: 15
+coverImage: "./cover.png"
+coverImageAlt: "A dark comparison-matrix style cover reading Claude Opus 4.8, Same Price, Cheaper Fast Mode, listing three row summaries: base price unchanged at 5 and 25 dollars per million tokens, Fast Mode cut from 30 and 150 to 10 and 50 dollars per million tokens, and the tokenizer inherited unchanged from Opus 4.7"
+faq:
+  - question: "Is Fast Mode worth using now if I dismissed it before as too expensive?"
+    answer: "Worth re-evaluating, especially for latency-sensitive workloads. Fast Mode's reported price dropped from $30/$150 to $10/$50 per million input/output tokens between Opus 4.7 and 4.8, a real cut, not a rounding change. A cost comparison done against 4.7's Fast Mode pricing no longer reflects what 4.8 actually charges."
+  - question: "Does the tokenizer change between Opus 4.7 and 4.8?"
+    answer: "No. Opus 4.8 inherited the same tokenizer Opus 4.7 introduced, unchanged. That matters because third-party coverage reports that tokenizer counts up to roughly 35% more tokens for the same text than pre-4.7 models did, a separate factor from the price cut covered here. See Claude's New Tokenizer Counts Up to 35% More for that detail."
+---
+
+## Quick Answer
+
+Claude Opus 4.8 launched at the same base price as Opus 4.7: $5 per million input tokens, $25 per million output tokens. Fast Mode dropped from $30/$150 to $10/$50 per million tokens, a real cut for latency-sensitive workloads. If Fast Mode looked too expensive against 4.7, re-run the math against 4.8's numbers.
+
+## What's actually changing
+
+Claude Opus 4.8 launched 2026-05-28 at the same base pricing as its predecessor: $5 per million input tokens and $25 per million output tokens, according to third-party pricing-tracking coverage (finout.io), not confirmed against Anthropic's own pricing page directly. On its own, that reads as no change at all.
+
+Fast Mode tells a different story. The same source reports Fast Mode's price fell from $30 per million input tokens and $150 per million output tokens under Opus 4.7, to $10/$50 under Opus 4.8. That is a real reduction in a mode specifically built for latency-sensitive workloads that pay a premium to get responses faster.
+
+## Structural Comparison Matrix
+
+| Operational Aspect                          | Opus 4.7                   | Opus 4.8                          |
+| :------------------------------------------ | :------------------------- | :-------------------------------- |
+| **Base price (input/output per MTok)**      | $5 / $25                   | $5 / $25 (unchanged)              |
+| **Fast Mode price (input/output per MTok)** | $30 / $150                 | $10 / $50                         |
+| **Tokenizer**                               | Introduced in this version | Inherited unchanged from Opus 4.7 |
+
+## Fix it: re-run the Fast Mode math
+
+Anyone who evaluated Fast Mode against Opus 4.7's $30/$150 pricing and decided the latency benefit wasn't worth the cost has a real reason to revisit that decision under Opus 4.8. A workload that pays for Fast Mode specifically to cut response time now does so at roughly a third of the previous rate, which changes the break-even point against standard mode meaningfully, not marginally.
+
+Base pricing staying flat is worth noting for a different reason: it means the price cut is isolated to Fast Mode specifically, not a general Opus 4.8 discount. Don't assume standard-mode costs moved just because Fast Mode did.
+
+<Callout type="warning" title="Same price doesn't mean same cost per prompt">
+  Opus 4.8 inherited Opus 4.7's tokenizer unchanged, and that tokenizer is
+  reported to count noticeably more tokens for the same text than older models.
+  See [Claude's New Tokenizer Counts Up to 35%
+  More](/ai-productivity/claudes-tokenizer-counts-up-to-35-percent-more/) before
+  assuming your cost per prompt is unchanged.
+</Callout>
+
+## Confirmed version
+
+Both the base-price figure and the Fast Mode figures are paraphrased from finout.io's Claude Opus 4.8 pricing breakdown, tied to the model's 2026-05-28 launch, not confirmed against Anthropic's own pricing page directly. Browse more coverage in the [AI Productivity](/ai-productivity) archive, or start from [The 2026 LLM Token & Pricing Reset](/ai-productivity/2026-llm-token-pricing-reset/) hub.

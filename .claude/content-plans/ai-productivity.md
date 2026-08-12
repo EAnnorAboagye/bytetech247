@@ -117,8 +117,8 @@ Status values: pending (researched, not yet approved) -> approved (user greenlit
 
 ### 11. GPT-5.6's Context Window: 922K In, 128K Out Tokens
 
-- Status: pending
-- Slug: -
+- Status: written (2026-08-12)
+- Slug: gpt-5-6-context-window-922k-tokens
 - Search Intent / Signal: GPT-5.6 (Sol/Terra/Luna) reached general availability with a 1.05M-token context window (up to 922K input, 128K output), using the o200k_base encoding shared with GPT-4o — paraphrased, aggregated across multiple 2026 model-tracking sites (Wikipedia's GPT-5.6 page, wavespeed.ai), not confirmed against OpenAI's own primary announcement post directly.
 - Structural Problem: Existing integrations sized their context-management/chunking logic around older models' smaller windows (128K-200K for the GPT-4 family). A near-1M window changes the entire "when do I need to chunk/summarize" calculus, and the shared o200k_base encoding means token counts for GPT-5.6 differ from cl100k_base-based estimates (relevant caveat: this site's own AI Token Counter tool currently implements cl100k_base only, not o200k_base — a real, honest limitation worth surfacing in this cluster).
 - Source: GPT-5.6 general availability, official API changelog date 2026-07-09 (per Wikipedia's GPT-5.6 entry, cross-referenced against wavespeed.ai's release-date tracking)
@@ -126,8 +126,8 @@ Status values: pending (researched, not yet approved) -> approved (user greenlit
 
 ### 12. GPT-5.6 Ends Free Prompt-Cache Writes (1.25x Premium)
 
-- Status: pending
-- Slug: -
+- Status: written (2026-08-12)
+- Slug: gpt-5-6-prompt-cache-write-premium
 - Search Intent / Signal: Moving to GPT-5.6 replaced OpenAI's free, implicit prompt caching with explicit cache breakpoints, a 1.25x cache-write premium, and a 30-minute minimum TTL, while cache reads keep the existing 90% discount — paraphrased, sourced to third-party cost-analysis coverage (effloow.com), not OpenAI's own primary pricing docs directly.
 - Structural Problem: Any integration that relied on OpenAI's previous "caching just happens, for free" model needs to add explicit cache-breakpoint configuration to keep getting a discount at all, and needs to budget for the new write-side cost that didn't exist before — a real code change, not just a number to note.
 - Source: effloow.com prompt-cache cost analysis, tied to GPT-5.6 GA (2026-07-09)
@@ -135,8 +135,8 @@ Status values: pending (researched, not yet approved) -> approved (user greenlit
 
 ### 13. OpenAI Extends Prompt Cache Retention to 24 Hours
 
-- Status: pending
-- Slug: -
+- Status: written (2026-08-12)
+- Slug: openai-prompt-cache-24-hour-retention
 - Search Intent / Signal: OpenAI changed the default prompt-cache lifetime from a few minutes to up to 24 hours — paraphrased, sourced to effloow.com's measured cache-retention analysis.
 - Structural Problem: Workflows that assumed a short cache window (and either didn't bother structuring prompts for cache hits, or worked around the short TTL some other way) can now restructure around a genuinely all-day cache lifetime — a real architecture decision for any agent/pipeline making repeated calls with a shared prefix.
 - Source: effloow.com, dated 2026-05-29
@@ -144,8 +144,8 @@ Status values: pending (researched, not yet approved) -> approved (user greenlit
 
 ### 14. gpt-4, o1, and o4-mini Shut Down October 23, 2026
 
-- Status: pending
-- Slug: -
+- Status: written (2026-08-12)
+- Slug: gpt-4-o1-o4-mini-shutdown-october-2026
 - Search Intent / Signal: `"Unless safety or compliance concerns require a faster timeline, we provide the following minimum notice periods before model retirement: Generally available models: At least 6 months."` — verbatim confirmed, fetched directly from OpenAI's own live deprecations page (developers.openai.com/api/docs/deprecations). That same page lists `gpt-4`/`gpt-4-0613`, `o1`/`o1-pro`, and `o4-mini` all shutting down 2026-10-23, with `gpt-5.6-sol` and `gpt-5.6-terra` as the named replacements, under the "2026-04-22: Legacy GPT model snapshots" notice.
 - Structural Problem: After the shutdown date, API calls to these model IDs return errors instead of responses — not a soft deprecation warning, a hard cutover. Anyone still pointing at `gpt-4`, `o1`, or `o4-mini` needs a real migration to `gpt-5.6-sol`/`gpt-5.6-terra` before then, including re-checking token counts and costs against the new models' different tokenizer/pricing (direct tie to cluster 11).
 - Source: OpenAI API deprecations page (developers.openai.com/api/docs/deprecations), notice dated 2026-04-22, shutdown 2026-10-23 — primary source, fetched directly
@@ -153,8 +153,8 @@ Status values: pending (researched, not yet approved) -> approved (user greenlit
 
 ### 15. Claude Opus 4.8: Same Price, Cheaper Fast Mode
 
-- Status: pending
-- Slug: -
+- Status: written (2026-08-12)
+- Slug: claude-opus-4-8-fast-mode-pricing
 - Search Intent / Signal: Claude Opus 4.8 launched at the same base pricing as Opus 4.7 ($5/$25 per MTok), but Fast Mode dropped from $30/$150 to $10/$50 per MTok — paraphrased, sourced to third-party pricing-tracking coverage (finout.io), not Anthropic's own pricing page directly.
 - Structural Problem: Anyone who priced out Fast Mode against Opus 4.7 and decided it was too expensive has a materially different cost equation now — a real re-evaluation, not just a footnote, especially for latency-sensitive workloads that specifically wanted Fast Mode.
 - Source: finout.io Claude Opus 4.8 pricing breakdown, model launch dated 2026-05-28
@@ -162,8 +162,8 @@ Status values: pending (researched, not yet approved) -> approved (user greenlit
 
 ### 16. Claude's New Tokenizer Counts Up to 35% More
 
-- Status: pending
-- Slug: -
+- Status: written (2026-08-12)
+- Slug: claudes-tokenizer-counts-up-to-35-percent-more
 - Search Intent / Signal: Opus 4.7 shipped an updated tokenizer that counts roughly 1.0-1.35x (up to ~35%) more tokens for the same input text than Opus 4.6 — paraphrased, sourced to third-party technical coverage (byteiota.com, developersdigest.tech). Explicitly **not confirmed** against Anthropic's own official GA changelog: a direct fetch of the GitHub changelog announcing Opus 4.7's general availability (2026-04-16) contains no mention of tokenizer or token-count changes at all, only general performance claims — worth stating plainly rather than presenting third-party reporting as if it were primary-sourced.
 - Structural Problem: Same pricing per token doesn't mean same cost per prompt — if the same text now tokenizes to more tokens, the effective cost per API call goes up even though the headline $/MTok rate didn't change. Anyone tracking a cost budget against token counts needs to re-baseline, not just re-check the price sheet. Confirmed still in effect as of Opus 4.8 (2026-05-28): the tokenizer did not change between 4.7 and 4.8, so this remains today's behavior, not a one-version blip.
 - Source: byteiota.com and developersdigest.tech technical coverage of Opus 4.7 (tokenizer claim); GA date 2026-04-16 confirmed via GitHub's official changelog (github.blog/changelog/2026-04-16-claude-opus-4-7-is-generally-available), which does **not** itself mention the tokenizer change; persistence into 4.8 per finout.io's 2026-05-28 Opus 4.8 coverage
@@ -171,8 +171,8 @@ Status values: pending (researched, not yet approved) -> approved (user greenlit
 
 ### 17. Claude Opus 4.7 Breaks temperature and top_p Params
 
-- Status: pending
-- Slug: -
+- Status: written (2026-08-12)
+- Slug: claude-opus-4-7-breaks-temperature-top-p-params
 - Search Intent / Signal: Opus 4.7 introduced breaking changes versus 4.6 where `budget_tokens` and the sampling parameters `temperature`/`top_p`/`top_k` all return HTTP 400 — paraphrased, sourced to third-party technical coverage, same caveat as cluster 16: not confirmed against Anthropic's own official GA changelog, which doesn't mention this.
 - Structural Problem: Any client code passing these parameters (a common, previously-valid pattern) breaks outright on upgrade rather than degrading gracefully — a real, immediate integration fix, not a deprecation with runway.
 - Source: Third-party Opus 4.7 technical coverage (same source cluster as 16); GA date 2026-04-16 per GitHub's official changelog (does not itself confirm this specific claim)
@@ -180,8 +180,8 @@ Status values: pending (researched, not yet approved) -> approved (user greenlit
 
 ### 18. Gemini 3.6 Flash Cuts Output Tokens 17%, Price Too
 
-- Status: pending
-- Slug: -
+- Status: written (2026-08-12)
+- Slug: gemini-3-6-flash-output-tokens-price-cut
 - Search Intent / Signal: Gemini 3.6 Flash launched using 17% fewer output tokens than Gemini 3.5 Flash for comparable tasks, at $1.50/$7.50 per million input/output tokens with a 1M-token context window — paraphrased, sourced to 9to5google.com's launch coverage (a reputable, dated tech-press source, though not Google's own primary blog post).
 - Structural Problem: A model that genuinely uses fewer output tokens per task changes the cost-per-task math independently of the per-token price — two separate levers moving at once (price per token, and tokens per task), which is easy to conflate if you're only comparing sticker prices across models.
 - Source: 9to5google.com, "Google launches Gemini 3.6 Flash and 3.5 Flash-Lite," dated 2026-07-21
@@ -189,8 +189,8 @@ Status values: pending (researched, not yet approved) -> approved (user greenlit
 
 ### 19. OpenAI vs Claude: Prompt Caching Cost Math in 2026
 
-- Status: pending
-- Slug: -
+- Status: written (2026-08-12)
+- Slug: openai-vs-claude-prompt-caching-cost-math
 - Search Intent / Signal: Synthesis cluster, not a single dated announcement — compares OpenAI's new explicit-breakpoint/1.25x-write-premium caching model (cluster 12) against Anthropic's existing cache-discount structure (up to 90% off cached input, no separate write premium documented), drawing on third-party cost-math coverage (ofox.ai).
 - Structural Problem: The two providers' caching economics are no longer directly comparable on a single "discount %" axis now that OpenAI charges a write premium Anthropic doesn't — a developer picking a provider based on caching-friendliness needs to model both sides of the write/read cost, not just the advertised read discount.
 - Source: ofox.ai prompt-caching cost-math comparison (2026); underlying facts from clusters 12-13

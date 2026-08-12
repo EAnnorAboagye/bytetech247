@@ -1,0 +1,57 @@
+---
+title: "GPT-5.6 Ends Free Prompt-Cache Writes (1.25x Premium)"
+description: "GPT-5.6 replaced OpenAI's free implicit prompt caching with explicit breakpoints and a 1.25x write premium. What changes in your integration."
+date: 2026-08-12
+category: ai-productivity
+tags: ["tokens", "gpt", "prompt-caching", "openai"]
+relatedSlugs:
+  [
+    "2026-llm-token-pricing-reset",
+    "same-prompt-different-bill-gpt-claude-gemini",
+  ]
+series: "2026-llm-token-pricing-reset"
+seriesOrder: 12
+coverImage: "./cover.png"
+coverImageAlt: "A dark comparison-matrix style cover reading GPT-5.6 Ends Free Prompt-Cache Writes, a 1.25x premium with a 30-minute minimum TTL, listing three row summaries: before automatic free caching, after explicit breakpoints with a 1.25x write cost, and cache reads staying at roughly 90% off unchanged"
+faq:
+  - question: "Do I need to change my code, or does this happen automatically?"
+    answer: "You need to change your code. GPT-5.6's caching model requires explicit cache breakpoints in the request; the previous free, implicit caching behavior does not carry over automatically. Without configuring breakpoints, a GPT-5.6 integration gets no caching discount at all, not the old default behavior."
+  - question: "Is caching still worth using after this change?"
+    answer: "Usually, for workloads that genuinely reuse a shared prompt prefix across many calls, since the roughly 90% read discount is unchanged. The new 1.25x write premium mainly changes the math for prompts that get cached once and reused rarely, where the extra write cost may not be recovered before the 30-minute minimum lifetime expires."
+---
+
+## Quick Answer
+
+GPT-5.6 replaced OpenAI's free, automatic prompt caching with explicit cache breakpoints, a 1.25x premium on cache writes, and a 30-minute minimum cache lifetime. Cache reads still get roughly the same 90% discount. If your integration relied on caching happening automatically, it now needs explicit breakpoint configuration to get any discount at all.
+
+## What's actually changing
+
+Third-party cost-analysis coverage reports that GPT-5.6 changed prompt caching from a free, invisible optimization into an explicit, configured one. Previously, OpenAI cached repeated prompt prefixes automatically at no extra cost. Under GPT-5.6, a request has to declare cache breakpoints explicitly, and writing to the cache for the first time now carries a 1.25x premium over the standard input-token rate. This detail is paraphrased from third-party cost analysis (effloow.com), tied to GPT-5.6's 2026-07-09 general availability, not confirmed against OpenAI's own primary pricing documentation directly.
+
+The cache's minimum lifetime also moved to 30 minutes. Cache reads keep roughly the same 90% discount off the standard input-token rate that caching offered before this change, so the discount itself did not shrink, only the path to earning it did.
+
+## Structural Comparison Matrix
+
+| Operational Aspect         | Before (pre-GPT-5.6 caching) | After (GPT-5.6)                     |
+| :------------------------- | :--------------------------- | :---------------------------------- |
+| **Cache activation**       | Automatic, implicit          | Explicit cache breakpoints required |
+| **Cache write cost**       | Free                         | 1.25x premium per write             |
+| **Minimum cache lifetime** | Short, a few minutes typical | 30-minute minimum                   |
+| **Cache read discount**    | ~90% off standard rate       | ~90% off standard rate (unchanged)  |
+
+## Fix it: add explicit cache breakpoints
+
+Any integration that never configured caching, because it previously happened for free without any setup, is not getting a silent downgrade under GPT-5.6. It is getting no caching at all until breakpoints are added explicitly. That is a real code change, not a pricing footnote: identify the shared prefixes in your prompts (a system instruction, a long reference document, a set of few-shot examples) and mark them as cache breakpoints so repeated calls actually hit the discount.
+
+Budget for the write side too. The first call that populates a cache breakpoint now costs 1.25x the standard input rate for that portion of the prompt, a real cost that did not exist before. For a workload that reuses a cached prefix many times before it expires, that write cost is easily recovered by the read discount. For a prefix cached once and rarely reused, the write premium may cost more than it saves, especially with a 30-minute minimum lifetime to work around.
+
+<Callout type="info" title="Retention moved too">
+  OpenAI separately extended cache retention further, up to 24 hours by default
+  in some configurations. See [OpenAI Extends Prompt Cache Retention to 24
+  Hours](/ai-productivity/openai-prompt-cache-24-hour-retention/) for how that
+  changes the reuse-window math above.
+</Callout>
+
+## Confirmed version
+
+Sourced from third-party cost-analysis coverage (effloow.com) tied to GPT-5.6's general availability, 2026-07-09, not OpenAI's own primary pricing documentation directly. Browse more coverage in the [AI Productivity](/ai-productivity) archive, or start from [The 2026 LLM Token & Pricing Reset](/ai-productivity/2026-llm-token-pricing-reset/) hub.

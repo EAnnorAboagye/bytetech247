@@ -1,0 +1,55 @@
+---
+title: "gpt-4, o1, and o4-mini Shut Down October 23, 2026"
+description: "OpenAI's gpt-4, o1, and o4-mini model IDs stop responding on October 23, 2026. The exact deprecation notice, and how to migrate to GPT-5.6."
+date: 2026-08-12
+category: ai-productivity
+tags: ["tokens", "gpt", "deprecation", "openai"]
+relatedSlugs:
+  ["2026-llm-token-pricing-reset", "gpt-5-6-context-window-922k-tokens"]
+series: "2026-llm-token-pricing-reset"
+seriesOrder: 14
+coverImage: "./cover.png"
+coverImageAlt: "A terminal window showing OpenAI's own deprecations page: generally available models get at least 6 months notice before retirement, and gpt-4, gpt-4-0613, o1, o1-pro, and o4-mini all shut down 2026-10-23, replaced by gpt-5.6-sol and gpt-5.6-terra"
+faq:
+  - question: "Is this a soft deprecation warning or a hard cutoff?"
+    answer: "A hard cutoff. OpenAI's own deprecations page states a minimum notice period before retirement, not an indefinite warning, and lists an exact shutdown date: October 23, 2026. After that date, calls to gpt-4, gpt-4-0613, o1, o1-pro, or o4-mini return errors instead of responses."
+  - question: "Do I need to change anything besides the model name when migrating?"
+    answer: "Yes. gpt-5.6-sol and gpt-5.6-terra use the o200k_base encoding, not the cl100k_base encoding the retiring models used, so any client-side token counting or budget logic needs to account for that difference. GPT-5.6 also changed prompt-caching behavior, so re-check caching configuration alongside the model swap, not just the model string."
+---
+
+## Quick Answer
+
+OpenAI's `gpt-4`, `gpt-4-0613`, `o1`, `o1-pro`, and `o4-mini` model IDs stop responding entirely on October 23, 2026, per OpenAI's own deprecations page. This is a hard cutover, not a warning: calls to these model IDs will error after that date. The named replacements are `gpt-5.6-sol` and `gpt-5.6-terra`.
+
+## What's actually changing
+
+This is the one figure in this series confirmed directly against a primary source, not paraphrased from third-party coverage. OpenAI's own deprecations page states its retirement policy in plain terms:
+
+> "Unless safety or compliance concerns require a faster timeline, we provide the following minimum notice periods before model retirement: Generally available models: At least 6 months."
+
+Under the "2026-04-22: Legacy GPT model snapshots" notice on that same page, `gpt-4`, `gpt-4-0613`, `o1`, `o1-pro`, and `o4-mini` are listed with a shutdown date of October 23, 2026, with `gpt-5.6-sol` and `gpt-5.6-terra` named as the direct replacements. That is roughly six months of notice from the 2026-04-22 posting date, consistent with OpenAI's own stated minimum.
+
+## Structural Comparison Matrix
+
+| Operational Aspect               | Before (until 2026-10-23) | After (2026-10-23 onward)        |
+| :------------------------------- | :------------------------ | :------------------------------- |
+| **`gpt-4` / `gpt-4-0613` calls** | Respond normally          | Return errors                    |
+| **`o1` / `o1-pro` calls**        | Respond normally          | Return errors                    |
+| **`o4-mini` calls**              | Respond normally          | Return errors                    |
+| **Recommended model**            | Any of the above          | `gpt-5.6-sol` or `gpt-5.6-terra` |
+
+## Fix it: migrate before the cutover, not after
+
+A hard cutover means there is no graceful fallback once October 23, 2026 passes: a call to a retired model ID fails, full stop. The practical fix is a model-string swap to `gpt-5.6-sol` or `gpt-5.6-terra`, but treat that as the start of the migration, not the whole thing.
+
+`gpt-5.6-sol` and `gpt-5.6-terra` use the `o200k_base` encoding, not the `cl100k_base` encoding the retiring models used, which changes token counts for identical prompts. See [GPT-5.6's Context Window](/ai-productivity/gpt-5-6-context-window-922k-tokens/) for what that means for chunking and cost estimation. GPT-5.6 also changed prompt-caching behavior, covered in [GPT-5.6 Ends Free Prompt-Cache Writes](/ai-productivity/gpt-5-6-prompt-cache-write-premium/), so a migration that only swaps the model string and skips re-checking caching configuration will get a real, avoidable cost surprise.
+
+<Callout type="warning" title="Check your own numbers before the deadline">
+  Use the free <a href="/tools/ai-token-counter/">AI Token Counter</a> to see
+  how your actual prompts tokenize under the newer encoding before you migrate,
+  not after.
+</Callout>
+
+## Confirmed version
+
+Fetched directly from OpenAI's own API deprecations page (developers.openai.com/api/docs/deprecations), notice dated 2026-04-22, shutdown date 2026-10-23. This is a primary source, not third-party reporting. Browse more coverage in the [AI Productivity](/ai-productivity) archive, or start from [The 2026 LLM Token & Pricing Reset](/ai-productivity/2026-llm-token-pricing-reset/) hub.

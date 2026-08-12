@@ -1,0 +1,58 @@
+---
+title: "Gemini 3.6 Flash Cuts Output Tokens 17%, Price Too"
+description: "Gemini 3.6 Flash uses 17% fewer output tokens than 3.5 Flash and costs $1.50/$7.50 per million tokens. Two cost levers, not one."
+date: 2026-08-12
+category: ai-productivity
+tags: ["tokens", "gemini", "google", "llm-pricing"]
+relatedSlugs:
+  [
+    "2026-llm-token-pricing-reset",
+    "same-prompt-different-bill-gpt-claude-gemini",
+  ]
+series: "2026-llm-token-pricing-reset"
+seriesOrder: 18
+coverImage: "./cover.png"
+coverImageAlt: "A dark comparison-matrix style cover reading Gemini 3.6 Flash Cuts Output Tokens 17%, Price Too, listing three row summaries: 17% fewer output tokens for comparable tasks, priced at 1.50 and 7.50 dollars per million input and output tokens, and a 1 million token context window"
+faq:
+  - question: "Does the 17% fewer tokens claim apply to every kind of task?"
+    answer: "The source describes it as measured across comparable tasks generally, not a universal guarantee for every prompt type. Tasks with very different output shapes, short factual answers versus long-form generation, for example, could see a different real-world reduction. Test against your own actual workload rather than assuming a flat 17% applies everywhere."
+  - question: "How much cheaper is Gemini 3.6 Flash overall compared to 3.5 Flash?"
+    answer: "That can't be stated precisely here, because Gemini 3.5 Flash's exact per-token pricing isn't part of the sourced figures for this post. What's confirmed is Gemini 3.6 Flash's own pricing, $1.50 per million input tokens and $7.50 per million output tokens, plus a reported 17% output-token reduction. Check Google's current pricing page directly for the exact side-by-side rate comparison."
+---
+
+## Quick Answer
+
+Gemini 3.6 Flash reportedly uses 17% fewer output tokens than Gemini 3.5 Flash for comparable tasks, and launched at $1.50 per million input tokens and $7.50 per million output tokens, with a 1M-token context window. That's two cost levers moving at once: a lower per-token rate, and fewer tokens spent per task.
+
+## What's actually changing
+
+Tech-press launch coverage (9to5google.com, "Google launches Gemini 3.6 Flash and 3.5 Flash-Lite," dated 2026-07-21) reports that Gemini 3.6 Flash uses 17% fewer output tokens than Gemini 3.5 Flash for comparable tasks. That figure is sourced to reputable tech-press coverage, not Google's own blog post directly, and is stated honestly as such.
+
+Separately, and more concretely confirmed by the same launch coverage, Gemini 3.6 Flash launched at $1.50 per million input tokens and $7.50 per million output tokens, with a 1M-token context window.
+
+## Structural Comparison Matrix
+
+| Operational Aspect                     | Gemini 3.5 Flash                              | Gemini 3.6 Flash      |
+| :------------------------------------- | :-------------------------------------------- | :-------------------- |
+| **Output tokens for comparable tasks** | Baseline                                      | ~17% fewer (reported) |
+| **Input price (per million tokens)**   | Not part of the sourced figures for this post | $1.50                 |
+| **Output price (per million tokens)**  | Not part of the sourced figures for this post | $7.50                 |
+| **Context window**                     | Not part of the sourced figures for this post | 1M tokens             |
+
+## Why two levers matter more than one
+
+A comparison that only checks the per-token rate misses half the picture here. If Gemini 3.6 Flash really does produce fewer output tokens for the same task, the cost saving compounds: a lower rate applied to a smaller token count, not just a lower rate applied to the same count as before. Two providers can advertise similar-looking per-token prices and still produce meaningfully different bills for the same workload, once actual token counts per task are accounted for.
+
+That is exactly the trap a sticker-price-only comparison falls into, and exactly why [Same Prompt, Different Bill](/ai-productivity/same-prompt-different-bill-gpt-claude-gemini/) treats token count and price per token as two separate numbers to check, not one.
+
+<Callout type="tip" title="Measure your own task, not the reported average">
+  A 17% average reduction across "comparable tasks" may not match your specific
+  prompt shape. Run your actual prompts through the free{" "}
+  <a href="/tools/ai-token-counter/">AI Token Counter</a> to see your own
+  estimated Gemini token counts before assuming the reported figure applies
+  directly to your workload.
+</Callout>
+
+## Confirmed version
+
+Sourced to 9to5google.com's launch coverage, dated 2026-07-21, a reputable tech-press source but not Google's own primary blog post. Browse more coverage in the [AI Productivity](/ai-productivity) archive, or start from [The 2026 LLM Token & Pricing Reset](/ai-productivity/2026-llm-token-pricing-reset/) hub.
