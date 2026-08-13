@@ -2,6 +2,23 @@ import { describe, it, expect } from "vitest";
 import { isAllowedOrigin, isRateLimited } from "../../worker/index";
 import type { Env } from "../../worker/index";
 
+// Deliberately not typed against the real KVNamespace interface (from
+// @cloudflare/workers-types) — that global is only ever configured for
+// worker/tsconfig.json's own `tsc` run (see that file's comment on why
+// it's checked separately from the rest of the project), not the root
+// tsconfig `astro check` runs against, which is what actually type-checks
+// this test file. A structural stand-in for just the two methods
+// isRateLimited calls avoids depending on a global that may not resolve
+// the same way here as it does inside worker/index.ts itself.
+interface FakeKv {
+  get(key: string): Promise<string | null>;
+  put(
+    key: string,
+    value: string,
+    options?: { expirationTtl?: number },
+  ): Promise<void>;
+}
+
 // isAllowedOrigin/isRateLimited guard POST /api/counter — a public,
 // unauthenticated KV write endpoint. A mistake here means either a
 // legitimate same-origin request getting rejected, or the rate limit
@@ -31,16 +48,16 @@ describe("isAllowedOrigin", () => {
   });
 });
 
-// Minimal in-memory stand-in for the two KVNamespace methods isRateLimited
-// actually calls — a full mock of the real binding's interface isn't
-// needed here, just something that behaves like it for get/put.
-function createFakeKv(): Pick<KVNamespace, "get" | "put"> {
+// Minimal in-memory stand-in for the two KV methods isRateLimited actually
+// calls — a full mock of the real binding's interface isn't needed here,
+// just something that behaves like it for get/put.
+function createFakeKv(): FakeKv {
   const store = new Map<string, string>();
   return {
-    get: (async (key: string) => store.get(key) ?? null) as KVNamespace["get"],
-    put: (async (key: string, value: string) => {
+    get: async (key) => store.get(key) ?? null,
+    put: async (key, value) => {
       store.set(key, value);
-    }) as KVNamespace["put"],
+    },
   };
 }
 
