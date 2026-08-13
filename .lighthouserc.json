@@ -10,7 +10,7 @@
         "http://localhost/tag/tokens/index.html",
         "http://localhost/tools/ai-token-counter/index.html"
       ],
-      "numberOfRuns": 3
+      "numberOfRuns": 5
     },
     "assert": {
       "assertions": {
