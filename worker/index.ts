@@ -9,7 +9,7 @@
 // backend" model: article content is always static HTML from `env.ASSETS`,
 // never rendered per-request.
 
-import { CATEGORY_SLUGS } from "../src/config";
+import { CATEGORY_SLUGS, siteConfig } from "../src/config";
 
 export interface Env {
   ASSETS: Fetcher;
@@ -269,6 +269,51 @@ interface CounterPayload {
   kind?: "view" | "reaction";
 }
 
+// This site's browser-facing CSP already restricts fetch() to 'self'
+// connect-src, so no legitimate first-party page can even attempt a
+// cross-origin call here — this check exists for the requests the CSP
+// can't see: a POST from curl, a script, or any page on a different
+// origin, none of which are bound by *this site's* headers. A same-origin
+// browser POST always sends an Origin header on a state-changing request
+// (fetch/XHR), so the only requests this lets through without an Origin
+// header are non-browser clients, which the rate limit below still bounds.
+export function isAllowedOrigin(request: Request): boolean {
+  const origin = request.headers.get("Origin");
+  if (!origin) return true;
+  return origin === siteConfig.url;
+}
+
+const RATE_LIMIT_WINDOW_SECONDS = 60;
+const RATE_LIMIT_MAX_REQUESTS = 20;
+
+/**
+ * Fixed-window per-IP rate limit, bucketed by minute. Reuses COUNTERS_KV
+ * (a dedicated `ratelimit:` key prefix) rather than provisioning a new KV
+ * namespace or a Durable Object just for this — reasonable for an
+ * endpoint with no callers yet; revisit if real traffic ever needs
+ * something stricter than "bounded", like Cloudflare's Rate Limiting
+ * binding.
+ *
+ * Like handleCounter's own increment below, this read-then-write has a
+ * race window under concurrent requests from the same IP within the same
+ * window — a rate limit only needs to be approximately right to do its
+ * job (bound abuse), unlike the view count itself, so that's an accepted
+ * tradeoff here, not an oversight.
+ */
+export async function isRateLimited(env: Env, ip: string): Promise<boolean> {
+  const bucket = Math.floor(Date.now() / (RATE_LIMIT_WINDOW_SECONDS * 1000));
+  const key = `ratelimit:${ip}:${bucket}`;
+  const current = Number((await env.COUNTERS_KV.get(key)) ?? "0");
+  if (current >= RATE_LIMIT_MAX_REQUESTS) return true;
+  await env.COUNTERS_KV.put(key, String(current + 1), {
+    // Outlives the window itself so a bucket that's already at the limit
+    // doesn't briefly disappear (and reset to 0) before the next bucket
+    // takes over.
+    expirationTtl: RATE_LIMIT_WINDOW_SECONDS * 2,
+  });
+  return false;
+}
+
 /**
  * View/reaction counter endpoint. Expects the *client* to batch/debounce
  * and send one request per interval, not one per pageview (build-spec.md
@@ -278,8 +323,25 @@ interface CounterPayload {
  * Phase 13, post-launch), so wiring automatic pings ahead of a consumer
  * would just be unused network traffic. This endpoint exists so that
  * work can be added independently later without touching the Worker.
+ *
+ * The increment itself is a plain KV read-then-write, not an atomic op —
+ * Workers KV has no compare-and-swap or native increment, so two requests
+ * for the same slug/kind landing inside the same eventually-consistent
+ * window can race and undercount by one. Acceptable for a display-only
+ * view/reaction count; if a future consumer (e.g. Phase 13 Trending) ever
+ * needs an exact count, that's a real argument for a Durable Object,
+ * which actually can serialize writes — not something to fake with KV.
  */
 async function handleCounter(request: Request, env: Env): Promise<Response> {
+  if (!isAllowedOrigin(request)) {
+    return new Response("Forbidden", { status: 403 });
+  }
+
+  const ip = request.headers.get("CF-Connecting-IP") ?? "unknown";
+  if (await isRateLimited(env, ip)) {
+    return new Response("Too Many Requests", { status: 429 });
+  }
+
   let payload: CounterPayload;
   try {
     payload = await request.json();

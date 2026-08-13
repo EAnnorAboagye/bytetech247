@@ -10,6 +10,7 @@ import Grid from "../../components/layout/Grid.astro";
 import PostCard from "../../components/PostCard.astro";
 import { siteConfig } from "../../config";
 import { slugifyTag } from "../../lib/taxonomy";
+import { collectionPageJsonLd, breadcrumbJsonLd } from "../../lib/json-ld";
 
 export async function getStaticPaths() {
   const posts = await getCollection("blog");
@@ -37,11 +38,27 @@ export async function getStaticPaths() {
 
 type Props = InferGetStaticPropsType<typeof getStaticPaths>;
 const { display, posts } = Astro.props as Props;
+const description = `Posts tagged "${display}" on ${siteConfig.name}.`;
+
+// Still noindex (tags are a flat discoverability layer, not a canonical
+// destination — build-spec.md §9), but "noindex, follow" pages still get
+// crawled, and the same "visible and structured data agree" principle the
+// article/category templates follow applies here too, not just to the
+// pages Google is told to index.
+const pageUrl = new URL(Astro.url.pathname, siteConfig.url).href;
+const jsonLdBlocks = [
+  collectionPageJsonLd({ name: `#${display}`, description, url: pageUrl }),
+  breadcrumbJsonLd([
+    { name: "Home", url: siteConfig.url },
+    { name: `#${display}`, url: pageUrl },
+  ]),
+];
 ---
 
 <BaseLayout
   title={`#${display} — ${siteConfig.name}`}
-  description={`Posts tagged "${display}" on ${siteConfig.name}.`}
+  description={description}
+  jsonLd={jsonLdBlocks}
   noindex
 >
   {

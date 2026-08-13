@@ -25,6 +25,7 @@ import { getRecentPosts } from "../../lib/recent-posts";
 import { getLastVerifiedDate } from "../../lib/last-verified";
 import { articleJsonLd, breadcrumbJsonLd, faqJsonLd } from "../../lib/json-ld";
 import { slugifyTag } from "../../lib/taxonomy";
+import { pageTitle } from "../../lib/seo";
 
 export async function getStaticPaths() {
   const posts = await getCollection("blog");
@@ -134,7 +135,7 @@ const nextInSeries =
 ---
 
 <BaseLayout
-  title={`${post.data.title} — ${categoryName}`}
+  title={pageTitle(post.data.title, categoryName)}
   description={post.data.description}
   type="article"
   image={post.data.coverImage.src}

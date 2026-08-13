@@ -16,14 +16,22 @@ import { getLastVerifiedDate } from "../lib/last-verified";
 // page does — their real content is whichever posts they list — so their
 // lastmod is the most recent post date among what they show instead.
 //
-// /archive/ and the legal/about pages (contact, privacy, terms,
+// /archive/ and the legal pages (contact, privacy, terms,
 // affiliate-disclosure, editorial-policy) are deliberately absent — they
 // all carry <meta name="robots" content="noindex, follow"> (see the
 // `noindex` prop on their BaseLayout usage), and a sitemap should only
 // ever list URLs you actually want indexed. Listing a noindex URL here
 // is a known Search Console "Sitemap contains noindex" warning.
+//
+// /about/ is NOT in that noindex group (fixed 2026-08-13): every article's
+// Person JSON-LD (src/lib/json-ld.ts) names /about/ as the author's
+// canonical authority page, so telling Google not to index the exact page
+// that schema points at as the credential source was a direct
+// contradiction of the E-E-A-T signal the rest of the site builds. See
+// src/pages/about.astro.
 const STATIC_PATHS: { path: string; file: string }[] = [
   { path: "/", file: "src/pages/index.astro" },
+  { path: "/about/", file: "src/pages/about.astro" },
   { path: "/tools/", file: "src/pages/tools/index.astro" },
 ];
 

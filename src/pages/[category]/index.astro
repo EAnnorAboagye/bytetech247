@@ -3,7 +3,8 @@ import { getCollection } from "astro:content";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import Grid from "../../components/layout/Grid.astro";
 import PostCard from "../../components/PostCard.astro";
-import { CATEGORIES, getCategoryName } from "../../config";
+import { CATEGORIES, getCategoryName, siteConfig } from "../../config";
+import { collectionPageJsonLd, breadcrumbJsonLd } from "../../lib/json-ld";
 
 export function getStaticPaths() {
   return CATEGORIES.map((category) => ({
@@ -13,15 +14,30 @@ export function getStaticPaths() {
 
 const { category } = Astro.params;
 const categoryName = getCategoryName(category);
+const description = `All ${categoryName} posts.`;
 
 const posts = (
   await getCollection("blog", (post) => post.data.category === category)
 ).sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+
+// Same "visible and structured data agree" principle the article template
+// follows (build-spec.md §10) — this page previously emitted only the
+// sitewide WebSite/Organization blocks from BaseLayout, nothing describing
+// the archive itself.
+const pageUrl = new URL(Astro.url.pathname, siteConfig.url).href;
+const jsonLdBlocks = [
+  collectionPageJsonLd({ name: categoryName, description, url: pageUrl }),
+  breadcrumbJsonLd([
+    { name: "Home", url: siteConfig.url },
+    { name: categoryName, url: pageUrl },
+  ]),
+];
 ---
 
 <BaseLayout
   title={`${categoryName} — Archive`}
-  description={`All ${categoryName} posts.`}
+  description={description}
+  jsonLd={jsonLdBlocks}
 >
   <p><a href="/" class="home-link">Home</a></p>
   <h1>{categoryName}</h1>

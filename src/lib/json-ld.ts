@@ -198,6 +198,28 @@ export function webApplicationJsonLd(opts: {
   };
 }
 
+/**
+ * CollectionPage block for a page whose content is a listing of posts
+ * rather than a single article — category archives (/dev-tools/) and tag
+ * archives (/tag/docker/). Paired with breadcrumbJsonLd() the same way
+ * every article page pairs Article + BreadcrumbList, so archive pages
+ * stop being the one template with only the sitewide WebSite/Organization
+ * blocks and nothing describing the page itself.
+ */
+export function collectionPageJsonLd(opts: {
+  name: string;
+  description: string;
+  url: string;
+}): JsonLdObject {
+  return {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    name: opts.name,
+    description: opts.description,
+    url: opts.url,
+  };
+}
+
 export function breadcrumbJsonLd(
   items: { name: string; url: string }[],
 ): JsonLdObject {

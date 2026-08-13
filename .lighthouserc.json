@@ -5,13 +5,16 @@
       "url": [
         "http://localhost/index.html",
         "http://localhost/dev-tools/index.html",
-        "http://localhost/dev-tools/git-worktrees-parallel-feature-development/index.html"
+        "http://localhost/dev-tools/git-worktrees-parallel-feature-development/index.html",
+        "http://localhost/ai-productivity/gpt-5-6-context-window-922k-tokens/index.html",
+        "http://localhost/tag/tokens/index.html",
+        "http://localhost/tools/ai-token-counter/index.html"
       ],
       "numberOfRuns": 3
     },
     "assert": {
       "assertions": {
-        "categories:performance": ["warn", { "minScore": 0.8 }],
+        "categories:performance": ["error", { "minScore": 0.8 }],
         "largest-contentful-paint": ["error", { "maxNumericValue": 3000 }],
         "cumulative-layout-shift": ["error", { "maxNumericValue": 0.1 }],
         "total-blocking-time": ["warn", { "maxNumericValue": 300 }]
