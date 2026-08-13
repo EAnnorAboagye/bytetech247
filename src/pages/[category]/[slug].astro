@@ -689,6 +689,30 @@ const nextInSeries =
     margin: 0 0 1.25em;
   }
 
+  /* Tailwind's Preflight resets <a> to color: inherit / text-decoration:
+     inherit, so every citation and internal link in the rendered MDX body
+     previously matched the surrounding paragraph color exactly, with no
+     underline — including every external citation added across the site's
+     own content pass, confirmed live as genuinely unstyled before this
+     rule existed anywhere outside @media print. Underline plus the site's
+     own accent color, not color alone, since color by itself isn't a
+     reliable enough signal (WCAG 1.4.1 "Use of Color") — this also
+     directly serves this site's own citation/E-E-A-T discipline: a source
+     link that doesn't visually read as a link doesn't get clicked or
+     verified.
+     :not(.astro-code a) excludes anything inside a rendered code block —
+     a URL appearing inside a fenced example is code content, not a real
+     citation to follow, and shouldn't be styled like one. */
+  .article-content :global(a):not(.astro-code a) {
+    color: var(--color-accent);
+    text-decoration: underline;
+    text-underline-offset: 0.15em;
+  }
+
+  .article-content :global(a):not(.astro-code a):hover {
+    text-decoration-thickness: 2px;
+  }
+
   .article-content :global(h2) {
     margin: 2.5em 0 1em;
   }

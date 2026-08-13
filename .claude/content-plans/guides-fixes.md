@@ -256,3 +256,112 @@ Research window note: most sources below fall inside the strict last-90-days win
 ### Pillar 2 status summary (2026-08-05, updated)
 
 10/10 cluster slots filled and **all 10 written**. Drafted in sequence 11-20 in a single session after user approval. All pairs the plan called out as siblings were interlinked bidirectionally after both posts existed: Cluster 11 ↔ 18 (default-behavior changes in the same build step), Cluster 16 ↔ 19 (the renamed key and its most common contents), Cluster 14 ↔ 20 (CJS/ESM boundary, import side vs. require side). Two corrections made during drafting, not assumed from the plan: Cluster 13's claim that the crash is "unchanged" on current Astro was checked directly against this repo's own `node_modules/astro/dist/toolbar/vite-plugin-dev-toolbar.js` and turned out to be wrong — the current 7.1.3 dev-toolbar plugin no longer sets `optimizeDeps.esbuildOptions.plugins` at all, so the post was rewritten to say so honestly rather than overclaim a still-live bug. Cluster 20's fix section avoided inventing exact usage syntax for Rolldown's `esmExternalRequirePlugin` (not independently verified) in favor of two confirmed-correct alternatives (don't externalize, or use Node's own `createRequire`), with the plugin mentioned as a third option to verify independently. This pillar is now complete; a future `pillar-cluster` run for `guides-fixes` should research a new (third) pillar rather than add more slots here.
+
+# Pillar 3 — researched 2026-08-13, via content-planner discovery
+
+Sourced through the new `content-planner` skill's 2026-08-13 keyword-discovery run (see `.claude/content-plans/discovered-keywords.md`), not a user-named topic — the first pillar in this file to originate that way.
+
+## Pillar 3
+
+**Vitest 5.0 Beta: Breaking Changes and Migration Fixes**
+
+- Status: approved
+- Slug: -
+- Why pillar: This repo's own `vitest.config.ts` is pinned to `^3.0.0` — direct first-person dogfooding material once/if this repo upgrades. 33 documented breaking changes in the official migration guide give real structural depth (10 non-overlapping clusters below, not a stretch). **Caveat, surfaced to and accepted by the user before approval**: Vitest 5.0 is still in beta (latest at research time: v5.0.0-beta.7, 2026-07-24), not a stable release — a real tension against this skill's own "affects most people on the current version" bar, since beta adopters are a minority of the ecosystem right now. Approved to proceed anyway given the strength of the material and site precedent for pre-release coverage elsewhere (e.g. Claude's Fast Mode research preview).
+- Hub article: **Yes** — user approved a standalone hub, matching the pattern already live for `ai-productivity`, `data-automation`, and `dev-tools`. Correction made to the user in the same turn: the _Astro 7 Upgrade_ pillar referenced as the model does **not** actually have a hub article itself (confirmed via this site's own earlier content-system audit — neither of this category's first two pillars does). This is genuinely the first `guides-fixes` pillar with one, not a copy of an existing `guides-fixes` pattern.
+
+## Clusters (Pillar 3)
+
+### 21. Fix Vitest 5 vi.mock Top-Level Scope Error
+
+- Status: approved
+- Slug: -
+- Search Intent / Signal: [confirmed, verbatim] Official migration guide: an error is thrown "was defined outside of the module's top level scope" when `vi.mock()`/`vi.unmock()`/`vi.hoisted()` is called inside a function or describe/test block instead of at module top level.
+- Structural Problem: These calls are hoisted to the top of the file at parse time regardless of where they're physically written in the source. Vitest 4 only warned when the call site didn't match that hoisted execution order; Vitest 5 throws, since silent hoisting-order mismatches were a real source of confusing bugs.
+- Source: [Migration Guide | Vitest](https://main.vitest.dev/guide/migration), "Hoisted Mocking Calls Must Be at Top Level" section, continuously maintained; corroborated as in-window by v5.0.0-beta.7 (2026-07-24).
+- Interlinks: none yet — first cluster in this pillar.
+
+### 22. Fix Vitest 5 clearMocks Breaking Mock State
+
+- Status: approved
+- Slug: -
+- Search Intent / Signal: [paraphrased] Described behavior change, no single literal error string since this is a silent default-behavior shift, not a thrown error: mock call counts unexpectedly reset between tests after upgrading.
+- Structural Problem: `clearMocks` now defaults to `true`, so `vi.clearAllMocks()` runs automatically before every test. Any suite that (even accidentally) relied on mock call state persisting across tests — the old default — silently gets a clean slate each test now, which can flip assertions that counted cumulative calls.
+- Source: [Migration Guide | Vitest](https://main.vitest.dev/guide/migration), "clearMocks Enabled by Default" section; corroborated by [vitest-dev/vitest discussion #3012](https://github.com/vitest-dev/vitest/discussions/3012) and [issue #872](https://github.com/vitest-dev/vitest/issues/872) (clearMocks/vi.mock interaction).
+- Interlinks: none yet.
+
+### 23. Fix Vitest 5 test.sequential Removed Error
+
+- Status: approved
+- Slug: -
+- Search Intent / Signal: [paraphrased] Guide states the removal plainly; exact runtime error text for calling a removed API not independently verified across versions.
+- Structural Problem: `test.sequential`, `describe.sequential`, and the `sequential` option are removed outright, not deprecated-with-warning, since `concurrent` and `sequential` were direct negations of each other. `{ concurrent: false }` is the only path forward.
+- Source: [Migration Guide | Vitest](https://main.vitest.dev/guide/migration), "sequential Options Removed" section; corroborated by [vitest-dev/vitest issue #10180](https://github.com/vitest-dev/vitest/issues/10180).
+- Interlinks: none yet.
+
+### 24. Fix Vitest 5 Config Not Found in Parent Directory
+
+- Status: approved
+- Slug: -
+- Search Intent / Signal: [paraphrased] Described workflow break: `vitest` works from the project root but fails to find config when run from a subdirectory after upgrading.
+- Structural Problem: Vitest 5 no longer searches parent directories for a config file. A monorepo or CI script invoking `vitest` from a nested working directory that relied on picking up a parent config now needs an explicit `--config` path.
+- Source: [Migration Guide | Vitest](https://main.vitest.dev/guide/migration), "Config Files Not Looked Up From Parent Directories" section, continuously maintained; corroborated as in-window by v5.0.0-beta.7 (2026-07-24).
+- Interlinks: none yet.
+
+### 25. Fix Vitest 5 bench No Longer Top-Level Export
+
+- Status: approved
+- Slug: -
+- Search Intent / Signal: [paraphrased] Guide describes the API removal; exact import-error text not independently verified.
+- Structural Problem: `bench()` is no longer a top-level export — benchmarks now run inside `test()` as a destructured context fixture. `benchmark.reporters`, `benchmark.outputFile`, `benchmark.compare`, and `benchmark.outputJson` config options are removed entirely, not renamed.
+- Source: [Migration Guide | Vitest](https://main.vitest.dev/guide/migration), "Benchmarking API Rewritten" section, continuously maintained; corroborated as in-window by v5.0.0-beta.7 (2026-07-24).
+- Interlinks: none yet.
+
+### 26. Fix Vitest 5 Unawaited Async Assertion Error
+
+- Status: approved
+- Slug: -
+- Search Intent / Signal: [paraphrased] Described new failure mode: a test that passed (with a warning) under Vitest 4 now fails outright.
+- Structural Problem: Vitest 4 silently auto-awaited async assertions at test end and printed a warning. Vitest 5 fails the test outright instead, surfacing a class of real bug (a forgotten `await` on an async matcher) that previously passed by accident.
+- Source: [Migration Guide | Vitest](https://main.vitest.dev/guide/migration), "Unawaited Async Assertions Fail Tests" section, continuously maintained; corroborated as in-window by v5.0.0-beta.7 (2026-07-24).
+- Interlinks: none yet.
+
+### 27. Fix Vitest 5 expect.poll Timeout Error
+
+- Status: approved
+- Slug: -
+- Search Intent / Signal: [confirmed, verbatim] Official migration guide: `expect.poll()` throws "expect.poll() function didn't resolve in time." when the callback or assertion doesn't settle within the timeout.
+- Structural Problem: Vitest 4 allowed a late-resolving `expect.poll()` callback or assertion to still succeed even after its deadline passed. Vitest 5 actively rejects on timeout instead, and the callback now receives an `AbortSignal` it can check.
+- Source: [Migration Guide | Vitest](https://main.vitest.dev/guide/migration), "expect.poll Fails on Timeout" section, continuously maintained; corroborated as in-window by v5.0.0-beta.7 (2026-07-24).
+- Interlinks: none yet.
+
+### 28. Fix Vitest 5 Cannot Find Module vitest/reporters
+
+- Status: approved
+- Slug: -
+- Search Intent / Signal: [paraphrased] Guide lists the removed entry points; exact module-resolution error text not independently verified across bundlers.
+- Structural Problem: Several subpath entry points (`vitest/coverage`, `vitest/reporters`, `vitest/environments`, `vitest/snapshot`, `vitest/runners`, `vitest/suite`, `vitest/mocker`, `vitest/internal/module-runner`) are removed outright. Any custom reporter or coverage config importing from these paths directly hits a hard resolution failure.
+- Source: [Migration Guide | Vitest](https://main.vitest.dev/guide/migration), "Package Deprecations and Removals" section, continuously maintained; corroborated as in-window by v5.0.0-beta.7 (2026-07-24).
+- Interlinks: none yet.
+
+### 29. Fix Vitest 5 toThrow('') Silently Passing Tests
+
+- Status: approved
+- Slug: -
+- Search Intent / Signal: [paraphrased] Described silent-correctness change — the most dangerous kind, since nothing errors and a test that should fail keeps passing.
+- Structural Problem: An empty string passed to `toThrow()` used to be special-cased to match only errors with an empty message. Vitest 5 treats it like any other substring match, and an empty string is trivially a substring of every string — so `toThrow('')` now matches any thrown error at all, silently.
+- Source: [Migration Guide | Vitest](https://main.vitest.dev/guide/migration), "toThrow(\"\") Matches Any Error Message" section, continuously maintained; corroborated as in-window by v5.0.0-beta.7 (2026-07-24).
+- Interlinks: none yet.
+
+### 30. Fix Vitest 5 Projects Not Inheriting Root Config
+
+- Status: approved
+- Slug: -
+- Search Intent / Signal: [paraphrased] Described config-inheritance behavior change: Vite plugins or `setupFiles` unexpectedly apply to (or stop applying to) an inline project after upgrading.
+- Structural Problem: Inline `test.projects` entries now inherit root config (plugins, `resolve.alias`, `setupFiles`) automatically via a new `extends` option, defaulting to `true`. A project deliberately relying on the old isolated-by-default behavior gets unexpected root config applied unless it explicitly sets `extends: false`.
+- Source: [Migration Guide | Vitest](https://main.vitest.dev/guide/migration), "Inline Projects Inherit Root Config by Default" section, continuously maintained; corroborated as in-window by v5.0.0-beta.7 (2026-07-24).
+- Interlinks: none yet.
+
+### Pillar 3 wiring
+
+Shared `series` value for the hub and all 10 clusters: **"Vitest 5.0 Beta: Breaking Changes and Migration Fixes"**. Hub gets `seriesOrder: 1`; clusters 21-30 above get `seriesOrder: 2` through `11` in that order — matching the site's own established convention where a hub exists (confirmed against the `ai-productivity` LLM-pricing pillar: hub = 1, clusters = 2-11), not the content-plan's own 21-30 bookkeeping numbers, which are a separate sitewide tracking sequence for this file only.

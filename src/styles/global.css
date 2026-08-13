@@ -481,6 +481,24 @@
     margin-top: 0.4em;
   }
 
+  /* Tailwind's Preflight resets <a> to color: inherit / text-decoration:
+     inherit, so a plain markdown/prose link on these pages previously
+     rendered in the same color as its surrounding text with no underline —
+     visually indistinguishable from non-clickable text. Confirmed live: no
+     rule anywhere in this codebase gave prose links a color outside of
+     @media print. Underline plus the site's own accent color, not color
+     alone, since color by itself isn't a reliable enough signal (WCAG 1.4.1
+     "Use of Color"). */
+  .legal a {
+    color: var(--color-accent);
+    text-decoration: underline;
+    text-underline-offset: 0.15em;
+  }
+
+  .legal a:hover {
+    text-decoration-thickness: 2px;
+  }
+
   .legal__updated {
     margin: 0 0 1.5em;
     font-size: var(--text-sm);
