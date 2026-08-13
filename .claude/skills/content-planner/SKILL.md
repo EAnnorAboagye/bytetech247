@@ -7,9 +7,11 @@ This is the stage that runs _before_ `pillar-cluster` — it answers "what shoul
 
 ## 1. Resolve inputs before searching
 
-- **Category scope** — default to scanning across all four (`dev-tools`, `data-automation`, `ai-productivity`, `guides-fixes`); the user can narrow to one or more. If category balance is known to be uneven (check `src/content/blog/*/index.mdx` frontmatter counts per category, or ask), weight the scan toward the thinner categories rather than splitting evenly by default — this site's own content-system audit found `dev-tools`/`data-automation` sitting at roughly half the volume of the other two.
-- **Keyword count** — minimum 1, maximum 5 per run. Never pad the shortlist to hit 5; a real 2-keyword shortlist beats a stretched 5-keyword one, the same discipline `pillar-cluster` §4 already applies to not stretching for a tenth cluster.
-- **Freshness window** — "fresh" means a real, dated source (an announcement, changelog entry, release, filed issue, or launch) from the last 60 _real_ calendar days, not the sandbox's system date. Check the actual publish/commit date on anything found, the same discipline `pillar-cluster` §1 already requires.
+**Defaults apply silently — don't ask the user to confirm these at the start of a run.** Only stop and ask if the user's own request already named a different number, window, or category scope for this specific run (e.g. "just find me 2" or "widen it to 90 days"); otherwise proceed straight to searching with the defaults below.
+
+- **Category scope** — default to scanning across all four (`dev-tools`, `data-automation`, `ai-productivity`, `guides-fixes`); the user can narrow to one or more. If category balance is known to be uneven (check `src/content/blog/*/index.mdx` frontmatter counts per category), weight the scan toward the thinner categories rather than splitting evenly by default — this site's own content-system audit found `dev-tools`/`data-automation` sitting at roughly half the volume of the other two.
+- **Keyword count** — default up to 5, minimum 1, per run. Never pad the shortlist to hit 5; a real 2-keyword shortlist beats a stretched 5-keyword one, the same discipline `pillar-cluster` §4 already applies to not stretching for a tenth cluster.
+- **Freshness window** — default 60 days. "Fresh" means a real, dated source (an announcement, changelog entry, release, filed issue, or launch) from the last N _real_ calendar days, not the sandbox's system date. Check the actual publish/commit date on anything found, the same discipline `pillar-cluster` §1 already requires.
 
 ## 2. Live search — broad-but-shallow, not `pillar-cluster`'s deep dive
 
