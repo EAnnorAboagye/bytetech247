@@ -80,7 +80,7 @@ Same rule as `write-article` step 2.8: only include questions a reader would gen
 
 ## 10. Cover image
 
-Follow `guides-fixes-article`'s anti-fabrication discipline: **do not use AI image generation for this category** — a fabricated-looking terminal capture or config screenshot undermines trust in a post whose whole premise is a verified comparison.
+Follow `guides-fixes-article`'s anti-fabrication discipline: **never use AI image generation to depict a terminal capture or config screenshot for this category** — a fabricated-looking terminal capture or config screenshot undermines trust in a post whose whole premise is a verified comparison. `write-article` §3's abstract-illustration option (only when Pexels has no genuine fit) is still available for a genuinely conceptual post here, same constraints as there — it stays strictly non-representational, never a stand-in for a real captured terminal/config state.
 
 - When the post centers on a single tool's CLI output (a config walkthrough, a single command sequence): generate deterministically from real captured data with `scripts/make-terminal-cover.mjs`, same as `guides-fixes-article` step 11 — `text` must be real, verified output, never invented.
 - When the post centers on the Structural Comparison Matrix itself (a genuine tool-vs-tool piece with no single dominant terminal flow): hand-build an SVG using the same brand palette (`INK #0B120F`, `SIGNAL #14957F`, `TRACE #6B7D77`, `PAPER #F4F2ED`, `ERROR_RED #E5484D`, 1600x900, rendered via `@resvg/resvg-js`) showing the real comparison categories from the post's own table, not invented ones. Don't build a dedicated comparison-table cover script until a second dev-tools post actually needs this shape — one post doesn't justify a new committed script yet.
@@ -114,7 +114,7 @@ Run `write-article`'s full checklist first, then check these on top:
 - [ ] 2-4 internal links include the `/dev-tools` category index and any pillar-cluster interlink target.
 - [ ] `src/content/blog` was checked for real topic collisions before finalizing — not assumed clear.
 - [ ] FAQ was genuinely considered, added only if real distinct questions exist.
-- [ ] Cover image is generated from real captured data (terminal script) or a hand-built SVG using the documented palette and the post's real comparison data — never AI-generated, never invented text/numbers.
+- [ ] Cover image is generated from real captured data (terminal script) or a hand-built SVG using the documented palette and the post's real comparison data — or, only if Pexels had no genuine fit, a generated abstract illustration checked for garbled pseudo-text. Never a generated image standing in for a real captured artifact, never invented text/numbers.
 - [ ] Cover image was compared against sibling/interlinked posts' actual images to rule out a near-duplicate layout.
 - [ ] `.claude/content-plans/dev-tools.md` (if it exists) has this entry flipped to `written` with the real slug filled in.
 - [ ] Tone reads as direct imperative, not hedged suggestion.

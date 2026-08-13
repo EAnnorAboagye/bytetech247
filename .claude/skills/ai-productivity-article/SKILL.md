@@ -73,7 +73,7 @@ Same rule as `write-article` step 2.8: only include questions a reader would gen
 
 ## 10. Cover image
 
-Follow the same anti-fabrication discipline as the other two categories: **do not use AI image generation for this category**, which is a genuinely awkward double standard to violate given the topic. A fabricated-looking terminal/API-response screenshot undermines trust in a post whose whole premise is a verified capability or schema change.
+Follow the same anti-fabrication discipline as the other two categories: **never use AI image generation to depict a terminal, API response, or schema screenshot for this category**, which would be a genuinely awkward double standard to violate given the topic. A fabricated-looking terminal/API-response screenshot undermines trust in a post whose whole premise is a verified capability or schema change. `write-article` §3's abstract-illustration option (only when Pexels has no genuine fit) is still available for a genuinely conceptual post here, same constraints as there — it stays strictly non-representational, never a stand-in for a real captured response.
 
 - When the post centers on a real API request/response or terminal output, generate deterministically from real captured or documented data with `scripts/make-terminal-cover.mjs`, same as the other two categories — `text` must be real, verified content, never invented.
 - When the post centers on the Structural Comparison Matrix itself with no single dominant terminal/payload artifact, hand-build an SVG using the same brand palette (`INK #0B120F`, `SIGNAL #14957F`, `TRACE #6B7D77`, `PAPER #F4F2ED`, `ERROR_RED #E5484D`, 1600x900, rendered via `@resvg/resvg-js`) showing the real comparison categories from the post's own table.
@@ -109,7 +109,7 @@ Run `write-article`'s full checklist first, then check these on top:
 - [ ] 2-4 internal links include the `/ai-productivity` category index and any pillar-cluster interlink target.
 - [ ] `src/content/blog` was checked for real topic collisions before finalizing, not assumed clear.
 - [ ] FAQ was genuinely considered, added only if real distinct questions exist.
-- [ ] Cover image is generated from real captured/documented data (terminal script) or a hand-built SVG using the documented palette and the post's real comparison data, never AI-generated, never invented text/numbers.
+- [ ] Cover image is generated from real captured/documented data (terminal script) or a hand-built SVG using the documented palette and the post's real comparison data — or, only if Pexels had no genuine fit, a generated abstract illustration checked for garbled pseudo-text — never a generated image standing in for a real captured artifact, never invented text/numbers.
 - [ ] Cover image was compared against sibling/interlinked posts' actual images to rule out a near-duplicate layout.
 - [ ] `.claude/content-plans/ai-productivity.md` (if it exists) has this entry flipped to `written` with the real slug filled in.
 - [ ] Tone reads as direct and operational, no marketing language about AI capabilities.

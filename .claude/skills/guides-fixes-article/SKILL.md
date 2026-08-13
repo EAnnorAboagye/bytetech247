@@ -80,7 +80,7 @@ Bug-fix posts are the category most likely to have genuinely distinct follow-ups
 
 `write-article`'s own cover-image guidance already says guides-fixes is the category _least_ likely to genuinely qualify for a Pexels stock photo. For this category specifically: default to a real screenshot of the actual error (terminal output, browser console, or the before/after diff itself) — a generic stock photo on a post about one specific error reads as filler and gives a reader nothing to visually confirm they've found the right fix. Follow `write-article`'s Pexels workflow (search, present candidates, wait for approval) only if the topic is genuinely conceptual enough that no real screenshot applies.
 
-**Do not use AI image generation for this category.** An AI-generated "screenshot" of a terminal or UI can look plausible while showing fabricated error text, version numbers, or code — actively misleading for a category whose whole premise is a verified, reproduced error. A reader who spots a fake-looking screenshot loses trust in the post's claims too, which is a worse outcome than a plain stock photo would ever cause.
+**Never use AI image generation to depict a screenshot, terminal, or UI for this category.** An AI-generated "screenshot" of a terminal or UI can look plausible while showing fabricated error text, version numbers, or code — actively misleading for a category whose whole premise is a verified, reproduced error. A reader who spots a fake-looking screenshot loses trust in the post's claims too, which is a worse outcome than a plain stock photo would ever cause. This is near-total in practice for guides-fixes specifically, since real screenshots almost always apply here; on the rare post genuinely conceptual enough that no screenshot applies at all (see `write-article` §3), its abstract-illustration option is available, same constraints as there — never a substitute for a real captured error.
 
 **Generate the cover deterministically from real captured data instead**, with `scripts/make-terminal-cover.mjs` (committed, reusable — not a one-off scratch script):
 
@@ -117,7 +117,7 @@ Run `write-article`'s full checklist first, then check these on top:
 - [ ] 1-3 external citations link the actual primary source inline.
 - [ ] 2-4 internal links include the category/tag index and any pillar-cluster interlink target, not just sibling posts.
 - [ ] FAQ was genuinely considered, not defaulted to skipped — added only if real distinct questions exist.
-- [ ] Cover image is generated from real captured data (via `scripts/make-terminal-cover.mjs` or a hand-built SVG using the documented palette), or an approved Pexels photo only if the topic is genuinely conceptual — never AI-generated, never text/data invented for the image.
+- [ ] Cover image is generated from real captured data (via `scripts/make-terminal-cover.mjs` or a hand-built SVG using the documented palette), or an approved Pexels photo only if the topic is genuinely conceptual — or, only if Pexels had no genuine fit, a generated abstract illustration checked for garbled pseudo-text. Never a generated image standing in for a real screenshot, never text/data invented for the image.
 - [ ] Cover image was compared against sibling/interlinked posts' actual images, not just their alt text, to rule out a near-duplicate layout.
 - [ ] `.claude/content-plans/guides-fixes.md` (if it exists) has this entry flipped to `written` with the real slug filled in.
 - [ ] Tone reads as direct imperative, not hedged suggestion.

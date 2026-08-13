@@ -9,3 +9,15 @@
 # static assets, not fetched at build or request time). Free key from
 # https://www.pexels.com/api/.
 PEXELS_API_KEY=your-pexels-api-key-here
+
+# Cloudflare Workers AI credentials for scripts/generate-conceptual-cover.mjs
+# (write-article skill's AI-generated-cover fallback, used only when no
+# Pexels photo is a genuine fit for a conceptual post — see write-article
+# §3). A separate concern from the CLOUDFLARE_API_TOKEN GitHub Actions
+# secret that deploys the Worker: this one is used locally, at authoring
+# time, to call the Workers AI REST API directly, never shipped to the
+# deployed Worker. Needs the "Workers AI" permission (Read is sufficient
+# for inference). Account ID is on any zone's Overview page in the
+# Cloudflare dashboard.
+CLOUDFLARE_API_TOKEN=your-cloudflare-api-token-here
+CLOUDFLARE_ACCOUNT_ID=your-cloudflare-account-id-here
