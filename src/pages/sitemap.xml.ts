@@ -43,8 +43,24 @@ export const GET: APIRoute = async () => {
       ? null
       : new Date(Math.max(...candidates.map((d) => d.getTime())));
 
-  const allPostDates = posts.map((post) => post.data.date);
-  const homepageLastmod = maxDate(allPostDates);
+  // Real lastmod per post, from the file's own git history — not the
+  // frontmatter `date` field, which is set once at drafting time and never
+  // bumped when a post is later edited. Confirmed live (2026-08-13): two
+  // posts corrected for factual errors that same day still carried their
+  // original `date` values (one a day stale, one a week stale), so the
+  // sitemap was misreporting lastmod to Google by up to 7 days. Falls back
+  // to `date` only if git history is unavailable (a freshly added,
+  // uncommitted post), matching this file's existing null-safety pattern
+  // rather than dropping the tag for a post that's clearly not stale.
+  const postLastmod = new Map(
+    posts.map((post) => [
+      post.id,
+      getLastVerifiedDate(`src/content/blog/${post.id}/index.mdx`) ??
+        post.data.date,
+    ]),
+  );
+
+  const homepageLastmod = maxDate([...postLastmod.values()]);
 
   const entries = [
     ...STATIC_PATHS.map(({ path, file }) => {
@@ -59,7 +75,7 @@ export const GET: APIRoute = async () => {
       const lastmod = maxDate(
         posts
           .filter((post) => post.data.category === category.slug)
-          .map((post) => post.data.date),
+          .map((post) => postLastmod.get(post.id)!),
       );
       return {
         loc: `${siteConfig.url}/${category.slug}/`,
@@ -74,7 +90,7 @@ export const GET: APIRoute = async () => {
     })),
     ...posts.map((post) => ({
       loc: postUrl(post),
-      lastmod: post.data.date.toISOString(),
+      lastmod: postLastmod.get(post.id)!.toISOString(),
     })),
   ];
 
