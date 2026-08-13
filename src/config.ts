@@ -121,7 +121,7 @@ export const siteConfig = {
   // <head> for every visitor (no consent gate, as of 2026-08-04) — see
   // privacy.astro's "What this site collects today" section, which this
   // ID must stay consistent with.
-  analyticsId: "G-QRNX9JBMX4",
+  analyticsId: "G-QCK9SYFM29",
 
   // Cloudflare Web Analytics beacon token (dash.cloudflare.com > Web
   // Analytics > this site > Manage Site) — not a secret, same reasoning
