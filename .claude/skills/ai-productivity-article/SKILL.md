@@ -1,9 +1,9 @@
 ---
 name: ai-productivity-article
-description: Apply the AI Productivity SEO/AEO/GEO blueprint (model/tool-use/prompting keyword targeting, Quick Answer block, Structural Comparison Matrix, hands-on model-call/tool-schema/agent-config scope requirement, verbatim capability/schema sourcing, citations, internal linking, FAQ, 90-100 Flesch readability, human dashes only) when drafting a post in the ai-productivity category. Use together with write-article — write-article covers general structure/tone/checklist, this skill layers the category-specific model/agent/prompting format on top. Only applies when the post's category is ai-productivity.
+description: Apply the AI Productivity SEO/AEO/GEO blueprint (model/tool-use/prompting keyword targeting, Quick Answer block, Structural Comparison Matrix, hands-on model-call/tool-schema/agent-config scope requirement, verbatim capability/schema sourcing, citations, internal linking, FAQ, natural non-generated sentence rhythm, human dashes only) when drafting a post in the ai-productivity category. Use together with write-article — write-article covers general structure/tone/checklist, this skill layers the category-specific model/agent/prompting format on top. Only applies when the post's category is ai-productivity.
 ---
 
-This is an addendum to `write-article`, not a replacement — run both. `write-article` covers title/description caps, banned phrases, cover image sourcing, and the general checklist (which now also carries the site-wide Flesch/dash/E-E-A-T rules this category inherits). This skill covers what's specific to `ai-productivity`: a reader integrating a model API, building agent tooling, or configuring an AI coding assistant, who needs to know what changed and exactly what to update, not a concept explainer or a "future of AI" think piece.
+This is an addendum to `write-article`, not a replacement — run both. `write-article` covers title/description caps, banned phrases, cover image sourcing, and the general checklist (which now also carries the site-wide sentence-discipline/dash/E-E-A-T rules this category inherits). This skill covers what's specific to `ai-productivity`: a reader integrating a model API, building agent tooling, or configuring an AI coding assistant, who needs to know what changed and exactly what to update, not a concept explainer or a "future of AI" think piece.
 
 ## 1. Scope check
 
@@ -89,7 +89,7 @@ Kept from `pillar-cluster`'s general methodology, adapted for this category:
 
 ## 12. House style
 
-Inherits `write-article`'s base rules on readability (Flesch 90-100), dashes (hyphens only, no em dash), and E-E-A-T (see that skill's sections 4 and 6). Nothing category-specific to add on top of those, beyond:
+Inherits `write-article`'s base rules on sentence/paragraph discipline, dashes (hyphens only, no em dash), the grammar/originality discipline gate, and E-E-A-T (see that skill's sections 4, 6, and 7). Nothing category-specific to add on top of those, beyond:
 
 - **Tone: direct and operational, not hedged or hyped.** Write "Add the `cache_control` block to the system prompt," not "You might want to consider exploring prompt caching." Avoid marketing language about AI capabilities entirely; this is a technical audience integrating with an API, not an audience being sold on AI.
 

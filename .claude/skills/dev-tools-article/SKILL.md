@@ -1,6 +1,6 @@
 ---
 name: dev-tools-article
-description: Apply the Dev Tools SEO/AEO/GEO blueprint (tool/workflow keyword targeting, Quick Answer recommendation block, Structural Comparison Matrix, terminal/CLI-required scope, verbatim config/flag sourcing, citations, internal linking, FAQ, 90-100 Flesch readability, human dashes only) when drafting a post in the dev-tools category. Use together with write-article — write-article covers general structure/tone/checklist, this skill layers the category-specific tool-comparison/configuration format on top. Only applies when the post's category is dev-tools.
+description: Apply the Dev Tools SEO/AEO/GEO blueprint (tool/workflow keyword targeting, Quick Answer recommendation block, Structural Comparison Matrix, terminal/CLI-required scope, verbatim config/flag sourcing, citations, internal linking, FAQ, natural non-generated sentence rhythm, human dashes only) when drafting a post in the dev-tools category. Use together with write-article — write-article covers general structure/tone/checklist, this skill layers the category-specific tool-comparison/configuration format on top. Only applies when the post's category is dev-tools.
 ---
 
 This is an addendum to `write-article`, not a replacement — run both. `write-article` covers title/description caps, banned phrases, cover image sourcing, and the general checklist. This skill covers what's specific to `dev-tools`: a reader mid-terminal-session deciding between two tools or workflows, or trying to get one configured correctly, not chasing a pasted error string the way `guides-fixes` readers are.
@@ -96,7 +96,7 @@ Kept from `pillar-cluster`'s general methodology, adapted for this category:
 
 ## 12. House style (inherited from write-article, tone from guides-fixes-article)
 
-- Inherits `write-article`'s base rules on readability (Flesch Reading Ease 90-100) and dashes (hyphens only, no em dash — see that skill's section 4) — nothing category-specific to add on top of those.
+- Inherits `write-article`'s base rules on sentence/paragraph discipline, dashes (hyphens only, no em dash — see that skill's section 4), and the grammar/originality discipline gate (section 7) — nothing category-specific to add on top of those.
 - **Tone: direct imperative, not hedged suggestion.** Write "Use worktrees when you need two branches checked out at once," not "You might want to consider worktrees in some cases."
 
 ## 13. Before calling a dev-tools draft done

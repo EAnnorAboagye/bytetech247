@@ -1,9 +1,9 @@
 ---
 name: data-automation-article
-description: Apply the Data Automation SEO/AEO/GEO blueprint (pipeline/API/webhook keyword targeting, Quick Answer block, Structural Comparison Matrix, hands-on pipeline/API/automation-script scope requirement, verbatim payload/error sourcing, citations, internal linking, FAQ, 90-100 Flesch readability, human dashes only) when drafting a post in the data-automation category. Use together with write-article — write-article covers general structure/tone/checklist, this skill layers the category-specific pipeline/API/automation format on top. Only applies when the post's category is data-automation.
+description: Apply the Data Automation SEO/AEO/GEO blueprint (pipeline/API/webhook keyword targeting, Quick Answer block, Structural Comparison Matrix, hands-on pipeline/API/automation-script scope requirement, verbatim payload/error sourcing, citations, internal linking, FAQ, natural non-generated sentence rhythm, human dashes only) when drafting a post in the data-automation category. Use together with write-article — write-article covers general structure/tone/checklist, this skill layers the category-specific pipeline/API/automation format on top. Only applies when the post's category is data-automation.
 ---
 
-This is an addendum to `write-article`, not a replacement — run both. `write-article` covers title/description caps, banned phrases, cover image sourcing, and the general checklist (which now also carries the site-wide Flesch/dash/E-E-A-T rules this category inherits). This skill covers what's specific to `data-automation`: a reader building or maintaining a pipeline, API integration, webhook handler, or scheduled automation job, who needs to know what changed and exactly what to update, not a concept explainer.
+This is an addendum to `write-article`, not a replacement — run both. `write-article` covers title/description caps, banned phrases, cover image sourcing, and the general checklist (which now also carries the site-wide sentence-discipline/dash/E-E-A-T rules this category inherits). This skill covers what's specific to `data-automation`: a reader building or maintaining a pipeline, API integration, webhook handler, or scheduled automation job, who needs to know what changed and exactly what to update, not a concept explainer.
 
 ## 1. Scope check
 
@@ -89,7 +89,7 @@ Kept from `pillar-cluster`'s general methodology, adapted for this category:
 
 ## 12. House style
 
-Inherits `write-article`'s base rules on readability (Flesch 90-100), dashes (hyphens only, no em dash), and E-E-A-T (see that skill's sections 4 and 6). Nothing category-specific to add on top of those, beyond:
+Inherits `write-article`'s base rules on sentence/paragraph discipline, dashes (hyphens only, no em dash), the grammar/originality discipline gate, and E-E-A-T (see that skill's sections 4, 6, and 7). Nothing category-specific to add on top of those, beyond:
 
 - **Tone: direct and operational, not hedged.** Write "Add the `apiVersion` field to every outgoing webhook handler," not "You might want to consider updating your webhook handler." Save nuance and trade-offs for the closing paragraph (`write-article` step 2.9), not the fix itself.
 

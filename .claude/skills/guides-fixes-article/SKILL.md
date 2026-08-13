@@ -1,6 +1,6 @@
 ---
 name: guides-fixes-article
-description: Apply the Guides & Fixes SEO/AEO/GEO blueprint (keyword targeting, Quick Answer block, verbatim error sourcing, citations, internal linking, FAQ, Before/After code windows, 90-100 Flesch readability, human dashes only) when drafting a post in the guides-fixes category. Use together with write-article — write-article covers general structure/tone/checklist, this skill layers the category-specific transactional-bug-fix format on top. Only applies when the post's category is guides-fixes.
+description: Apply the Guides & Fixes SEO/AEO/GEO blueprint (keyword targeting, Quick Answer block, verbatim error sourcing, citations, internal linking, FAQ, Before/After code windows, natural non-generated sentence rhythm, human dashes only) when drafting a post in the guides-fixes category. Use together with write-article — write-article covers general structure/tone/checklist, this skill layers the category-specific transactional-bug-fix format on top. Only applies when the post's category is guides-fixes.
 ---
 
 This is an addendum to `write-article`, not a replacement — run both. `write-article` covers title/description caps, banned phrases, cover image sourcing, and the general checklist. This skill covers what's specific to `guides-fixes`: a reader who pasted an exact error into a search bar and needs the fix fast, not a concept explainer.
@@ -98,7 +98,7 @@ This fits when the error is genuinely console/terminal output. When the bug is a
 
 ## 12. House style (this project's additions)
 
-- Inherits `write-article`'s base rules on readability (Flesch Reading Ease 90-100) and dashes (hyphens only, no em dash — see that skill's section 4) — nothing category-specific to add on top of those.
+- Inherits `write-article`'s base rules on sentence/paragraph discipline, dashes (hyphens only, no em dash — see that skill's section 4), and the grammar/originality discipline gate (section 7) — nothing category-specific to add on top of those.
 - **Tone: direct imperative, not hedged suggestion.** A reader here has a broken build, not idle curiosity. Write "Add the array guard before the `.map()` call," not "You might consider adding a guard clause." Save nuance and trade-offs for the closing paragraph (`write-article` step 2.9), not the fix itself.
 
 ## 13. Before calling a guides-fixes draft done

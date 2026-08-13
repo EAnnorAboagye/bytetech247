@@ -55,13 +55,14 @@ When a Pexels photo is the right call:
 
 ## 4. Sentence and paragraph rules
 
-- **Grade-5 applies to sentence structure, not vocabulary.** Short sentences, active voice, one idea per sentence. Keep precise technical terms this audience needs (`worktree`, `HSTS`, `debounce`) — explain on first use instead of replacing them with a vaguer word. Simplifying the terms a developer actually needs to know reads as condescending, not clear.
+No numeric readability-score target here on purpose — a fixed grade-level/Flesch target was tried and dropped. It's structurally incompatible with keeping the precise technical terms this audience needs (`worktree`, `HSTS`, `debounce`), and real published posts on this site measured 35+ points under a 90-100 target every single time it was checked, regardless of how well-written the post actually was. Clarity is the goal; a score chasing an arbitrary number isn't.
+
+- **Short sentences, active voice, one idea per sentence** — as a structural habit, not a vocabulary-simplification exercise. Keep the precise technical terms this audience needs, and explain them on first use instead of swapping in a vaguer word. Simplifying the terms a developer actually needs to know reads as condescending, not clear.
 - **Vary sentence length on purpose.** A run of same-length sentences is the most reliable statistical fingerprint of generated text. Mix a short, blunt sentence next to a longer one that carries a dependent clause.
 - **Paragraphs stay short**: 2-4 sentences, one point each. If a paragraph is doing two jobs, split it.
 - **Specificity over generalization, always.** Replace "this can significantly improve performance" with the actual number you measured, or cut the claim.
 - **No repetition of the same point in different words** to pad length. Say it once, well, and move to the next point.
 - **Do not force a keyword into a sentence where it doesn't fit naturally.** The related-terms list from step 1 should already cover the topic without repetition — if you're rereading a sentence and it feels inserted, it was.
-- **Readability target: Flesch Reading Ease 90-100** ("very easy," roughly 5th-grade level) — the numeric version of this section's grade-5 rule above. Short sentences (~15-20 words average), common everyday words, active voice, one idea per sentence, while still keeping the precise technical terms the topic needs. If a score is wanted on a specific draft, say so and it can be computed from the actual sentence/word/syllable counts rather than eyeballed.
 - **Human dashes only. No em dash (`—`) anywhere in article prose** — use a hyphen (`-`), a comma, or split into two sentences instead. This applies to every category, not just one: an em dash used as a default transition is one of the most reliable tells of generated text (see the banned-patterns list below). Exception: a real, verbatim quoted string (an error message, a log line, a flag's exact name) that itself contains an em dash — preserve it exactly, never rewrite a quote to satisfy a style rule.
 
 ## 5. Banned phrases and patterns
@@ -87,7 +88,16 @@ Google's ranking guidance evaluates Experience, Expertise, Authoritativeness, an
 - **Authoritativeness** — the 1-3 external citations (step 2.7) link the primary source (official docs, the actual issue or changelog, the standard itself), not a secondary blog restating it. Citing a primary source is what signals authority; citing a summary of a summary erodes it.
 - **Trustworthiness** — every factual claim is verified, not guessed. If a claim can't be verified, either verify it before publishing or state the uncertainty honestly ("unconfirmed whether this affects v6" beats a confident-sounding guess). A wrong claim stated confidently damages trust more than an honest "not verified yet."
 
-## 7. Before calling a draft done, check every one of these
+## 7. Discipline gate — grammar and originality checks
+
+Two automated checks, both run against the drafted MDX file before the checklist in section 8 counts as complete. Neither is a build-time guard (both need network access — LanguageTool's API, and fetching the post's own cited pages), so run them manually during drafting, the same way `scripts/generate-conceptual-cover.mjs` already is:
+
+1. **Grammar/style**: `node scripts/check-grammar.mjs <post-folder>/index.mdx`. Reports every match LanguageTool finds — it does not auto-fix and does not mean the draft is rejected on any hit. Grammar tools have a real false-positive rate on technical writing (an unrecognized compound term like "worktree," a deliberate sentence fragment in a Quick Answer block). Read every match; fix the real ones, dismiss the rest with judgment, don't skip running it because "it'll just flag jargon."
+2. **Originality**: `node scripts/check-originality.mjs <post-folder>/index.mdx`. Flags any run of 8+ words shared verbatim between the draft's own prose and the pages it cites — this site drafts from primary sources by design, so the real risk is prose that ends up too close to the source's own sentence structure while summarizing it, not broad web plagiarism. A real hit needs rewording, or moving into an explicit blockquote as an intentional quote (verbatim error strings and changelog quotes are supposed to be verbatim — that's excluded from the check already, so a hit outside a blockquote is a real one to fix).
+
+Neither script requires an API key for its default free tier. If a script can't reach its API (network issue, rate limit), say so explicitly rather than silently skipping the check and calling the draft done anyway.
+
+## 8. Before calling a draft done, check every one of these
 
 - [ ] Title is 60 characters or fewer (count it — `src/content.config.ts` fails the build otherwise) and carries the primary keyword near the front.
 - [ ] The meta `description` is 160 characters or fewer (count it) and contains the primary keyword/phrase.
@@ -97,8 +107,10 @@ Google's ranking guidance evaluates Experience, Expertise, Authoritativeness, an
 - [ ] At least one detail in the post could only come from having actually done the thing (a command, a number, a specific failure).
 - [ ] Nothing repeats a point already made elsewhere in different words.
 - [ ] No banned phrase from section 5 survived.
-- [ ] Sentence lengths visibly vary when you read it aloud, consistent with a 90-100 Flesch Reading Ease target.
+- [ ] Sentence lengths visibly vary when you read it aloud — no numeric score target, just read it and confirm it doesn't fall into a same-length rhythm.
 - [ ] Zero em dashes in the prose (a real verbatim quoted string is the only exception).
+- [ ] `scripts/check-grammar.mjs` was run and every real match fixed (section 7).
+- [ ] `scripts/check-originality.mjs` was run and every real overlap reworded or moved into a blockquote (section 7).
 - [ ] E-E-A-T checked explicitly: an Experience-only-detail is present, Expertise-level specifics (versions, exact names) are used, citations are primary-source (Authoritativeness), and every factual claim is verified rather than guessed (Trustworthiness).
 - [ ] The closing paragraph gives a real recommendation, not a summary.
 - [ ] The cover image is a real screenshot/diagram, a genuinely fitting Pexels photo the user approved from candidates, or (only when no Pexels photo fit) a generated abstract illustration checked by eye for garbled pseudo-text — never an auto-picked stock photo, and never a generated image standing in for a real captured artifact.
