@@ -1,0 +1,77 @@
+---
+title: "Fix ChatGPT Conversation With Assistant Migration"
+description: "Zapier auto-migrates ChatGPT's Conversation With Assistant (Legacy) action but leaves the new Zap off. How to review and re-enable it before Aug 26, 2026."
+date: 2026-08-13
+category: data-automation
+tags: ["zapier", "chatgpt", "openai", "assistants-api"]
+relatedSlugs: ["rebuild-chatgpt-create-assistant-zaps"]
+series: "Zapier's 2026 Integration Deprecation Wave: What Breaks in Live Zaps"
+seriesOrder: 7
+coverImage: "./cover.png"
+coverImageAlt: "A terminal window showing the real Zapier Help Center notice: on August 26, 2026, Zaps using these actions will stop working, and migrated Zaps are left turned off so you can review them first"
+faq:
+  - question: "Does Zapier migrate the Conversation With Assistant (Legacy) action automatically, or do I have to rebuild it myself?"
+    answer: "Automatically, for this specific action. Zapier migrates any Zap using Conversation With Assistant (Legacy) to the new Conversation action on its own. The catch is that it leaves the migrated Zap turned off, so the automatic part only gets you to a disabled Zap waiting for a human to confirm it, not a live one."
+  - question: "What's the difference between the Conversation action and the Send Prompt action?"
+    answer: "Zapier describes Conversation as built for back-and-forth conversations with memory, file search, web search, and MCP tool support, while Send Prompt is for simple, one-off prompts that don't need memory. If the legacy Assistant action was just generating a single response per run with no conversational state, Send Prompt is worth checking too, not just the default Conversation migration."
+---
+
+## Quick Answer
+
+Zapier auto-migrates any Zap using the Conversation With Assistant (Legacy) action to the new Conversation action, built on OpenAI's Responses API, but the migrated Zap stays switched off. Before August 26, 2026, open it, confirm the new action's configuration, remap any downstream step reading the old output shape, and manually re-enable it.
+
+## Why this is worth checking even if nothing looks broken
+
+OpenAI is deprecating its Assistants API, and Zapier's own [ChatGPT deprecation notice](https://help.zapier.com/hc/en-us/articles/44865998484365) states the deadline plainly:
+
+> "On August 26, 2026, Zaps using these actions will stop working."
+
+A short honesty note before going further: ByteTech247 doesn't run Zapier. This site's own automation is Cloudflare Workers and GitHub Actions, covered in our [Cloudflare API deprecation pillar](/data-automation/cloudflares-july-2026-api-deprecation-wave/). Everything below is drawn directly from Zapier's own Help Center documentation, not from running these exact Zaps ourselves.
+
+For the Conversation With Assistant (Legacy) action specifically, Zapier already did the migration work. Any Zap using it gets automatically switched to the new Conversation action. The part that catches people off guard is what happens next: Zapier's notice states that
+
+> "Migrated Zaps are left turned off so you can review them first."
+
+That's a deliberate design choice, not a bug. But it means a Zap that "already migrated" weeks ago can still be sitting disabled today, with the only visible sign being a toggle set to off somewhere in a list of dozens of Zaps. There's no separate ongoing alert once the initial migration notice scrolls past your inbox.
+
+## Structural Comparison Matrix
+
+| Operational Aspect            | Conversation With Assistant (Legacy)                             | Conversation (auto-migrated)                                      |
+| :---------------------------- | :--------------------------------------------------------------- | :---------------------------------------------------------------- |
+| **Underlying API**            | OpenAI Assistants API                                            | OpenAI Responses API                                              |
+| **Zap state after migration** | Running normally                                                 | Automatically turned off                                          |
+| **What it supports**          | Assistant-based conversation with a fixed assistant/thread model | Adds memory plus file, web, and MCP-based tool access, per Zapier |
+| **Action required**           | None, until migration runs                                       | Manual review, field remap, re-enable, before 2026-08-26          |
+
+## Fix it: find, review, and re-enable
+
+<Callout type="warning" title="A migrated Zap isn't a working Zap">
+  Auto-migration only changes which action the Zap points to. It does not
+  confirm the new action's fields are mapped correctly, and it does not turn the
+  Zap back on. Treat "migrated" and "working" as two separate states.
+</Callout>
+
+Start by finding every Zap that's been silently switched off:
+
+1. Open your Zaps list and filter by status: **Off**. Any Zap that used to run on Conversation With Assistant (Legacy) and now shows as off, without you having turned it off yourself, is a migration candidate.
+2. Open the Zap's editor and check the action step. If it now reads **Conversation** instead of **Conversation With Assistant (Legacy)**, this is one of the auto-migrated ones.
+3. Review the Conversation action's configuration. The legacy action ran against a specific assistant and thread; the new one is prompt- and memory-based, so confirm the model, prompt, and any file/web search options are actually set the way the old Zap intended, not left at defaults.
+4. Check every downstream step (a Formatter step, a filter, a Slack or email notification) that reads a field off the ChatGPT step's output. The legacy action's output shape was built around assistant/thread objects; the Conversation action's output is not guaranteed to match field-for-field, so a step reading `output.message` or similar needs to be checked against what the new action actually returns in a live test run.
+5. Run a test, confirm the output looks right end to end, then flip the Zap back on.
+
+If the legacy Zap only ever needed a single one-shot response with no ongoing memory, it's worth comparing against **Send Prompt** instead of sticking with the default Conversation migration, since Send Prompt is Zapier's stated action for exactly that simpler case.
+
+<Callout
+  type="info"
+  title="Four other ChatGPT actions don't get this treatment"
+>
+  Conversation With Assistant (Legacy) is the one action Zapier auto-migrates.
+  Create Assistant, Upload File, Find Assistant, and Find or Create Assistant
+  get no automatic migration at all and need a full rebuild, covered in [Rebuild
+  ChatGPT Create Assistant Zaps by Aug
+  26](/data-automation/rebuild-chatgpt-create-assistant-zaps/).
+</Callout>
+
+## Confirmed version
+
+Sourced from Zapier's official Help Center advisory on the OpenAI Assistants API deprecation for ChatGPT, updated 2026-07-20, deadline confirmed as 2026-08-26. Browse more posts like this in the [Data Automation](/data-automation) archive.

@@ -1,0 +1,96 @@
+---
+title: "Set Up GitHub Agentic Workflows in Actions"
+description: "GitHub Agentic Workflows (public preview) compiles Markdown into Actions YAML for AI-driven triage and CI analysis, sandboxed behind a read-only default."
+date: 2026-08-13
+category: dev-tools
+tags: ["github-actions", "ci-cd", "ai-agents", "automation"]
+relatedSlugs: ["automate-static-site-deploys-github-actions-cloudflare-workers"]
+series: "GitHub Actions' Summer 2026 Security & Config Overhaul: What to Change in Your Workflows"
+seriesOrder: 11
+coverImage: "./cover.png"
+coverImageAlt: "A terminal window showing the gh extension install github/gh-aw command and the verbatim changelog entry for GitHub Agentic Workflows public preview"
+faq:
+  - question: "Does GitHub Agentic Workflows lock me into GitHub Copilot?"
+    answer: "No. Copilot is the default engine the setup wizard offers, but GitHub's own quickstart lists Claude Code, OpenAI Codex, Google Gemini, and Pi as other built-in engine options, each configured through its own secret (COPILOT_GITHUB_TOKEN, ANTHROPIC_API_KEY, OPENAI_API_KEY, or GEMINI_API_KEY) during setup."
+  - question: "Is this ready for production use?"
+    answer: "GitHub's own changelog labels it public preview as of 2026-06-11, not general availability. Treat it the way you'd treat any preview feature: useful to pilot on a low-stakes workflow like issue triage, but not yet the kind of guarantee you'd want backing a release-blocking gate."
+  - question: "Do I edit the compiled .lock.yml file directly?"
+    answer: "No, and this wasn't independently reproduced here beyond what GitHub's own docs describe. The Markdown file is the source of truth; running gh aw compile regenerates the .lock.yml Actions actually executes. Hand-editing the generated YAML directly would just get overwritten the next time the Markdown source is recompiled."
+---
+
+## Quick Answer
+
+Use GitHub Agentic Workflows when you want a reasoning-based repo task, issue triage, CI failure analysis, documentation updates, automated from a natural-language Markdown file instead of hand-written YAML plus your own LLM glue code and security boundary. Skip it for simple deterministic automation; plain Actions YAML is simpler and doesn't need an AI engine, its secrets, or a sandboxed execution layer.
+
+## What this replaces
+
+Automating a reasoning-based repo task, deciding whether an issue is a duplicate, summarizing why a CI run failed, drafting a documentation update, used to mean hand-writing bespoke Actions YAML and whatever custom code called an LLM API, with no standard security boundary around what that code could read, write, or execute inside CI. Every team building this kind of automation solved the sandboxing and output-validation problem themselves, if they solved it at all.
+
+GitHub's changelog, published 2026-06-11:
+
+> "GitHub Agentic Workflows is now in public preview. With agentic workflows, you can automate reasoning-based tasks like issue triage, CI failure analysis, and documentation updates by leveraging coding agents inside GitHub Actions."
+
+Workflows are authored as plain-language Markdown, not YAML directly:
+
+> "You define your automation using natural language Markdown files, and GitHub Agentic Workflows compiles them into standard Actions YAML."
+
+<Callout type="info" title="The security layer is the actual news here">
+  Four separate safeguards ship with the preview: an integrity filter on what
+  content an agent can access, read-only permissions by default, sandboxed
+  execution inside an "Agent Workflow Firewall," and a dedicated
+  threat-detection job that scans an agent's proposed changes before they apply.
+  A "safe outputs" process validates what the agent produces before anything
+  from it lands in the repo. None of that existed as a standard feature for
+  hand-rolled agent-in-CI setups before this.
+</Callout>
+
+## Structural Comparison Matrix
+
+| Operational Aspect       | Hand-rolled agent automation (before)           | GitHub Agentic Workflows (public preview)           |
+| :----------------------- | :---------------------------------------------- | :-------------------------------------------------- |
+| **Authoring format**     | Actions YAML plus custom LLM-calling code       | Natural-language Markdown, compiled to Actions YAML |
+| **Default permissions**  | Whatever the team's own YAML granted            | Read-only by default                                |
+| **Execution sandboxing** | Whatever the team built themselves, if anything | Runs inside the Agent Workflow Firewall             |
+| **Output validation**    | Custom, team-specific, if it exists at all      | A dedicated "safe outputs" process                  |
+| **Pre-apply review**     | Manual code review of generated changes         | A threat-detection job scans proposed changes first |
+
+## Install the CLI extension and scaffold a workflow
+
+GitHub Agentic Workflows ships as a `gh` CLI extension, not a built-in `gh` subcommand:
+
+```bash title="install the extension"
+gh extension install github/gh-aw
+```
+
+Running `gh aw compile` produces a `.lock.yml` file containing the standard Actions YAML the Markdown source compiled into, which is the file Actions actually runs, not the Markdown itself. From a repo's root, the wizard scaffolds a first workflow interactively:
+
+```bash title="scaffold a starter workflow"
+gh aw add-wizard githubnext/agentics/daily-repo-status
+```
+
+The wizard's reference argument uses an `OWNER/REPO/WORKFLOW-NAME` format, pulling a starter template, in this case a daily repo status check, from GitHub's own `githubnext/agentics` collection of prebuilt workflows. It walks through checking repository prerequisites, choosing an AI engine (Copilot by default, or Claude Code, OpenAI Codex, Google Gemini, or Pi instead), and setting up whichever secret that engine needs.
+
+<Callout type="tip" title="No manual install step if your gh CLI is current">
+  GitHub's docs note that with `gh` CLI 2.90.0 or later, running any `gh aw`
+  command prompts an automatic install of the extension if it isn't present yet,
+  so the explicit `gh extension install` step above is a fallback more than a
+  hard requirement on a recent `gh`.
+</Callout>
+
+## Where the workflow actually lives
+
+The scaffolded workflow is a Markdown file at `.github/workflows/<workflow-name>.md`, for example `.github/workflows/daily-repo-status.md`. After editing that file's frontmatter or body, recompile it so the change actually takes effect:
+
+```bash title="recompile after editing the Markdown source"
+gh aw compile
+```
+
+That command regenerates the matching `.lock.yml` file, the version Actions actually executes. Both files belong in the repo: the Markdown source, because it's what a human edits, and the compiled `.lock.yml`, because Actions never compiles Markdown on its own at run time.
+
+## Would this help this site's own workflows?
+
+Not yet, in any concrete way worth claiming. This site's `.github/workflows/ci.yml` runs deterministic build, lint, and test steps, not the kind of reasoning-based task, issue triage, CI failure summarization, this feature targets. A plausible future use here would be automating triage on reader-submitted issues or summarizing why a Lighthouse CI budget failed, but nothing in this repo uses agentic workflows today, and this preview's public-preview status is reason enough to wait before wiring it into a pipeline that gates a real deploy.
+
+## Confirmed version
+
+Sourced from [GitHub's changelog entry announcing the public preview](https://github.blog/changelog/2026-06-11-github-agentic-workflows-is-now-in-public-preview/), published 2026-06-11, and corroborated against GitHub's [Agentic Workflows quickstart](https://docs.github.com/en/copilot/how-tos/github-agentic-workflows/quickstart) for the install and scaffolding commands above. Browse more posts like this in the [Dev Tools](/dev-tools) archive.

@@ -1,0 +1,99 @@
+---
+title: "Zapier Functions Secrets: Move to API by Zapier"
+description: "Zapier Functions let you hardcode API keys in code. Code by Zapier doesn't. Move secrets to an API by Zapier connection before the September 1 shutdown."
+date: 2026-08-13
+category: data-automation
+tags: ["zapier", "api", "security", "automation"]
+relatedSlugs:
+  [
+    "migrate-zapier-functions-python-code-to-fetch",
+    "zapier-functions-split-multi-trigger-functions",
+    "automate-static-site-deploys-github-actions-cloudflare-workers",
+  ]
+series: "Zapier's 2026 Integration Deprecation Wave: What Breaks in Live Zaps"
+seriesOrder: 6
+coverImage: "./cover.png"
+coverImageAlt: "A terminal window showing the connections['api_by_zapier'] binding syntax from Zapier's real migration guide for moving hardcoded secrets out of Function code"
+faq:
+  - question: "Can I just copy my old Function code, hardcoded key and all, into a Code by Zapier step?"
+    answer: "Zapier's migration guide describes Code by Zapier's execution model as not supporting embedded secrets the way Functions did, so a copy-pasted key either fails to work as expected or, worse, ends up sitting in plaintext inside a Zap step where it's more exposed than it was in a dedicated Functions environment. Either outcome is worse than doing the connection migration up front."
+  - question: "What is the Account ID Variable, and why does it have to match?"
+    answer: "It's the identifier API by Zapier uses to reference a specific stored connection. The connections['api_by_zapier'] value in code has to match that variable exactly, or the code step is pointing at the wrong connection, or none at all, and the authenticated call fails at the connection lookup rather than at the API itself."
+---
+
+## Quick Answer
+
+Zapier Functions let you hardcode API keys and tokens directly in Python source. Code by Zapier doesn't support embedded secrets the same way. Credentials have to move into an API by Zapier connection and get referenced in code as `connections['api_by_zapier']`, matched to that connection's Account ID Variable, before the 2026-09-01 Functions shutdown.
+
+## Why a copy-paste migration is actively risky here
+
+The two earlier posts in this series cover the code-syntax fix ([`requests` to `fetch`](/data-automation/migrate-zapier-functions-python-code-to-fetch/)) and the architecture fix ([splitting multi-trigger functions](/data-automation/zapier-functions-split-multi-trigger-functions/)). This one is different in kind: it's a credentials problem, and getting it wrong doesn't just break a Zap, it can leave a live secret exposed.
+
+Zapier Functions ran on an execution model where a Python script could hold an API key as a plain string, right in the code, and use it directly in a `requests` call header. [Zapier's migration guide](https://help.zapier.com/hc/en-us/articles/45230556598157), the same article covering the other two changes in this series, updated 2026-07-13, doesn't describe Code by Zapier's runtime as supporting that pattern the same way. Credentials instead route through **API by Zapier**, a dedicated connection type, referenced from code with a specific binding:
+
+```javascript title="referencing a stored connection from Code by Zapier"
+const api = zapier.apps.api_by_zapier({
+  connectionId: connections["api_by_zapier"],
+});
+```
+
+The guide is specific about what has to line up:
+
+> "`connections['api_by_zapier']` must match the Account ID Variable for your API by Zapier connection."
+
+Get that mismatched, and the code step fails at the connection lookup, before it even reaches the API call the credential was meant to authenticate.
+
+<Callout
+  type="warning"
+  title="A hardcoded key left in place is the worst outcome, not a safe fallback"
+>
+  If old Function code with an embedded key gets copy-pasted straight into a
+  Code by Zapier step instead of migrated to a connection, two things can
+  happen: the call fails because the runtime doesn't handle it the way Functions
+  did, or it "works" for now with a live credential sitting in plaintext inside
+  a Zap step, visible to anyone with edit access to that Zap. Neither is an
+  acceptable stopping point.
+</Callout>
+
+## Structural Comparison Matrix
+
+| Operational Aspect             | Zapier Functions                      | Code by Zapier                                                  |
+| :----------------------------- | :------------------------------------ | :-------------------------------------------------------------- |
+| **Where credentials live**     | Hardcoded in Python source            | API by Zapier connection                                        |
+| **How code accesses them**     | Direct string reference in the script | `connections['api_by_zapier']` bound to the Account ID Variable |
+| **Exposure if migrated wrong** | N/A                                   | Plaintext key visible in the Code step to any editor            |
+| **Matching requirement**       | None                                  | Binding value must match the connection's Account ID Variable   |
+
+## Fix it: create the connection before touching the code
+
+1. Set up an **API by Zapier** connection for the credential the old Function used, giving it an Account ID Variable you'll reference from code.
+2. In the Code by Zapier step, replace every hardcoded key reference with the `connections['api_by_zapier']` binding shown above, matched to that variable.
+3. Delete the hardcoded string from the source entirely, not just from the line that used it, in case it was assigned to a variable reused elsewhere in the same file.
+4. Test the step against a real call that requires the credential, confirming the connection resolves and the authenticated request succeeds.
+
+```javascript title="before: hardcoded key (do not carry this forward)"
+// Old Functions code - DO NOT copy into Code by Zapier as-is:
+// const apiKey = "sk_live_..." (hardcoded, plaintext in the script)
+```
+
+```javascript title="after: credential via API by Zapier connection"
+const api = zapier.apps.api_by_zapier({
+  connectionId: connections["api_by_zapier"],
+});
+// apiKey is no longer a literal string anywhere in this file
+```
+
+<Callout type="info" title="This site doesn't run Zapier">
+  As stated across this series: bytetech247.com's own automation runs on
+  Cloudflare Workers and GitHub Actions, not Zapier (see [this site's actual
+  deploy
+  automation](/data-automation/automate-static-site-deploys-github-actions-cloudflare-workers/)).
+  This fix is drawn directly from Zapier's own published migration guide, not
+  from having migrated a hardcoded key in our own automation.
+</Callout>
+
+This is the last of three distinct problems in the same Zapier Functions migration guide. [The HTTP/runtime port](/data-automation/migrate-zapier-functions-python-code-to-fetch/) and [the trigger-splitting requirement](/data-automation/zapier-functions-split-multi-trigger-functions/) each need their own fix; none of the three substitutes for the others, and a Function that used all three patterns needs all three fixes applied before the 2026-09-01 shutdown.
+
+## Confirmed version
+
+Sourced from [Zapier's official Help Center migration guide for Zapier Functions](https://help.zapier.com/hc/en-us/articles/45230556598157), updated 2026-07-13. Browse more posts like this in the [Data Automation](/data-automation) archive.

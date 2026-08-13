@@ -1,0 +1,89 @@
+---
+title: "Set Up GitHub Actions Workflow Execution Protections"
+description: "Workflow execution protections let you allow-list who can trigger GitHub Actions workflows and which events are permitted, built on GitHub's rulesets."
+date: 2026-08-13
+category: dev-tools
+tags: ["github-actions", "security", "rulesets", "ci-cd"]
+relatedSlugs: ["actions-checkout-v7-blocks-pull-request-target-prs"]
+series: "GitHub Actions' Summer 2026 Security & Config Overhaul: What to Change in Your Workflows"
+seriesOrder: 4
+coverImage: "./cover.png"
+coverImageAlt: "A terminal window showing the GitHub Actions workflow execution protections changelog entry describing an allow list for who can trigger workflows and which events are permitted"
+faq:
+  - question: "Do I need an Enterprise plan to use workflow execution protections?"
+    answer: "No. GitHub's own documentation describes the feature as configurable at the enterprise, organization, and repository level, so a single repository not part of any Enterprise org can still opt in through repository Settings, not just an org or enterprise admin."
+  - question: "Does this replace actions/checkout's pull_request_target fork-checkout block?"
+    answer: "No, they're complementary layers. actions/checkout v7 stops a specific unsafe checkout pattern inside a workflow that's already running. Workflow execution protections sit earlier, deciding whether the workflow is even allowed to start for a given actor or event in the first place. See actions/checkout v7 Blocks pull_request_target PRs for the checkout-level control."
+  - question: "Can I test a policy before it starts blocking real workflow runs?"
+    answer: "Yes. GitHub's guidance describes an evaluate mode that shows exactly what a rule would have blocked without actually enforcing it, so you can roll out a new actor or event rule and check the impact before switching it to active enforcement."
+---
+
+## Quick Answer
+
+Workflow execution protections (public preview, 2026-06-18) add an allow-list layer in front of every GitHub Actions workflow: actor rules control who can trigger a run, event rules control which trigger types are permitted at all. Configure it under **Settings → Actions → Policies** at the repository, organization, or enterprise level. Use evaluate mode first to see what a rule would block before enforcing it.
+
+## The gap this closes
+
+Before this feature, anyone with write access to a repository could modify a workflow file to run arbitrary code with that repo's secrets, and any event GitHub Actions supports (`push`, `pull_request_target`, `workflow_dispatch`, and the rest) could trigger a workflow with nothing standing in front of it. There was no repo-level or org-level control over who was allowed to cause a workflow to run, or which event types were even legitimate for a given repo's actual usage pattern.
+
+GitHub's changelog describes the fix plainly:
+
+> "Workflow execution protections are now in public preview for GitHub Enterprise, organizations, and repositories" and let you "define an allow list that controls who can trigger GitHub Actions workflows and which events are permitted to run them."
+
+The feature is "built on the GitHub rulesets framework," which means it inherits rulesets' existing concepts, including an evaluate mode that reports exactly what a rule would have blocked without actually stopping any runs, so you can roll a new policy out and check its real-world impact before switching it to active enforcement, rather than introducing a parallel permissions system to learn from scratch.
+
+## Actor rules vs. event rules
+
+The two rule types are independently configurable, and most real policies use both together.
+
+**Actor rules** control who can trigger a workflow at all. Straight from GitHub's own description:
+
+> "Individual users, repository roles (e.g., Read, Maintain, and Admin), GitHub Apps, Copilot, and Dependabot."
+
+That's the piece that separates "who can push code" from "who can cause a workflow to execute," a distinction that didn't exist as an enforceable setting before.
+
+**Event rules** control which trigger types are permitted, regardless of who fires them. `pull_request_target` is the one worth allow-listing carefully; ordinary triggers like `push` and `workflow_dispatch` are lower risk, and `pull_request` sits somewhere between the two depending on what the workflow actually does. A repo that has no legitimate reason to ever run a workflow off `pull_request_target` can block that event type outright, independent of who's involved.
+
+## Structural Comparison Matrix
+
+| Operational Aspect                        | Before                                        | After (workflow execution protections)    |
+| :---------------------------------------- | :-------------------------------------------- | :---------------------------------------- |
+| **Who can trigger a workflow run**        | Anyone with write access, no separate control | Allow-listed by actor rule                |
+| **Which event types can run at all**      | Every event Actions supports, no restriction  | Allow-listed by event rule                |
+| **Testing a new policy before enforcing** | No built-in dry-run                           | Evaluate mode shows would-be blocks first |
+| **Configuration scope**                   | N/A (no equivalent existed)                   | Repository, organization, or enterprise   |
+
+## Setting up a policy
+
+This lives in a new "Policies" section under Actions settings, layered on rulesets:
+
+1. **Navigate to the right level.** For a single repository: **Settings → Actions → Policies**. For an organization-wide rule: the organization's own **Settings → Actions → Policies**, which can apply across every repo in the org.
+
+2. **Create a new ruleset scoped to workflow execution.** Give it a name and decide whether it targets specific repositories (via repository custom properties, at the org/enterprise level) or the whole scope you're configuring it at.
+
+3. **Add actor rules.** Start narrow: allow specific repository roles (`Write`, `Maintain`, `Admin`) or specific GitHub Apps, rather than defaulting to "everyone with write access."
+
+4. **Add event rules.** List only the trigger events your workflows actually use. If nothing in the repo legitimately needs `pull_request_target`, don't allow-list it, even if no current workflow uses it; this closes the door on someone adding one later without review.
+
+5. **Set the ruleset to evaluate mode first**, rather than jumping straight to enforcement. Let it run for a normal work cycle (a week is reasonable) and review what it would have blocked.
+
+6. **Switch to active enforcement** once evaluate mode shows no unexpected blocks against real usage.
+
+<Callout type="tip" title="Pair this with the checkout-level fix">
+  Workflow execution protections and `actions/checkout` v7's
+  `pull_request_target` block address the same fork-PR attack surface from
+  different angles: this feature decides whether the workflow runs at all for a
+  given actor or event, while the checkout change stops a specific unsafe
+  checkout pattern inside a workflow that's already running. See
+  [actions/checkout v7 Blocks pull_request_target
+  PRs](/dev-tools/actions-checkout-v7-blocks-pull-request-target-prs) for the
+  complementary control. Neither one alone covers the whole attack surface.
+</Callout>
+
+## Does this apply to a repo like this site's?
+
+Yes, and this is one of the changes in this series where a single repository genuinely doesn't need an Enterprise plan or an organization admin to benefit. Per GitHub's own docs, workflow execution protections are configurable "at the enterprise, organization, and repository level," so a solo-maintained repo can opt in through its own **Settings → Actions → Policies** the same way an org-wide policy would be configured, just scoped to one repository instead of many.
+
+## Source
+
+GitHub's [changelog entry introducing this allow-list feature](https://github.blog/changelog/2026-06-18-control-who-and-what-triggers-github-actions-workflows/) (2026-06-18), corroborated by [GitHub's own docs page on the feature](https://docs.github.com/en/organizations/managing-organization-settings/actions-policies/workflow-execution-protections). Browse more posts like this in the [Dev Tools](/dev-tools) archive.

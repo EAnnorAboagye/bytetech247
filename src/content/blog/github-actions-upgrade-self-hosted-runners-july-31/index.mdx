@@ -1,0 +1,98 @@
+---
+title: "GitHub Actions: Upgrade Self-Hosted Runners by Jul 31"
+description: "GitHub now enforces a minimum self-hosted runner version (2.329.0+) with brownout windows before full enforcement. Check your version before jobs stop running."
+date: 2026-08-13
+category: dev-tools
+tags: ["github-actions", "self-hosted-runners", "ci-cd", "devops"]
+relatedSlugs: ["github-actions-self-repository-dollar-slash-syntax"]
+series: "GitHub Actions' Summer 2026 Security & Config Overhaul: What to Change in Your Workflows"
+seriesOrder: 3
+coverImage: "./cover.png"
+coverImageAlt: "A terminal window showing the GitHub Actions self-hosted runner minimum version requirement: the runner must be on version 2.329.0 or later"
+faq:
+  - question: "My runners auto-update. Do I need to do anything?"
+    answer: "No, that's the point of the 30-day install window. GitHub's own guidance is that runners with auto-update enabled satisfy the requirement automatically, since they install each new release well inside the 30-day window without anyone stepping in."
+  - question: "What happens to a runner below the minimum version during a brownout window versus after full enforcement?"
+    answer: "During a brownout window, restrictions apply only during the published 11:00 AM-3:00 PM ET slot on that day, then lift until the next scheduled window. After full enforcement, the restriction is permanent: an under-version runner can't register or reregister, and one already registered stops running jobs even though it still shows as connected."
+  - question: "Does GitHub-hosted ubuntu-latest or macos-latest need any of this?"
+    answer: "No. This entire enforcement is scoped to self-hosted runners, the ones you register and manage yourself with the runner application. GitHub-hosted runners are managed and versioned by GitHub directly and are unaffected."
+---
+
+## Quick Answer
+
+GitHub now enforces a minimum version for self-hosted Actions runners, and every runner has to pick up each new release inside a rolling 30-day window to stay compliant. Full enforcement starts 2026-07-31 for GitHub Enterprise Cloud with Data Residency and 2026-09-25 for standard GitHub Enterprise Cloud, preceded by four weeks of escalating brownout windows. Below the minimum, your runner won't register or run jobs. Check your version now.
+
+## What's actually enforced, and when
+
+GitHub's changelog states the version floor directly:
+
+> "The runner must be on version 2.329.0 or later."
+
+A second, separate requirement rides alongside it:
+
+> "The runner must stay up to date by installing each new runner release within 30 days of its publication."
+
+That second rule is a rolling window, not a one-time bump. A runner that's on 2.329.0 today but skips the next few releases can drift back out of compliance a few months from now.
+
+Runners with auto-update enabled satisfy the 30-day rule without anyone touching them, since GitHub's own guidance confirms auto-update installs each release well inside that window. Manually managed runners are the ones actually at risk here.
+
+Enforcement isn't a single flip-the-switch date. It rolls out as four weeks of brownout windows, each one a four-hour block scheduled for late morning through early afternoon Eastern time, progressively expanding in scope: early windows only block new runner registrations during that slot, later windows also start blocking job execution on outdated runners during the window. Full, permanent enforcement follows the brownout schedule: 2026-07-31 for GitHub Enterprise Cloud with Data Residency, 2026-09-25 for standard GitHub Enterprise Cloud.
+
+<Callout type="warning" title="What this looks like if you're unprepared">
+  An outdated runner doesn't throw a clear "upgrade your runner" error during a
+  brownout window. It just stops picking up jobs, or fails to register, for that
+  four-hour window and then works again. That reads as flaky infrastructure, not
+  a version problem, unless you already know the schedule exists. Once full
+  enforcement lands, the same failure becomes permanent instead of a four-hour
+  window.
+</Callout>
+
+## Structural Comparison Matrix
+
+| Operational Aspect                             | Runner below 2.329.0 / stale install       | Runner on 2.329.0+, updated within 30 days |
+| :--------------------------------------------- | :----------------------------------------- | :----------------------------------------- |
+| **During a brownout window (11am-3pm ET)**     | Registration or job pickup blocked         | Unaffected                                 |
+| **Outside a brownout window, pre-enforcement** | Works normally, still non-compliant        | Works normally                             |
+| **After full enforcement date**                | Can't register; existing runner stops jobs | Unaffected                                 |
+| **Maintenance burden**                         | Manual version checks needed indefinitely  | None, if auto-update is enabled            |
+
+## Checking and upgrading your runner version
+
+Run this on the machine hosting the self-hosted runner to see what it's currently on:
+
+```bash
+# From the runner's install directory
+cat .runner_version 2>/dev/null || ./config.sh --version
+```
+
+If it reports anything below `2.329.0`, or you don't know when it last updated, upgrade it. GitHub Actions runners support auto-update by default unless it was explicitly disabled; check the runner service configuration first:
+
+```bash
+# Check whether auto-update is disabled for this runner
+cat .runner | grep -i "disableupdate"
+```
+
+If auto-update is off, or you manage runners at a scale where you don't want to rely on it, download and install the current release directly from the runner releases page, then restart the runner service so it picks up the new binary:
+
+```bash
+# Example for a Linux x64 runner - use the current release asset URL
+curl -o actions-runner-linux-x64.tar.gz -L \
+  https://github.com/actions/runner/releases/download/v2.329.0/actions-runner-linux-x64-2.329.0.tar.gz
+tar xzf ./actions-runner-linux-x64.tar.gz
+sudo ./svc.sh stop
+sudo ./svc.sh start
+```
+
+At fleet scale, script the version check across every self-hosted runner group before the brownout windows start rather than finding out one at a time when a job silently stops queuing.
+
+## Does this affect this site's own workflows?
+
+No, and it's worth saying so plainly rather than forcing a first-person angle that isn't real. This site's `.github/workflows/ci.yml` runs entirely on GitHub-hosted `ubuntu-latest` runners for both the build and deploy jobs, never a self-hosted runner. The enforcement covered here is scoped specifically to self-hosted runner registration and job execution; GitHub-hosted runners are versioned and managed by GitHub itself and sit outside this change entirely.
+
+This cluster is still worth knowing if you run Actions at scale with your own infrastructure, self-hosted runners are common wherever a team needs specific hardware, network access, or licensing that GitHub-hosted runners can't provide. If that's your setup, the brownout schedule is the part most teams miss: it's already running in the weeks before full enforcement, not a future date you can safely ignore until it arrives.
+
+A separate but related change lets you [reference same-repository actions with a new `$/` syntax](/dev-tools/github-actions-self-repository-dollar-slash-syntax/), which requires Actions runner 2.336.0 or later, a different, higher version floor than the 2.329.0 registration minimum covered here. Don't conflate the two version requirements if you're checking both.
+
+## Source
+
+GitHub's [changelog entry on the self-hosted runner version cutoff](https://github.blog/changelog/2026-06-12-github-actions-minimum-version-enforcement-timeline-for-self-hosted-runners/) (2026-06-12). Browse more posts like this in the [Dev Tools](/dev-tools) archive.

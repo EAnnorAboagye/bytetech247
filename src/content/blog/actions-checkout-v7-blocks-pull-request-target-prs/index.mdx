@@ -1,0 +1,109 @@
+---
+title: "actions/checkout v7 Blocks pull_request_target PRs"
+description: "actions/checkout v7 refuses to fetch fork PR code in pull_request_target and workflow_run by default. Here's the fix if your workflow relied on it."
+date: 2026-08-13
+category: dev-tools
+tags: ["github-actions", "actions-checkout", "security", "ci-cd"]
+relatedSlugs:
+  [
+    "github-actions-workflow-execution-protections",
+    "automate-static-site-deploys-github-actions-cloudflare-workers",
+  ]
+series: "GitHub Actions' Summer 2026 Security & Config Overhaul: What to Change in Your Workflows"
+seriesOrder: 2
+coverImage: "./cover.png"
+coverImageAlt: "A terminal window showing the actions/checkout v7 changelog entry blocking fork pull request checkouts in pull_request_target and workflow_run workflows"
+faq:
+  - question: "Does this affect every workflow_run trigger, or only pull request ones?"
+    answer: "Only PR-flavored ones. actions/checkout blocks the unsafe fork checkout in workflow_run workflows specifically when workflow_run.event is a pull_request* event. A workflow_run triggered by a push-based workflow isn't affected."
+  - question: "My workflow pins actions/checkout@v4. Do I need to change anything?"
+    answer: "If you pin the floating major tag (@v4), no action is needed. The fix was backported to v4.4.0 on 2026-07-20, and a floating tag picks up patch releases automatically. If you pin an exact version or a commit SHA below v4.4.0, bump it explicitly."
+  - question: "What if my workflow genuinely needs the fork's head commit in pull_request_target?"
+    answer: "That's rare, and it's exactly the pattern GitHub is trying to get teams to stop and review. If you've confirmed the workflow doesn't run anything from that checkout with elevated permissions, or you've added other safeguards, set allow-unsafe-pr-checkout: true on the checkout step. Treat it as a flag that needs a second person's review, not a default you reach for to make an error go away."
+---
+
+## Quick Answer
+
+`actions/checkout` v7 refuses to check out a fork pull request's head or merge ref inside `pull_request_target` and PR-flavored `workflow_run` workflows, closing the classic "pwn request" hole where a workflow runs with the base repo's secrets but executes an attacker's code. Floating tags (`@v4`) picked up the fix automatically once it was backported on 2026-07-20; pinned versions and SHAs need an explicit bump.
+
+## Why this was a real vulnerability, not a theoretical one
+
+`pull_request_target` exists so that a workflow can run with the base repository's full secrets and write permissions even when triggered by a fork's pull request, useful for things like commenting on the PR or triggering a deploy preview. The catch: many workflows using that trigger also checked out the fork's own head commit, because that's the code the PR is actually proposing to merge.
+
+Put those two facts together, and you get the "pwn request" pattern: a workflow with real secrets, running arbitrary code from someone who doesn't have write access to your repo. An attacker opens a PR from a fork, and any workflow step that executes something from the checked-out fork code (a build script, a test runner, a linter with a plugin system) runs with the base repo's permissions.
+
+`actions/checkout` v7.0.0 (released 2026-06-18) closes this by refusing to fetch the fork's code in that specific context. The action now fails on patterns like these when it detects a `pull_request_target` or PR-flavored `workflow_run` event:
+
+```yaml
+# actions/checkout v7 blocks all three of these inside
+# pull_request_target and PR-flavored workflow_run:
+ref: refs/pull/${{ github.event.pull_request.number }}/merge
+ref: ${{ github.event.pull_request.head.sha }}
+repository: ${{ github.event.pull_request.head.repo.full_name }}
+```
+
+The fix landed as a major release first, then GitHub backported it to every older supported major version on 2026-07-20: the v6 line got v6.1.0, v5 got v5.1.0, v4 got v4.4.0, v3 got v3.7.0, and v2 got v2.8.0, each shipping the same enforcement that same day. Workflows pinned to a floating major tag like `@v4` picked up the change automatically the next time that job ran.
+
+<Callout type="warning" title="This doesn't cover every pwn-request vector">
+  Blocking the fork-checkout shortcut closes the most common path, but it isn't
+  a complete fix for `pull_request_target` misuse. A workflow that manually runs
+  `git fetch` against the fork, or checks out an unrelated third-party
+  repository and executes something from it, sits outside what this specific
+  change catches. Review what a `pull_request_target` workflow actually
+  executes, not just how it checks out code.
+</Callout>
+
+## Structural Comparison Matrix
+
+| Operational Aspect                            | Before (unpatched)                        | After (v7.0.0 / backported)                        |
+| :-------------------------------------------- | :---------------------------------------- | :------------------------------------------------- |
+| **Fork PR ref in `pull_request_target`**      | Checked out normally, no warning          | Action fails by default                            |
+| **Fork PR ref in PR-flavored `workflow_run`** | Checked out normally, no warning          | Action fails by default                            |
+| **Floating tag pin (`@v4`)**                  | Vulnerable until GitHub patched it        | Fixed automatically once backport landed           |
+| **Exact version/SHA pin below the fix**       | Vulnerable, stays vulnerable indefinitely | Still vulnerable until you bump the pin yourself   |
+| **Genuinely intended unsafe checkout**        | No opt-in required, no audit trail        | Requires explicit `allow-unsafe-pr-checkout: true` |
+
+## Fixing a workflow that hits this
+
+If a `pull_request_target` or `workflow_run` job in your repo starts failing at the checkout step after 2026-07-20, work through this in order.
+
+1. **Check what version you're actually pinned to.** Open the workflow file and look at the `uses:` line for every checkout step in a `pull_request_target` or `workflow_run` job.
+
+   ```yaml title=".github/workflows/preview.yml"
+   - uses: actions/checkout@v4.2.0 # exact pin, below the 4.4.0 fix
+     with:
+       ref: ${{ github.event.pull_request.head.sha }}
+   ```
+
+2. **Bump the pin to the fixed release** for your major version: v7.0.0 if you're on the v7 line, or the matching backport otherwise (v6 got 6.1.0, v5 got 5.1.0, v4 got 4.4.0, v3 got 3.7.0, v2 got 2.8.0).
+
+   ```yaml title=".github/workflows/preview.yml"
+   - uses: actions/checkout@v4.4.0 # fixed
+     with:
+       ref: ${{ github.event.pull_request.head.sha }}
+   ```
+
+3. **Confirm the job still fails after the bump.** If it does, that's the intended behavior: your workflow genuinely was checking out fork code under `pull_request_target`, and the failure is GitHub asking you to look at it again, not a bug.
+
+4. **Redesign around the safer pattern if you can.** Most `pull_request_target` use cases (posting a comment, labeling a PR, triggering a status check) don't need the fork's code at all. Split the job: run the untrusted build/test steps under plain `pull_request` (no secrets, no write access), and use a separate `pull_request_target` job only for the trusted, secrets-requiring step that reads the PR's metadata rather than its code.
+
+5. **Only if you've reviewed it and it's genuinely necessary**, opt back in explicitly:
+
+   ```yaml title=".github/workflows/preview.yml"
+   - uses: actions/checkout@v4.4.0
+     with:
+       ref: ${{ github.event.pull_request.head.sha }}
+       allow-unsafe-pr-checkout: true
+   ```
+
+## Does this affect this site's own deploy workflow?
+
+This site's CI, `.github/workflows/ci.yml`, pins `actions/checkout@v7` already and only triggers on `push` to `main` and same-repo `pull_request` events, never `pull_request_target` or a fork-originated `workflow_run`. That specific attack surface doesn't exist here. Worth saying plainly rather than implying a dogfooding story that isn't real: this repo has nothing to fix for this particular change, because it was never exposed to the pattern it blocks.
+
+Restricting which triggers and which people can even fire a workflow in the first place is a related, complementary control: see [Set Up GitHub Actions Workflow Execution Protections](/dev-tools/github-actions-workflow-execution-protections) for the allow-list layer that sits in front of the checkout step covered here.
+
+If you're deploying this exact kind of static site through GitHub Actions rather than Cloudflare's built-in Git integration, [Cloudflare Workers Deploys: Built-In Git vs. GitHub Actions](/data-automation/automate-static-site-deploys-github-actions-cloudflare-workers) covers that pipeline choice, including the `actions/checkout` step in a from-scratch deploy workflow.
+
+## Source
+
+GitHub's own [changelog entry announcing this checkout change](https://github.blog/changelog/2026-06-18-safer-pull_request_target-defaults-for-github-actions-checkout/) (2026-06-18, enforcement backported 2026-07-20), corroborated against the [checkout action's release history](https://github.com/actions/checkout/releases) on GitHub (major release plus five backported patch versions, all published 2026-07-20). Browse more posts like this in the [Dev Tools](/dev-tools) archive.

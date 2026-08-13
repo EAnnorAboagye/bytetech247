@@ -1,0 +1,114 @@
+---
+title: "Reference Same-Repo Actions With $/ Syntax"
+description: "GitHub Actions' new $/ syntax resolves a same-repo action to the exact running commit, no checkout step needed. Requires runner 2.336.0 or newer."
+date: 2026-08-13
+category: dev-tools
+tags: ["github-actions", "ci-cd", "workflow-syntax", "composite-actions"]
+relatedSlugs:
+  [
+    "automate-static-site-deploys-github-actions-cloudflare-workers",
+    "github-actions-upgrade-self-hosted-runners-july-31",
+  ]
+series: "GitHub Actions' Summer 2026 Security & Config Overhaul: What to Change in Your Workflows"
+seriesOrder: 7
+coverImage: "./cover.png"
+coverImageAlt: "A terminal window showing the verbatim changelog entry for GitHub Actions' $/ self-repository syntax: resolves to your workflow's own repository at the exact commit that is running, with no checkout required"
+faq:
+  - question: "Does $/ work for an action defined in a different repository?"
+    answer: "No. The changelog is specific that a uses: value starting with $/ resolves to your workflow's own repository, the one the workflow file itself lives in. For an action defined anywhere else, you still need a normal owner/repo@ref reference, pinned the way your org's policy requires."
+  - question: "What happens if a self-hosted runner is below 2.336.0?"
+    answer: "GitHub-hosted runners are updated by GitHub automatically, so this generally isn't something you need to check on ubuntu-latest, windows-latest, or macos-latest. Self-hosted runner fleets are different: a runner below 2.336.0 won't understand the $/ prefix, so confirm your fleet's runner version before adopting this syntax if you run self-hosted infrastructure."
+  - question: "Does $/ replace the need to pin external actions to a commit SHA?"
+    answer: "No, and it isn't trying to. $/ only resolves same-repo references. Third-party actions from other repositories still need their own pinning policy; what $/ removes is the separate maintenance problem of keeping a same-repo reference's version in sync with the workflow calling it."
+---
+
+## Quick Answer
+
+Use `$/` when a workflow step, composite action, or reusable workflow call references an action defined in the same repository. It resolves to your workflow's own repository at the exact commit currently running, so you skip the checkout step `./` needs and avoid the version drift a hardcoded ref causes. Requires GitHub Actions runner 2.336.0 or newer.
+
+## What $/ actually resolves to
+
+Calling an action that lives in the same repo as the workflow used to force a choice between two imperfect options. A workspace-relative path like `./.github/actions/build-tool` worked, but only after an explicit `actions/checkout` step ran first, since `./` resolves against files already sitting in the runner's workspace. Or you hardcoded a version or tag on the reference, which then had to be bumped by hand every time the calling workflow's own ref moved, and quietly drifted out of sync the moment someone forgot.
+
+GitHub shipped a third option on 2026-07-30. From the changelog:
+
+> "A `uses:` value that starts with `$/` resolves to your workflow's own repository at the exact commit that is running, with no checkout required."
+
+The same entry explains why this matters for teams enforcing commit-SHA pinning on every action reference:
+
+> "Sibling actions and workflows automatically match the ref you are already running, so your internal references stay consistent even when callers pin to a full-length commit SHA."
+
+That second sentence is the real payoff. A shop that enforces SHA-only pinning on every action reference has historically found its own internal actions awkward to comply with, since someone had to hand-update that SHA every time the internal action changed. `$/` sidesteps the whole problem because the resolution tracks the running commit automatically, with no separate SHA to keep current.
+
+<Callout type="info" title="Where $/ works">
+  GitHub's own docs confirm `$/` is a drop-in swap for `./` anywhere the latter
+  already worked: a plain step's `uses:` line, a step inside a composite action,
+  an action nested inside another action, and the `uses:` line on a reusable
+  workflow call. If `./` used to resolve there, `$/` does too, minus the
+  checkout requirement.
+</Callout>
+
+## Structural Comparison Matrix
+
+| Reference Method                | Requires a checkout step first | Stays in sync with the caller's ref                       | Minimum runner version       |
+| :------------------------------ | :----------------------------- | :-------------------------------------------------------- | :--------------------------- |
+| **`./` relative path**          | Yes                            | Yes, but only because it reads the same checked-out files | None beyond checkout support |
+| **Hardcoded version or SHA**    | No                             | No, drifts until manually bumped                          | None additional              |
+| **`$/` self-repository syntax** | No                             | Yes, automatically, by resolving the running commit       | 2.336.0+                     |
+
+## Add it to a workflow
+
+Say a repo defines a composite action at `.github/actions/setup-project/action.yml` that other workflows in the same repo call to install dependencies and warm a cache. Before `$/`, calling it from another workflow meant checking out the repo first, then referencing the path:
+
+```yaml title=".github/workflows/build.yml — before"
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup-project
+      - run: npm run build
+```
+
+With `$/`, the checkout step is no longer required just to resolve the action reference:
+
+```yaml title=".github/workflows/build.yml — after"
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: $/.github/actions/setup-project
+      - run: npm run build
+```
+
+If the job also needs the repo's files for the build itself, `actions/checkout` still belongs in the workflow, but it's no longer there solely to make the internal action reference resolvable. The same substitution applies to a reusable workflow call:
+
+```yaml title="calling a reusable workflow defined in the same repo"
+jobs:
+  call-shared-build:
+    uses: $/.github/workflows/shared-build.yml
+    with:
+      target: production
+```
+
+<Callout
+  type="warning"
+  title="Don't confuse this with the self-hosted runner version floor"
+>
+  GitHub also rolled out a [separate minimum-version enforcement schedule for
+  self-hosted
+  runners](/dev-tools/github-actions-upgrade-self-hosted-runners-july-31/)
+  around the same summer, gated at 2.329.0 for registering and picking up jobs
+  at all. That's a different requirement from the 2.336.0 floor here, which only
+  governs whether a runner understands the `$/` prefix. A self-hosted fleet
+  needs to clear both numbers, not just one, if it wants both the registration
+  floor and this syntax to work.
+</Callout>
+
+## This repo's own workflows
+
+This site's own `.github/workflows/ci.yml` doesn't define any custom composite actions or reusable workflows today, only calls to third-party actions like `actions/checkout` and `actions/setup-node`, so there's nothing here to convert to `$/` yet. The moment this repo's CI grows a shared composite action, an internal cache-warming step or a build-and-test action reused across the `build` and `deploy` jobs, `$/` is the version to reach for over a `./`-plus-checkout pattern.
+
+## Confirmed version
+
+Sourced from [GitHub's own changelog entry on the $/ syntax](https://github.blog/changelog/2026-07-30-reference-same-repository-actions-with-self-repository-syntax/), published 2026-07-30, and corroborated against GitHub's [metadata syntax reference](https://docs.github.com/en/actions/reference/workflows-and-actions/metadata-syntax), which documents the same `./`-equivalent behavior `$/` extends. Browse more posts like this in the [Dev Tools](/dev-tools) archive.

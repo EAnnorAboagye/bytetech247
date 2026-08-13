@@ -1,0 +1,102 @@
+---
+title: "Restrict GitHub-Hosted Runners to Named Runner Groups"
+description: "GitHub Team and Enterprise plans can disable standard runner labels like ubuntu-latest org-wide and force workflows through named runner groups instead."
+date: 2026-08-13
+category: dev-tools
+tags: ["github-actions", "runner-groups", "ci-cd", "devops"]
+relatedSlugs:
+  [
+    "github-actions-layered-custom-runner-images",
+    "automate-static-site-deploys-github-actions-cloudflare-workers",
+  ]
+series: "GitHub Actions' Summer 2026 Security & Config Overhaul: What to Change in Your Workflows"
+seriesOrder: 9
+coverImage: "./cover.png"
+coverImageAlt: "A terminal window showing the verbatim changelog entry for GitHub-hosted runner group controls: disable the standard labels for hosted runners such as ubuntu-latest"
+faq:
+  - question: "What happens to a workflow using runs-on: ubuntu-latest the moment standard labels are disabled?"
+    answer: "It breaks. The changelog is describing exactly that tradeoff: disabling the standard labels org-wide means every workflow still referencing ubuntu-latest, windows-latest, or macos-latest directly stops resolving to a runner. Every one of those lines across every repo in the org needs rewriting to target a runner group by name first."
+  - question: "Does this feature affect self-hosted runners too?"
+    answer: "No. Self-hosted runners already require explicit runner group assignment; this change is specifically about GitHub-hosted runners, which previously resolved through standard labels with no group-level access control at all."
+  - question: "Is this available on GitHub Free or Pro?"
+    answer: "No. The changelog states this feature is available on Team and Enterprise plans. A repository on a Free or Pro plan has no runner-group option for GitHub-hosted runners and keeps using standard labels as-is."
+---
+
+## Quick Answer
+
+Disable standard GitHub-hosted runner labels and route workflows through named runner groups when you're on a Team or Enterprise plan and need centralized control over which repos and orgs can request a shared runner. Keep standard labels enabled if you're on Free or Pro, since the feature isn't available there, or if your org has no reason to restrict who can spin up a `ubuntu-latest` job.
+
+## What changed, and who it's for
+
+Every GitHub-hosted runner label, `ubuntu-latest`, `windows-latest`, `macos-latest`, has always resolved to GitHub's shared runner pool with no access control in front of it. Any workflow in any repo that can use Actions at all could request one. For most repos that's exactly the point. For a large org managing cost, compliance, or which teams can spin up compute at all, it's a gap: there was no way to say "only these repos get GitHub-hosted runners" without moving everything to self-hosted infrastructure.
+
+GitHub's changelog, published 2026-06-25:
+
+> "Disable the standard labels for hosted runners such as `ubuntu-latest`"
+
+The same release also lets macOS runners join runner groups for the first time:
+
+> "Add macOS runners to runner groups"
+
+Both land specifically for Team and Enterprise customers. Once an admin disables the standard labels at the organization or enterprise level, every job in every repo under that org has to target a runner group explicitly instead of a bare label, and that group's own membership and permissions decide who actually gets a runner.
+
+## Structural Comparison Matrix
+
+| Operational Aspect                                   | Standard labels enabled (default)             | Standard labels disabled, runner groups required            |
+| :--------------------------------------------------- | :-------------------------------------------- | :---------------------------------------------------------- |
+| **Who can request a GitHub-hosted runner**           | Any repo in the org with Actions enabled      | Only repos granted access to a specific runner group        |
+| **`runs-on: ubuntu-latest` in an existing workflow** | Resolves normally                             | Fails to resolve; must be rewritten to target a group       |
+| **macOS runner access control**                      | None; any workflow can request `macos-latest` | Restrictable per group, plus group-level concurrency limits |
+| **Plan requirement**                                 | None                                          | Team or Enterprise                                          |
+
+## Rewrite runs-on to target a runner group
+
+The syntax change is small, but it touches every job in every workflow that used a standard label. Before, a job referencing GitHub's shared pool directly:
+
+```yaml title="before — breaks once standard labels are disabled org-wide"
+jobs:
+  build:
+    runs-on: ubuntu-latest
+```
+
+After, the same job targeting a named runner group instead:
+
+```yaml title="after — explicit runner group targeting"
+jobs:
+  build:
+    runs-on:
+      group: shared-ubuntu-runners
+```
+
+If a job also needs a specific runner size or OS variant inside that group, `labels` combines with `group` in the same block, and a runner has to satisfy both to pick up the job:
+
+```yaml title="group plus a label filter"
+jobs:
+  build:
+    runs-on:
+      group: shared-ubuntu-runners
+      labels: ubuntu-24.04-16core
+```
+
+<Callout
+  type="warning"
+  title="This is an org-wide switch, not a per-workflow opt-in"
+>
+  Disabling standard labels is configured at the organization or enterprise
+  level, in the runner groups settings, not per repository and not per workflow
+  file. Flip it before every affected workflow has been rewritten and every job
+  using a bare `ubuntu-latest`, `windows-latest`, or `macos-latest` label starts
+  failing to resolve a runner at once, not gradually.
+</Callout>
+
+## Pair this with layered custom runner images
+
+Runner groups control who can use a runner. A separate June 2026 release, [layering custom GitHub Actions runner images](/dev-tools/github-actions-layered-custom-runner-images), controls what's already installed on the machine that runner boots from. An org adopting one is a natural candidate for the other: once workflows are already routed through named groups instead of standard labels, pointing a group at a custom image built specifically for it is a small additional step, and the two changes solve genuinely different problems that tend to show up on the same team's roadmap together.
+
+## Does this affect this site's own workflows?
+
+No, and it's worth being direct about that rather than stretching for a first-person claim. This site's `.github/workflows/ci.yml` uses `runs-on: ubuntu-latest` directly in both its `build` and `deploy` jobs, and this site isn't on a GitHub Team or Enterprise plan. Runner groups for GitHub-hosted runners aren't something this repo can adopt today, and nothing here breaks from this change either, since nobody has disabled standard labels for it. This cluster matters for the dev-tools audience running Actions at organizational scale, where restricting who can request a shared runner is a real, common requirement this repo simply doesn't have.
+
+## Confirmed version
+
+Sourced from [GitHub's changelog entry on hosted-runner controls](https://github.blog/changelog/2026-06-25-more-control-over-your-github-hosted-runners/), published 2026-06-25, and corroborated against GitHub's [runner groups documentation](https://docs.github.com/en/actions/concepts/runners/runner-groups) and [choosing the runner for a job](https://docs.github.com/actions/using-jobs/choosing-the-runner-for-a-job) reference for the `group`/`labels` `runs-on` syntax. Browse more posts like this in the [Dev Tools](/dev-tools) archive.

@@ -1,0 +1,113 @@
+---
+title: "Build Custom GitHub Actions Runner Images in Layers"
+description: "GitHub Actions larger runners can now build a custom image on top of another custom image, plus conditional snapshot: generation for image versions."
+date: 2026-08-13
+category: dev-tools
+tags: ["github-actions", "runner-groups", "ci-cd", "devops"]
+relatedSlugs:
+  [
+    "restrict-github-hosted-runners-named-runner-groups",
+    "automate-static-site-deploys-github-actions-cloudflare-workers",
+  ]
+series: "GitHub Actions' Summer 2026 Security & Config Overhaul: What to Change in Your Workflows"
+seriesOrder: 10
+coverImage: "./cover.png"
+coverImageAlt: "A terminal window showing the verbatim changelog entry for GitHub Actions layered custom runner images: build custom images on top of other custom images"
+faq:
+  - question: "Does a layered image expire on its own schedule, separate from its base image?"
+    answer: "No. GitHub's docs are explicit that a derived image inherits its base image's expiration timeline, and the maximum version age is calculated from when the base image was built, not when the layered image was created. A base image built on day 2 with a layered image built from it on day 4, under a 7-day expiration policy, expires both images on day 9, not day 11."
+  - question: "Do I pick the base image in a workflow YAML file?"
+    answer: "No. Base image selection happens in the GitHub UI, in the Image dropdown, when configuring the image-generation larger runner itself, a Settings-level step separate from the workflow that runs the snapshot: keyword to actually build the image."
+  - question: "Can the conditional if: on snapshot skip image generation for a whole workflow run, not just image creation?"
+    answer: "No. The if: condition on snapshot only gates whether a new image version is generated from that run. The rest of the job's steps still execute normally regardless of whether the snapshot condition is true or false."
+---
+
+## Quick Answer
+
+Layer a custom runner image when a shared base image (common tooling, base OS config) needs team-specific dependencies added on top, instead of every team maintaining its own flat, duplicated image. Add a conditional `if:` to the `snapshot` keyword when you only want a new image version generated on some builds, like main-branch merges, not every tag build or pull request.
+
+## What was flat and duplicated before
+
+Building a custom runner image for GitHub-hosted larger runners used to mean building it flat, independently, every single time. Picture a platform team maintaining one image with the org's baseline toolchain, and three product teams each needing their own extra packages on top of it. Before this release, those three teams had exactly two bad options: each one duplicates the platform team's build from scratch and maintains its own separate copy, or everyone shares a single image that grows more bloated with every team's unrelated dependencies added to it.
+
+GitHub's changelog, published 2026-06-18:
+
+> "Build custom images on top of other custom images"
+
+The docs describe how the layering itself is configured:
+
+> "You can start from an existing custom image as the base, enabling layered image workflows."
+
+That base-image selection happens in the GitHub UI, not in a workflow file, specifically in the Image dropdown when you configure the image-generation larger runner that will build the new, derived image.
+
+GitHub's docs are specific about how a derived image's age clock works:
+
+> "the derived image inherits the expiration timeline of its base image. The maximum version age is calculated from when the base custom image was built, not when the derived image was created."
+
+<Callout type="warning" title="A layered image doesn't get its own fresh clock">
+  Easy to miss: a derived image's countdown starts from its ancestor's build
+  date, not its own. Walk the numbers GitHub uses as an example: a base image
+  built on day 2, a layered image built from it on day 4, both under a 7-day
+  expiration policy. They still both go stale on the same day, day 9, measured
+  from the base image, not day 11 from when the layered image itself was
+  created.
+</Callout>
+
+## Structural Comparison Matrix
+
+| Operational Aspect                 | Flat custom images (before)                   | Layered custom images (after)                                    |
+| :--------------------------------- | :-------------------------------------------- | :--------------------------------------------------------------- |
+| **Shared tooling across teams**    | Duplicated in every team's own image build    | Built once in a base image, reused as a starting point           |
+| **Image version generation**       | Runs unconditionally on every build           | Gatable with `snapshot: if:`, e.g. skip tag builds               |
+| **Expiration timeline**            | Each flat image has its own independent clock | A derived image inherits the base image's clock                  |
+| **Where the base image is chosen** | N/A, images aren't derived from one another   | The Image dropdown, when configuring the image-generation runner |
+
+## Generate an image version with snapshot
+
+The `snapshot` keyword, added to a workflow job, is what actually triggers image generation. In its simplest form, it's a string naming the image:
+
+```yaml title="simplest form: generate an image version on every run"
+snapshot: my-custom-image
+```
+
+The mapping form adds an explicit version pattern and, with `if:`, a condition that decides whether this run generates a new image version at all:
+
+```yaml title="only generate a new image version off the default branch"
+snapshot:
+  if: ${{ ! startsWith(github.ref, 'refs/tags/') }}
+  image-name: my-custom-image
+  version: 2.*
+```
+
+That `if:` condition skips image creation for tag builds specifically, per GitHub's own documentation, useful when a repo tags releases far more often than it actually needs a fresh runner image. `version: 2.*` tells GitHub to auto-increment the minor version under major version 2 (2.0.0, 2.1.0, and so on) each time a new image is generated, rather than requiring a hand-picked version string on every run.
+
+## Layer a team-specific image on a shared base
+
+1. Build the shared base image first, on its own image-generation runner, with `snapshot:` targeting a name like `org-base-image`. This is the image every sub-team's own image will start from.
+2. Create a second image-generation larger runner for the team-specific build, and in that runner's Settings, pick `org-base-image` in the Image dropdown as its starting point instead of a stock OS image.
+3. Run a workflow job with its own `snapshot:` block on that runner, installing only the team's extra dependencies on top of what the base image already has, and generating a new, derived image version.
+
+```yaml title="job that builds the layered, team-specific image"
+jobs:
+  build-team-image:
+    runs-on:
+      group: image-generation-runners
+      labels: team-checkout-image-gen
+    snapshot:
+      if: ${{ ! startsWith(github.ref, 'refs/tags/') }}
+      image-name: team-checkout-image
+      version: 2.*
+    steps:
+      - name: Install team-specific dependencies
+        run: ./scripts/install-team-deps.sh
+```
+
+The base-image selection itself, step 2 above, isn't a YAML setting; it's configured once when the image-generation runner is set up, which is why this walkthrough separates it from the `snapshot:` block that runs on every build.
+
+## Pair this with restricting who can use these runners
+
+Layered images control what's already installed on a runner before a job even starts. A separate June 2026 release, [restricting GitHub-hosted runners to named runner groups](/dev-tools/restrict-github-hosted-runners-named-runner-groups), controls who can request a runner at all. The two changes solve different problems, but they show up on the same roadmap often: a team that's already built a shared base image with per-team layers is a strong candidate for also routing those runners through named groups, so a team's custom image is only reachable by the repos that actually need it.
+
+## Confirmed version
+
+Sourced from [GitHub's changelog entry on layered custom runner images](https://github.blog/changelog/2026-06-18-actions-build-custom-images-from-custom-images/), published 2026-06-18, and corroborated against GitHub's [custom images how-to guide](https://docs.github.com/en/actions/how-tos/manage-runners/larger-runners/use-custom-images), which documents the base-image dropdown, the inherited expiration timeline, and the exact `snapshot:` syntax used above. Browse more posts like this in the [Dev Tools](/dev-tools) archive.

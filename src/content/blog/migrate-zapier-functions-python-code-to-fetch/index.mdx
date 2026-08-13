@@ -1,0 +1,117 @@
+---
+title: "Migrate Zapier Functions Python Code to fetch()"
+description: "Zapier Functions shuts down September 1, 2026. Migrate Python requests calls to fetch() in Code by Zapier, except authenticated calls, handled differently."
+date: 2026-08-13
+category: data-automation
+tags: ["zapier", "python", "javascript", "api"]
+relatedSlugs:
+  [
+    "zapier-functions-split-multi-trigger-functions",
+    "zapier-functions-secrets-move-to-api-by-zapier",
+    "automate-static-site-deploys-github-actions-cloudflare-workers",
+  ]
+series: "Zapier's 2026 Integration Deprecation Wave: What Breaks in Live Zaps"
+seriesOrder: 4
+coverImage: "./cover.png"
+coverImageAlt: "A terminal window showing a Python requests.get call being rewritten as a JavaScript fetch call, above the real Zapier warning not to use fetch for authenticated calls"
+faq:
+  - question: "Can I keep using Python in Code by Zapier instead of switching to JavaScript?"
+    answer: "Code by Zapier does support Python as well as JavaScript, but it isn't the same runtime Zapier Functions ran on, and it doesn't ship the requests library the way Functions did. Whichever language you pick, HTTP calls need to be rewritten against Code by Zapier's actual runtime, not assumed to carry over from Functions unchanged."
+  - question: "What happens if I just leave requests.get() calls in place after the migration?"
+    answer: "They fail at runtime, not silently. Code by Zapier's environment doesn't have Zapier Functions' Python requests library available, so a call left unconverted throws an import or execution error the first time that step runs, rather than producing wrong output the way a dropped field does elsewhere in this series."
+---
+
+## Quick Answer
+
+Zapier Functions shuts down entirely on 2026-09-01. Its replacement, Code by Zapier, runs on a different runtime with no `requests` library, so plain HTTP calls need to be rewritten using `fetch`. The one exception: Zapier's own migration guide says not to use `fetch` for authenticated calls, those have to go through an API by Zapier connection instead.
+
+## Why this isn't a find-and-replace
+
+Zapier Functions let you write Python code with the `requests` library available for outbound HTTP calls, inside Zapier's own hosted runtime, with a five-minute max execution time. [Zapier's Help Center](https://help.zapier.com/hc/en-us/articles/45230556598157) confirms the shutdown date plainly, in its migration guide updated 2026-07-13:
+
+> "Zapier Functions is being deprecated on September 1, 2026"
+
+Code by Zapier is positioned as the direct replacement, but it runs JavaScript or Python on a different execution environment, one that doesn't ship the `requests` library old Functions code relied on. A script built around `requests.get()` or `requests.post()` has no equivalent library to fall back to; it has to be rewritten against whatever HTTP mechanism the new runtime actually provides.
+
+For JavaScript-based Code by Zapier steps, that mechanism is the standard `fetch` API:
+
+```python title="before: Zapier Functions (Python, requests)"
+import requests
+
+response = requests.get("https://api.example.com/items")
+data = response.json()
+print(data)
+```
+
+```javascript title="after: Code by Zapier (JavaScript, fetch)"
+const response = await fetch("https://api.example.com/items");
+const data = await response.json();
+console.log(data);
+```
+
+`requests.post(url, json=data)` follows the same pattern, rewritten as a `fetch` call with an explicit method, JSON body, and content-type header:
+
+```javascript title="POST requests in fetch()"
+const response = await fetch(url, {
+  method: "POST",
+  body: JSON.stringify(data),
+  headers: { "Content-Type": "application/json" },
+});
+```
+
+<Callout type="info" title="This site doesn't run Zapier">
+  Direct statement, since this is the honesty note this whole series carries:
+  bytetech247.com's own automation runs on Cloudflare Workers and GitHub
+  Actions, not Zapier (see [this site's actual deploy
+  automation](/data-automation/automate-static-site-deploys-github-actions-cloudflare-workers/)).
+  This is a structural walkthrough of Zapier's own published migration guide,
+  not a first-person account of migrating our own Functions code.
+</Callout>
+
+## The exception that breaks a naive find-and-replace
+
+Zapier's guide is explicit about where this pattern stops working: authenticated HTTP calls. Its warning reads:
+
+> "Do not use `fetch` for these calls."
+
+The reasoning is that Code by Zapier's execution model doesn't let code hold onto secrets the way Functions could. A `fetch` call with an API key baked into a header or query string would mean putting that credential directly in the Code step's source, exactly the pattern the runtime is designed not to support. Instead, authenticated requests have to go through **API by Zapier** with the Zapier SDK, which handles the credential through a stored connection rather than inline code. [The last post in this series](/data-automation/zapier-functions-secrets-move-to-api-by-zapier/) covers that connection setup and its exact binding syntax in full.
+
+## Structural Comparison Matrix
+
+| Operational Aspect             | Zapier Functions (Python)          | Code by Zapier                                           |
+| :----------------------------- | :--------------------------------- | :------------------------------------------------------- |
+| **Shutdown / availability**    | Ends 2026-09-01                    | Current replacement                                      |
+| **Language**                   | Python only                        | JavaScript or Python                                     |
+| **Unauthenticated HTTP calls** | `requests.get()` / `.post()`       | `fetch()`                                                |
+| **Authenticated HTTP calls**   | `requests` with inline credentials | API by Zapier connection via the Zapier SDK, not `fetch` |
+| **Console output**             | `print()`                          | `console.log()`                                          |
+
+## Fix it: audit before you convert
+
+Before rewriting anything, list every outbound HTTP call in the existing Functions code and mark whether it carries a credential (an API key header, a bearer token, a signed query string) or not. Unauthenticated calls convert straight to `fetch`. Authenticated ones need the API by Zapier connection instead, not a `fetch` call with the header simply carried over.
+
+```javascript title="a call that must NOT become fetch()"
+// Old Functions code:
+// requests.get(url, headers={"Authorization": f"Bearer {api_key}"})
+//
+// This is an authenticated call. Per Zapier's own migration guide,
+// route it through an API by Zapier connection, not fetch().
+```
+
+<Callout
+  type="warning"
+  title="Two other migration problems live in the same guide"
+>
+  Converting HTTP calls is one of three distinct problems Zapier's migration
+  guide covers. If the original Function handled multiple trigger events, [see
+  the next post on splitting it into separate
+  Zaps](/data-automation/zapier-functions-split-multi-trigger-functions/). If it
+  had hardcoded secrets anywhere, [see the post on moving them to an API by
+  Zapier
+  connection](/data-automation/zapier-functions-secrets-move-to-api-by-zapier/).
+  Fixing HTTP calls alone doesn't cover either of those.
+</Callout>
+
+## Confirmed version
+
+Sourced from [Zapier's official Help Center migration guide for Zapier Functions](https://help.zapier.com/hc/en-us/articles/45230556598157), updated 2026-07-13. Browse more posts like this in the [Data Automation](/data-automation) archive.

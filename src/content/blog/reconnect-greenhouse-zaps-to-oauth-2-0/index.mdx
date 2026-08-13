@@ -1,0 +1,69 @@
+---
+title: "Reconnect Greenhouse Zaps to OAuth 2.0 by Aug 26"
+description: "Greenhouse version 2.0.0 uses Harvest v3 and OAuth 2.0 auth. Zaps on the old API-key connection need a manual Reconnect before Aug 26, 2026."
+date: 2026-08-13
+category: data-automation
+tags: ["zapier", "greenhouse", "oauth", "harvest-api"]
+relatedSlugs: ["fix-greenhouse-zaps-for-harvest-v3-field-changes"]
+series: "Zapier's 2026 Integration Deprecation Wave: What Breaks in Live Zaps"
+seriesOrder: 9
+coverImage: "./cover.png"
+coverImageAlt: "A terminal window showing the real Zapier Help Center notice: Zapier is releasing Greenhouse version 2.0.0, which uses Harvest v3 and OAuth 2.0 authentication, click Reconnect to connect your account"
+faq:
+  - question: "Is reconnecting to OAuth 2.0 enough on its own to fix a Greenhouse Zap?"
+    answer: "No. Reconnecting fixes the authentication layer, so the Zap can talk to Greenhouse's API again. It does not fix field or schema differences between Harvest v1/v2 and v3 on individual triggers and actions, which is a separate migration covered in the companion post on Harvest v3 field changes."
+  - question: "What happens if I don't reconnect before the deadline?"
+    answer: "Zapier's notice gives two dates: Greenhouse version 1.5.1 (the old, API-key based connection) stops working August 26, 2026, and Greenhouse's own Harvest API v1 and v2 are retired August 31, 2026. Either date is enough to break a Zap still running on the old connection, since the API-key auth it depends on stops being accepted."
+---
+
+## Quick Answer
+
+Zapier's Greenhouse version 2.0.0 switches from API-key authentication to OAuth 2.0, running on Greenhouse's Harvest v3 API. Every Zap still connected through the old version needs its Greenhouse connection manually reconnected through the new OAuth flow before August 26, 2026, or every step using that connection fails at the authentication layer, regardless of whether the step itself was otherwise migrated.
+
+## Why the fix here is the connection, not a single step
+
+One honesty note before the details: ByteTech247 doesn't run Zapier. Its own automation runs on Cloudflare Workers and GitHub Actions, covered in our separate [Cloudflare API deprecation pillar](/data-automation/cloudflares-july-2026-api-deprecation-wave/). Everything below comes from Zapier's own Help Center advisory on the Greenhouse deprecation, not from operating these Zaps ourselves.
+
+Greenhouse is shutting down the older versions of its Harvest API, v1 and v2. [Zapier's own notice](https://help.zapier.com/hc/en-us/articles/47585848967437) explains what the replacement app version actually changes:
+
+> "Zapier is releasing Greenhouse version 2.0.0, which uses Harvest v3 and OAuth 2.0 authentication."
+
+That second half matters as much as the API version bump. The old Greenhouse connection in Zapier authenticated with a static API key, tied to the Greenhouse account, that Zapier stored and reused on every call. Version 2.0.0 authenticates through OAuth 2.0 instead, an actual authorization flow rather than a stored secret. Zapier's fix instruction is a single, specific action:
+
+> "Click Reconnect to connect your Greenhouse account using the new OAuth 2.0 flow."
+
+The two relevant deadlines aren't the same date. Zapier states that Greenhouse version 1.5.1, the old API-key connection, stops working August 26, 2026, while Greenhouse's own Harvest API v1 and v2 are retired August 31, 2026. Zapier's cutoff lands five days before Greenhouse's, giving a small buffer, not a reason to wait until the later date.
+
+## Structural Comparison Matrix
+
+| Operational Aspect    | Greenhouse v1.5.1 (old)                         | Greenhouse v2.0.0 (current) |
+| :-------------------- | :---------------------------------------------- | :-------------------------- |
+| **Auth method**       | Static API key                                  | OAuth 2.0                   |
+| **API it calls**      | Harvest v1/v2                                   | Harvest v3                  |
+| **Zapier cutoff**     | Stops working 2026-08-26                        | N/A                         |
+| **Greenhouse cutoff** | Harvest v1/v2 retired 2026-08-31                | N/A                         |
+| **Action required**   | Reconnect via OAuth 2.0, before either deadline | N/A                         |
+
+## Fix it: reconnect before touching individual steps
+
+<Callout
+  type="warning"
+  title="Reconnecting is a prerequisite, not the whole fix"
+>
+  Getting the connection onto OAuth 2.0 only fixes authentication. Individual
+  triggers, actions, and searches still need checking against Harvest v3's field
+  and schema changes, a separate step covered in [Fix Greenhouse Zaps for
+  Harvest v3 Field
+  Changes](/data-automation/fix-greenhouse-zaps-for-harvest-v3-field-changes/).
+  Do the reconnect first; it's the layer everything else depends on.
+</Callout>
+
+1. **Find every Zap using a Greenhouse connection.** Check each one's app version. Anything still showing the older Greenhouse connection (pre-2.0.0, API-key based) is on borrowed time regardless of which specific trigger or action it uses.
+2. **Open the connection settings and click Reconnect**, per Zapier's own instruction. This walks through Greenhouse's OAuth 2.0 authorization screen rather than asking for an API key directly, so expect a real Greenhouse login/authorize prompt, not a paste-a-key field.
+3. **Confirm the reconnected Zap picks up version 2.0.0**, not just a refreshed token on the old version. The version shown in the app step is the signal that the underlying API surface actually changed from Harvest v1/v2 to v3, not just that the credential got refreshed.
+4. **Don't stop at reconnecting.** A successful OAuth reconnect means the Zap can authenticate again. It says nothing about whether the specific trigger, action, or search fields still map correctly under Harvest v3, since v3 changes response shapes independently of the auth method.
+5. **Do this before August 26, 2026**, Zapier's own cutoff for the old connection, five days ahead of Greenhouse's own Harvest v1/v2 retirement on August 31.
+
+## Confirmed version
+
+Sourced from Zapier's official Help Center advisory on the Greenhouse Harvest API deprecation, published 2026-07-27, with the version, auth method, and both cutoff dates confirmed directly against that source. Browse more posts like this in the [Data Automation](/data-automation) archive.

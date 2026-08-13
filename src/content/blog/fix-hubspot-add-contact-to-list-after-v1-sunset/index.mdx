@@ -1,0 +1,62 @@
+---
+title: "Fix HubSpot Add Contact to List After V1 Sunset"
+description: "HubSpot's v1 Lists API sunset April 30, 2026, breaking Zapier's Add/Remove Contact from List actions. Here's what we know and how to check your Zaps."
+date: 2026-08-13
+category: data-automation
+tags: ["zapier", "hubspot", "lists-api", "api"]
+relatedSlugs: []
+series: "Zapier's 2026 Integration Deprecation Wave: What Breaks in Live Zaps"
+seriesOrder: 11
+coverImage: "./cover.png"
+coverImageAlt: "A terminal window showing the real Zapier Community digest line: Add Contact to List and Remove Contact from List, actions using deprecated v1 Lists API, sunset April 30 2026"
+faq:
+  - question: "Is there a dedicated Zapier Help Center article for this HubSpot deprecation, like the ones for Pipedrive, Greenhouse, or ChatGPT?"
+    answer: "No, and that's worth stating plainly. The only Zapier-side documentation found for this one is a single bullet point inside a monthly community digest post, not a dedicated action-required advisory. That's a meaningfully weaker citation than the other posts in this series, and it means there's no canonical page to check back against for updates."
+  - question: "How would I know if my Zap is actually affected right now?"
+    answer: "Test it directly. Run the Add Contact to List or Remove Contact from List action manually against a real contact and list, then check HubSpot's list membership afterward to confirm the contact actually moved. Since there's no error-throwing behavior described in the source, a silent no-op is the likely failure mode, not a visible Zap error."
+---
+
+## Quick Answer
+
+HubSpot retired its v1 Lists API on April 30, 2026. Zapier's Add Contact to List and Remove Contact from List actions, built against that API, stopped working on that date. There's no dedicated Zapier Help Center advisory for this one, only a single line in a May 2026 community digest post, so the practical fix is testing the action directly against a real contact and list rather than waiting for a Zap error to surface it.
+
+## Why this one is sourced differently than the rest of this series
+
+One honesty note first: ByteTech247 doesn't run Zapier. This site's own automation is Cloudflare Workers and GitHub Actions, covered in a separate [Cloudflare API deprecation pillar](/data-automation/cloudflares-july-2026-api-deprecation-wave/). What follows is sourced from Zapier's own community documentation, not from running this integration ourselves.
+
+This post also needs a second, more specific honesty note, because its sourcing is genuinely weaker than the Pipedrive, Greenhouse, and ChatGPT posts in this series. Those three each have a dedicated Zapier Help Center "action required" article with a clear publish date and an explicit deadline. This one doesn't. The only corroborating source is a single bullet inside [Zapier Community's monthly integrations digest](https://community.zapier.com/product-updates/what-s-new-73-updated-integrations-for-may-2026-53403), published May 28, 2026, buried among dozens of unrelated feature updates:
+
+> "Add Contact to List / Remove Contact from List: Actions using deprecated v1 Lists API sunset April 30 2026"
+
+Both dates here sit slightly earlier than the freshness window the rest of this series targets. This is the same shape of caveat we've stated on two other posts on this site, [Cloudflare's AMP/SXG API end-of-life](/data-automation/cloudflare-amp-sxg-api-end-of-life/) and [Cloudflare's Gateway Audit SSH rules deprecation](/data-automation/cloudflare-deprecates-gateway-audit-ssh-rules/), both of which document changes that had already happened before the corroborating post went up. The justification is the same here: this break is old enough to have already occurred, but recent enough, and undocumented enough by any dedicated advisory, that people are plausibly still finding silently broken list-management Zaps months later with nothing authoritative to search for and find.
+
+## Structural Comparison Matrix
+
+| Operational Aspect                       | Before 2026-04-30 | After 2026-04-30                                                       |
+| :--------------------------------------- | :---------------- | :--------------------------------------------------------------------- |
+| **HubSpot Lists API version**            | v1                | v1 retired                                                             |
+| **Add/Remove Contact from List actions** | Functional        | Broken, per the community digest                                       |
+| **Dedicated Zapier advisory**            | N/A               | None found; only a community digest bullet                             |
+| **Failure mode**                         | N/A               | Not described in the source; test directly rather than assume an error |
+
+## Fix it: test directly, since there's nothing else to check against
+
+<Callout
+  type="warning"
+  title="Weakest citation in this series, stated honestly"
+>
+  Every other post in this series links a dedicated Zapier Help Center advisory.
+  This one doesn't have one. Treat the guidance below as a reasonable response
+  to a thin source, not as confirmed the way the Pipedrive, Greenhouse, and
+  ChatGPT deprecations in this series are.
+</Callout>
+
+1. **Find every Zap using Add Contact to List or Remove Contact from List.** These are the two actions the digest names directly.
+2. **Run each one manually against a real contact and a real list**, rather than trusting that a Zap showing "success" in its history actually moved the contact. Since the digest gives no description of how the failure presents (an error, a silent no-op, or something else), don't assume a clean Zap history means the action actually worked.
+3. **Check list membership in HubSpot directly after the test run.** If the contact wasn't added or removed despite the Zap reporting success, that's consistent with the v1 API sunset described in the digest.
+4. **Look for a current, non-deprecated list-management action in the Zapier HubSpot app** as the fix, rather than assuming there's a drop-in v2 equivalent to swap into the same action slot. Since no dedicated migration guide exists for this one, confirming the current action's exact behavior against a live HubSpot list is the most reliable check available.
+5. **Re-check periodically.** Because this deprecation has no dedicated advisory to bookmark, there's no single page to watch for updates. A recheck every so often is a reasonable substitute for the update notifications the other Zaps in this series get from their own Help Center articles.
+
+## Confirmed version
+
+Sourced from Zapier Community's monthly integrations digest for May 2026, published 2026-05-28, the only corroborating source found for this deprecation; no dedicated Zapier Help Center advisory exists for it as of this writing. Browse more posts like this in the [Data Automation](/data-automation) archive.

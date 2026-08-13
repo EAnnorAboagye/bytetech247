@@ -1,0 +1,63 @@
+---
+title: "GitHub Actions' Summer 2026 Overhaul: Full Guide"
+description: "GitHub shipped 10 Actions changes across June-July 2026: one breaking checkout default, a runner version cutoff, new security controls, and new syntax."
+date: 2026-08-13
+category: dev-tools
+tags: ["github-actions", "ci-cd", "security", "devops"]
+relatedSlugs:
+  [
+    "automate-static-site-deploys-github-actions-cloudflare-workers",
+    "wranglers-july-2026-breaking-changes",
+  ]
+series: "GitHub Actions' Summer 2026 Security & Config Overhaul: What to Change in Your Workflows"
+seriesOrder: 1
+coverImage: "./cover.png"
+coverImageAlt: "A dark comparison-matrix style cover listing GitHub Actions' summer 2026 changes across three groups: security (checkout defaults, cache tokens, execution allow-lists), infrastructure (self-hosted runner floor, runner groups, layered images), and new syntax ($/ same-repo actions, parallel steps, agentic workflows)"
+faq:
+  - question: "Do I need to act on all 10 of these before my next deploy?"
+    answer: "No. Only one of the ten - actions/checkout v7 blocking pull_request_target fork checkouts - can break an existing workflow outright, and only if that workflow actually uses that pattern. The rest are either opt-in new capabilities (parallel steps, $/ syntax, layered runner images, agentic workflows) or scoped to infrastructure most teams don't run (self-hosted runners, Team/Enterprise runner groups). Check the table below against what your own .github/workflows actually do."
+  - question: "Does this affect ByteTech247's own CI pipeline?"
+    answer: "Partially, and each linked post says so honestly rather than forcing a dogfooding claim that isn't real. This site's ci.yml pins actions/checkout@v7 and triggers only on push and same-repo pull_request events, so the pull_request_target default change and the workflow-execution-protections allow-list are the two most directly relevant; the self-hosted-runner and runner-group changes don't apply, since this site's CI runs entirely on GitHub-hosted ubuntu-latest runners."
+---
+
+## Quick Answer
+
+Between 2026-06-11 and 2026-07-30, GitHub shipped 10 distinct changes to Actions: one real breaking default (`actions/checkout` v7 blocking fork PR checkouts under `pull_request_target`), a self-hosted runner version cutoff with an active brownout schedule, three new security controls (workflow execution allow-lists, bot-PR approval gating, read-only cache tokens on untrusted triggers), and five new capabilities (same-repo `$/` action syntax, parallel step execution, restricted runner groups, layered custom runner images, and GitHub Agentic Workflows). If you run GitHub Actions at all, check the table below against your own `.github/workflows/*.yml` files before assuming nothing here applies to you.
+
+GitHub Actions is the CI/CD platform behind this site's own deploy pipeline (`.github/workflows/ci.yml`: lint, test, build, then deploy to Cloudflare Workers on every push to `main`). That gives real first-person standing to discuss at least the checkout-default and workflow-trigger changes directly — though, as every linked post below says plainly, several of these changes target infrastructure (self-hosted runners, Team/Enterprise runner groups) this site doesn't actually run, and the honest answer there is "doesn't apply here," not a forced dogfooding story.
+
+## Structural Comparison Matrix
+
+| #   | Change                                             | Type                          | Applies to you if...                                                            |
+| :-- | :------------------------------------------------- | :---------------------------- | :------------------------------------------------------------------------------ |
+| 1   | `actions/checkout` v7 blocks fork PR checkouts     | Breaking (security)           | You use `pull_request_target` or PR-flavored `workflow_run` with fork checkouts |
+| 2   | Self-hosted runner minimum version enforced        | Deprecation cutoff            | You run self-hosted Actions runners                                             |
+| 3   | Workflow execution protections (allow-lists)       | New security control          | You want to restrict who/what can trigger workflows                             |
+| 4   | Bot-created PRs need approval to run workflows     | Behavior default              | A scheduled workflow in your repo opens PRs as `github-actions[bot]`            |
+| 5   | Actions cache goes read-only on untrusted triggers | Security tightening           | You populate a shared cache from a `pull_request_target`-style trigger          |
+| 6   | `$/` same-repository action syntax                 | New syntax                    | You reference a composite action or reusable workflow in the same repo          |
+| 7   | Parallel steps via `background`/`wait`/`parallel`  | New capability                | Your workflow has independent steps forced into artificial sequence             |
+| 8   | Restrict GitHub-hosted runners to named groups     | New control (Team/Enterprise) | You're on a Team/Enterprise plan and want to gate standard runner labels        |
+| 9   | Layered custom runner images                       | New capability                | You maintain custom runner images and duplicate a shared base image today       |
+| 10  | GitHub Agentic Workflows (public preview)          | New capability                | You want AI agents doing reasoning tasks (triage, CI analysis) inside CI        |
+
+Every row is confirmed against GitHub's own changelog entry for that change, not summarized from memory. Full mechanism, exact quoted text, and the fix live in each linked post below.
+
+## The 10 changes, in detail
+
+1. **[actions/checkout v7 Blocks pull_request_target PRs](/dev-tools/actions-checkout-v7-blocks-pull-request-target-prs/)**: closes the classic "pwn request" hole where a workflow with real secrets checks out an attacker-controlled fork commit.
+2. **[GitHub Actions: Upgrade Self-Hosted Runners by Jul 31](/dev-tools/github-actions-upgrade-self-hosted-runners-july-31/)**: a minimum runner version (2.329.0+) and a rolling 30-day update window, enforced through escalating brownout windows.
+3. **[Set Up GitHub Actions Workflow Execution Protections](/dev-tools/github-actions-workflow-execution-protections/)**: a rulesets-based allow-list controlling who can trigger workflows and which events are permitted at all.
+4. **[Approve Workflow Runs From github-actions[bot] PRs](/dev-tools/approve-workflow-runs-github-actions-bot-prs/)**: bot-authored PRs can now trigger CI, but only after a collaborator explicitly approves the run.
+5. **[GitHub Actions Cache Goes Read-Only on Untrusted Triggers](/dev-tools/github-actions-cache-read-only-untrusted-triggers/)**: closes a cache-poisoning path where an external contributor could write to a default-branch cache scope.
+6. **[Reference Same-Repo Actions With $/ Syntax](/dev-tools/github-actions-self-repository-dollar-slash-syntax/)**: resolves a same-repo action to the exact running commit, no checkout step required.
+7. **[Run GitHub Actions Steps in Parallel With background](/dev-tools/github-actions-parallel-steps-background-keyword/)**: `background: true`, `wait`, `wait-all`, `cancel`, and `parallel` bring real concurrency inside a single job's step list.
+8. **[Restrict GitHub-Hosted Runners to Named Runner Groups](/dev-tools/restrict-github-hosted-runners-named-runner-groups/)**: Team/Enterprise admins can disable standard labels like `ubuntu-latest` org-wide and force named runner groups instead.
+9. **[Build Custom GitHub Actions Runner Images in Layers](/dev-tools/github-actions-layered-custom-runner-images/)**: compose custom runner images on top of other custom images instead of duplicating a shared base.
+10. **[Set Up GitHub Agentic Workflows in Actions](/dev-tools/github-actions-agentic-workflows-setup/)**: compiles natural-language Markdown into standard Actions YAML, sandboxed behind an Agent Workflow Firewall with read-only defaults.
+
+## Why this happened in one summer
+
+GitHub ships Actions changes on a rolling basis, but June and July 2026 concentrated an unusual amount of security-hardening into a seven-week window: a real breaking default aimed squarely at the "pwn request" pattern, two more security controls closing adjacent gaps (cache poisoning, unapproved bot-triggered runs), and a version-enforcement push for self-hosted infrastructure — alongside a separate cluster of new capability (parallel steps, same-repo action syntax, agentic workflows) that reads more like a normal feature cadence. None of the dates or quoted text above are estimated; every one traces to GitHub's own [changelog](https://github.blog/changelog/label/actions/), cross-checked per cluster against the individual changelog post and, where one exists, GitHub's own docs page for that feature.
+
+Browse the rest of the [Dev Tools](/dev-tools) archive for more CI/CD and Cloudflare Workers coverage.

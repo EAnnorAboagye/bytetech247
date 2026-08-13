@@ -1,0 +1,118 @@
+---
+title: "GitHub Actions Cache Goes Read-Only on Untrusted Triggers"
+description: "GitHub Actions now issues read-only cache tokens for untrusted triggers like pull_request_target, closing a cache-poisoning path. Here's what still writes."
+date: 2026-08-13
+category: dev-tools
+tags: ["github-actions", "security", "ci-cd", "caching"]
+relatedSlugs: []
+series: "GitHub Actions' Summer 2026 Security & Config Overhaul: What to Change in Your Workflows"
+seriesOrder: 6
+coverImage: "./cover.png"
+coverImageAlt: "A terminal window showing the GitHub Actions changelog entry describing read-only cache tokens for workflow events that can be triggered without write permissions"
+faq:
+  - question: "Does this break my normal push-triggered build cache?"
+    answer: "No. push, schedule, workflow_dispatch, and repository_dispatch keep read-write cache tokens on the default branch. Only untrusted-trigger events, ones that can be caused by someone without write access, are restricted to read-only."
+  - question: "What's actually being prevented here?"
+    answer: "Cache poisoning followed by trusted execution. Before this change, an untrusted trigger like pull_request_target could write to the default-branch cache scope. A later trusted run (push or schedule) would then restore that same cache entry and could execute whatever was planted in it, a path GitHub's own changelog describes as being able to run arbitrary code and exfiltrate production secrets."
+  - question: "My workflow needs to populate the cache from a restricted context. What do I do now?"
+    answer: "Split it into two workflows. Keep a trusted-trigger workflow (push, schedule, workflow_dispatch, or repository_dispatch) dedicated to the cache save step, and let the untrusted-trigger workflow only restore from it. That's a structural change to how the workflow files are organized, not a config flag to flip."
+---
+
+## Quick Answer
+
+As of 2026-06-26, any default-branch cache scope only gets a read-only token when the triggering event doesn't require write access to the repo, `pull_request_target`, `issue_comment`, and fork-originated `workflow_run` cascades among them. `push`, `schedule`, `workflow_dispatch`, and `repository_dispatch` keep read-write access. If a workflow used to save cache from one of the now-restricted triggers, split cache-saving into a separate trusted-trigger workflow.
+
+## The attack this closes
+
+The Actions cache was read-write for every triggering event before this change, including events anyone can cause without holding write access to the repo. `pull_request_target` is the clearest example: it runs with the base repo's permissions, but the event itself can be caused by opening a pull request from a fork, something an outside contributor can always do.
+
+That combination let an external contributor poison a default-branch cache entry, a dependency artifact, a build output, anything a later job would restore and trust. GitHub's own changelog names the consequence directly:
+
+> "a trusted workflow such as `push` or `schedule` would later restore" the poisoned entry, closing "a path to run arbitrary code and exfiltrate production secrets."
+
+The fix, effective 2026-06-26, scopes cache-token write access to trust level of the triggering event rather than treating every event the same.
+
+## Which events still get read-write, and which don't
+
+| Trigger type                            | Cache token access after 2026-06-26 |
+| :-------------------------------------- | :---------------------------------- |
+| `push`                                  | Read-write                          |
+| `schedule`                              | Read-write                          |
+| `workflow_dispatch`                     | Read-write                          |
+| `repository_dispatch`                   | Read-write                          |
+| `pull_request_target`                   | Read-only                           |
+| `issue_comment`                         | Read-only                           |
+| Fork-originated `workflow_run` cascades | Read-only                           |
+
+The line GitHub draws is straightforward:
+
+> "...can be triggered without write permissions to the repository."
+
+Anything an outside contributor can cause on their own, no maintainer action required, loses write access to the default branch's cache scope. Anything that requires a maintainer or a scheduled job to fire keeps it.
+
+## Structural Comparison Matrix
+
+| Operational Aspect                                         | Before (2026-06-25 and earlier)          | After (2026-06-26+)                          |
+| :--------------------------------------------------------- | :--------------------------------------- | :------------------------------------------- |
+| **Cache write access from `pull_request_target`**          | Read-write, no restriction               | Read-only                                    |
+| **Cache write access from `push`/`schedule`**              | Read-write                               | Unchanged, still read-write                  |
+| **Cache poisoning via an untrusted trigger**               | Possible                                 | Blocked: token can't write                   |
+| **Workflow needing to save cache from a restricted event** | Single workflow handled save and restore | Requires a separate trusted-trigger workflow |
+
+## Restructuring a workflow that saved cache from an untrusted trigger
+
+If a `pull_request_target` (or `issue_comment`, or fork-triggered `workflow_run`) job in your repo relies on `actions/cache`'s `save` action or a post-job automatic save, it now silently stops writing rather than erroring loudly, check for stale cache hits as the symptom, not a clear failure message.
+
+The fix is to split cache population from cache use across two workflows:
+
+```yaml title=".github/workflows/cache-populate.yml"
+# Trusted trigger: read-write cache access
+name: Populate build cache
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "0 6 * * *"
+
+jobs:
+  populate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: deps-${{ hashFiles('package-lock.json') }}
+      - run: npm ci
+```
+
+```yaml title=".github/workflows/pr-check.yml"
+# Untrusted trigger: read-only cache access, restore only
+name: PR check
+on:
+  pull_request_target:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/cache/restore@v4
+        with:
+          path: node_modules
+          key: deps-${{ hashFiles('package-lock.json') }}
+      - run: npm ci # falls back to a real install on a cache miss
+```
+
+The `pull_request_target` workflow now only restores, using `actions/cache/restore` instead of the combined `actions/cache` action, since it never has permission to write back. The trusted `push`/`schedule` workflow owns keeping the cache current.
+
+<Callout type="tip" title="A cache miss under the new model isn't a bug">
+  If the untrusted-trigger workflow's cache key doesn't match anything the
+  trusted workflow already saved, it just runs a real install instead of
+  restoring from cache, the same as any normal cache miss. That's expected
+  behavior under this model, not a sign something's broken.
+</Callout>
+
+## Source
+
+[github.blog/changelog: Read-only Actions cache for untrusted triggers](https://github.blog/changelog/2026-06-26-read-only-actions-cache-for-untrusted-triggers/) (2026-06-26). Browse more posts like this in the [Dev Tools](/dev-tools) archive.

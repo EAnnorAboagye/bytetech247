@@ -1,0 +1,75 @@
+---
+title: "Fix Greenhouse Zaps for Harvest v3 Field Changes"
+description: "Every Greenhouse trigger, action, and search built on Harvest v1/v2 needs checking against v3's field changes. Here's Zapier's exact affected-steps list."
+date: 2026-08-13
+category: data-automation
+tags: ["zapier", "greenhouse", "harvest-api", "api"]
+relatedSlugs: ["reconnect-greenhouse-zaps-to-oauth-2-0"]
+series: "Zapier's 2026 Integration Deprecation Wave: What Breaks in Live Zaps"
+seriesOrder: 10
+coverImage: "./cover.png"
+coverImageAlt: "A terminal window showing the real Zapier Help Center list of Greenhouse triggers, actions, and searches affected by the Harvest v3 migration"
+faq:
+  - question: "Is there a single marker, like a bracketed label, that flags which Zap steps are affected?"
+    answer: "No. Unlike Zapier's Pipedrive deprecation, which prepends a literal [DEPRECATING JULY 31 2026] label to affected step names, the Greenhouse notice gives no per-step visual marker. The only way to find affected steps is to manually cross-reference each Zap's step names against Zapier's published list."
+  - question: "Does reconnecting my Greenhouse account to OAuth 2.0 also fix these field changes?"
+    answer: "No, they're separate problems. Reconnecting fixes authentication, covered in our companion post on the OAuth 2.0 migration. It doesn't touch field names or response shapes, which changed independently when Greenhouse moved from Harvest v1/v2 to v3."
+---
+
+## Quick Answer
+
+Even after reconnecting a Greenhouse Zap to OAuth 2.0, every trigger, action, and search built on Harvest v1 or v2 needs its fields checked against Harvest v3's schema. Zapier names six triggers, five actions, and two searches as affected, plus any raw API Request or custom action calling the Harvest API directly, with no single marker to flag which of your Zaps' steps need attention.
+
+## A schema problem, not an auth problem
+
+A quick honesty note before the specifics: ByteTech247 doesn't run Zapier. Its own automation runs on Cloudflare Workers and GitHub Actions, covered separately in our [Cloudflare API deprecation pillar](/data-automation/cloudflares-july-2026-api-deprecation-wave/). What's below is sourced from Zapier's own Help Center advisory on the Greenhouse deprecation, not from operating these Zaps first-hand.
+
+The [same Zapier notice](https://help.zapier.com/hc/en-us/articles/47585848967437) that covers the [OAuth 2.0 reconnect](/data-automation/reconnect-greenhouse-zaps-to-oauth-2-0/) also lists exactly which steps are built against the old Harvest v1/v2 API and need checking under v3. Unlike Zapier's Pipedrive deprecation notice, which prepends a literal `[DEPRECATING JULY 31 2026]` label to every affected step name inside the Zap editor, this one gives no in-product marker. The list exists only in the Help Center article itself, so finding affected steps means manually comparing that list against every Greenhouse step across every live Zap.
+
+Zapier's affected-steps list, quoted directly:
+
+> **Triggers:** New Candidate Application, New Job Post, Candidate Hired, New Scheduled Interview, Job Updated, New Scorecard Due
+>
+> **Actions:** API Request (Beta), Create Candidate Note, Create Candidate, Create Prospect, Update Candidate
+>
+> **Searches:** Find Candidate, Find Due Scorecard
+
+For anything built with a raw API call rather than one of Zapier's built-in steps, the notice is direct:
+
+> "If you use the _API Request_ action or _custom action_, you must migrate your request to the Harvest v3 API"
+
+That migration covers updating URLs, headers, body fields, and authentication parameters to match Greenhouse's current Harvest v3 documentation, according to the same notice. Zapier doesn't publish a field-by-field diff between v2 and v3 for each of these steps, so the practical path is checking each one's current output against what the Zap's downstream steps expect, then consulting Greenhouse's own Harvest v3 API reference for anything that looks off.
+
+## Structural Comparison Matrix
+
+| Operational Aspect                            | Harvest v1/v2 steps                                                   | Harvest v3 steps                                       |
+| :-------------------------------------------- | :-------------------------------------------------------------------- | :----------------------------------------------------- |
+| **Affected step count**                       | 13 named steps (6 triggers, 5 actions, 2 searches), per Zapier's list | Same steps, migrated                                   |
+| **In-product marker for affected steps**      | None                                                                  | None                                                   |
+| **Raw API calls (API Request/custom action)** | Built against v1/v2 endpoints                                         | Must be manually migrated per Greenhouse's v3 docs     |
+| **How to find affected steps**                | N/A                                                                   | Manual cross-reference against Zapier's published list |
+
+## Fix it: cross-reference every Greenhouse step
+
+<Callout type="info" title="Reconnecting to OAuth 2.0 comes first">
+  This field-level check only matters once the connection itself is on OAuth
+  2.0. If a Zap is still authenticating with the old API key, fix that first;
+  see [Reconnect Greenhouse Zaps to OAuth 2.0 by Aug
+  26](/data-automation/reconnect-greenhouse-zaps-to-oauth-2-0/).
+</Callout>
+
+1. **List every Zap using a Greenhouse step.** For each one, note the exact trigger, action, or search name in use.
+2. **Check each step name against Zapier's list above.** If it matches one of the six triggers, five actions, or two searches, treat it as needing a field-level review, not just an auth reconnect.
+3. **For built-in steps, re-test with real data after reconnecting.** Run the Zap manually against a real record and compare the fields it returns or writes against what the downstream steps in the Zap actually expect. A field silently missing or renamed under v3 won't throw an error the way a broken auth call does; it just produces blank or unexpected values further down the Zap.
+4. **For API Request or custom action steps, migrate manually.** Per Zapier's notice, that means updating the request URL, headers, body fields, and auth parameters to match Harvest v3, referencing Greenhouse's own current API documentation rather than the v1/v2 shape the request was originally built against.
+5. **Don't assume a Zap is clear just because it ran successfully once.** Since there's no per-step marker, the only reliable check is the manual cross-reference in step 2, done for every Zap, not a spot check on the ones that come to mind first.
+
+<Callout type="warning" title="Two separate deadlines still apply">
+  Zapier's own cutoff for the old Greenhouse connection is August 26, 2026;
+  Greenhouse retires Harvest v1 and v2 on August 31, 2026. Field-level fixes
+  from this list need to land before whichever of those hits first, not after.
+</Callout>
+
+## Confirmed version
+
+Sourced from Zapier's official Help Center advisory on the Greenhouse Harvest API deprecation, published 2026-07-27, with the full affected-steps list and API Request migration instruction confirmed directly against that source. Browse more posts like this in the [Data Automation](/data-automation) archive.

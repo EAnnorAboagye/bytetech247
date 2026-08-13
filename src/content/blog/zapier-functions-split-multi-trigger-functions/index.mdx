@@ -1,0 +1,87 @@
+---
+title: "Zapier Functions: Split Multi-Trigger Functions"
+description: "Code by Zapier allows one trigger per Zap. A Zapier Function with multiple triggers has to split into separate Zaps before the September 1, 2026 shutdown."
+date: 2026-08-13
+category: data-automation
+tags: ["zapier", "automation", "webhook"]
+relatedSlugs:
+  [
+    "migrate-zapier-functions-python-code-to-fetch",
+    "zapier-functions-secrets-move-to-api-by-zapier",
+    "automate-static-site-deploys-github-actions-cloudflare-workers",
+  ]
+series: "Zapier's 2026 Integration Deprecation Wave: What Breaks in Live Zaps"
+seriesOrder: 5
+coverImage: "./cover.png"
+coverImageAlt: "A terminal window showing the real Zapier migration guidance: each function trigger becomes a separate Zap trigger, so a multi-trigger function must split into one Zap per trigger"
+faq:
+  - question: "Can I keep one Zap and just add a second trigger to it?"
+    answer: "No. Zapier's automation model allows exactly one trigger per Zap, the same constraint that forces this split in the first place. A second trigger event has to live in its own Zap, not as an additional trigger bolted onto the first one."
+  - question: "Does duplicating shared logic across Zaps create a maintenance problem?"
+    answer: "It can, which is exactly why Zapier's own guide offers the sub-Zap option as an alternative to duplicating code. A sub-Zap holds the shared logic once and gets called from each of the split Zaps, so a future change to that logic happens in one place instead of needing to be copied into every Zap that split off the original function."
+---
+
+## Quick Answer
+
+A single Zapier Function could handle multiple trigger events in one function file. Code by Zapier has no equivalent: each Zap supports exactly one trigger. A multi-trigger Function has to be split into one Zap per trigger event before the 2026-09-01 shutdown, with shared logic either duplicated across those Zaps or pulled into a callable sub-Zap.
+
+## Why this is an architecture problem, not a syntax one
+
+[The previous post in this series](/data-automation/migrate-zapier-functions-python-code-to-fetch/) covers rewriting HTTP calls from Python's `requests` to JavaScript's `fetch`. That's a code-level fix: same logic, different syntax, same Zap structure. This one is different. It's about the shape of the Zap itself.
+
+[Zapier's own migration guide](https://help.zapier.com/hc/en-us/articles/45230556598157), updated 2026-07-13, states the constraint directly:
+
+> "Each function trigger becomes a separate Zap trigger. If your function had multiple triggers, create one Zap per trigger or share code logic in a sub-Zap."
+
+A Zapier Function could be written to respond to more than one kind of event, for example, one function handling both a "record created" case and a "record updated" case inside the same file, branching on which event fired. Code by Zapier doesn't carry that flexibility forward. Every Zap in Zapier's automation model has exactly one trigger, full stop, and that hasn't changed as part of this migration. A function built around multiple triggers doesn't have a single-Zap home to migrate into.
+
+<Callout type="warning" title="The silent-failure version of this problem">
+  Converting the code for one trigger event and calling the migration done is
+  the easy mistake here. The Zap runs, the tests for that one trigger pass, and
+  everything looks migrated. Meanwhile, whatever the original function did in
+  response to its other trigger events has no Zap running it at all, so those
+  code paths stop firing with nothing in the Zap history to flag it as a gap,
+  since there's no longer a Zap for it to fail in.
+</Callout>
+
+## Structural Comparison Matrix
+
+| Operational Aspect             | Zapier Functions                            | Code by Zapier                                       |
+| :----------------------------- | :------------------------------------------ | :--------------------------------------------------- |
+| **Triggers per code unit**     | One function, potentially multiple triggers | One Zap, exactly one trigger                         |
+| **Multi-event logic**          | Branches inside a single function file      | Split across separate Zaps                           |
+| **Shared logic across events** | Shared within the same file                 | Duplicated per Zap, or extracted into a sub-Zap      |
+| **Migration risk**             | N/A                                         | Only the first migrated trigger is obviously visible |
+
+## Fix it: map every trigger before splitting anything
+
+Start by listing every distinct trigger event the original Function actually responded to, not just the one that happens to be top of mind. That list is the number of Zaps this migration needs, not one Zap with a converted first branch.
+
+```text title="one Zapier Function -> multiple Zaps"
+Original function.py:
+  handle_record_created(payload)  -> logic A
+  handle_record_updated(payload)  -> logic A (shared) + logic B
+
+Migrated structure:
+  Zap 1: trigger = Record Created  -> Code step running logic A
+  Zap 2: trigger = Record Updated  -> Code step running logic A + logic B
+```
+
+For the shared logic (`logic A` in the example above), Zapier's guide gives two options: duplicate it into the Code step of each split Zap, or extract it into a sub-Zap that both Zaps call. Duplication is faster to set up and fine for logic that's genuinely small and stable. A sub-Zap is the better call when that shared logic is likely to change, since a future fix only needs to land in one place instead of being copied into every Zap that split off the original function.
+
+<Callout type="info" title="This site doesn't run Zapier">
+  Same honesty note as the rest of this series: bytetech247.com's own automation
+  runs on Cloudflare Workers and GitHub Actions, not Zapier (see [this site's
+  actual deploy
+  automation](/data-automation/automate-static-site-deploys-github-actions-cloudflare-workers/)).
+  This walkthrough follows Zapier's own published migration guide, not a
+  first-person account of splitting our own Functions.
+</Callout>
+
+Once every trigger has its own Zap, test each one independently with a real event, not just the trigger that was easiest to verify. A Zap that "looks migrated" because its trigger fires correctly can still be missing the shared logic branch that only runs on the second or third event type.
+
+[Two other distinct problems](/data-automation/migrate-zapier-functions-python-code-to-fetch/) live in this same migration guide: converting HTTP calls from `requests` to `fetch`, and [moving hardcoded secrets to an API by Zapier connection](/data-automation/zapier-functions-secrets-move-to-api-by-zapier/). Splitting triggers correctly doesn't fix either of those on its own.
+
+## Confirmed version
+
+Sourced from [Zapier's official Help Center migration guide for Zapier Functions](https://help.zapier.com/hc/en-us/articles/45230556598157), updated 2026-07-13. Browse more posts like this in the [Data Automation](/data-automation) archive.

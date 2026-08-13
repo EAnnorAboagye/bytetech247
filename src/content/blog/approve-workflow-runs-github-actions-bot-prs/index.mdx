@@ -1,0 +1,79 @@
+---
+title: "Approve Workflow Runs From github-actions[bot] PRs"
+description: "Pull requests from github-actions[bot] can now trigger CI workflows, but only after a collaborator approves the run. Here's how the gate works."
+date: 2026-08-13
+category: dev-tools
+tags: ["github-actions", "ci-cd", "automation", "security"]
+relatedSlugs: []
+series: "GitHub Actions' Summer 2026 Security & Config Overhaul: What to Change in Your Workflows"
+seriesOrder: 5
+coverImage: "./cover.png"
+coverImageAlt: "A terminal window showing the GitHub Actions changelog entry describing approval requirements for bot-created pull requests before workflows can run"
+faq:
+  - question: "Does this apply to any bot, or only github-actions[bot] specifically?"
+    answer: "The changelog describes this for github-actions[bot] pull requests, the identity used when a workflow commits changes and opens a PR with the built-in GITHUB_TOKEN. GitHub notes this aligns bot PRs with how Copilot-authored PR workflow runs are already gated, so the underlying approval-gate pattern isn't unique to one bot identity."
+  - question: "Where do I turn this capability on or off?"
+    answer: "It hangs off the existing repository setting under Settings -> Actions -> General that governs whether Actions can create and approve pull requests. That checkbox already existed before this change; what's new is that a bot-created PR can now trigger a workflow run at all, gated on a human's approval, rather than being unable to trigger one under any circumstance."
+  - question: "Who is allowed to approve the workflow run?"
+    answer: "A repository collaborator with write access. The changelog frames this explicitly as a security measure so that generated code doesn't automatically run workflows with access to sensitive information, so the approval step is meant to be a real human check, not a formality to click through."
+---
+
+## Quick Answer
+
+Pull requests opened by `github-actions[bot]` (typically from a scheduled workflow that commits changes and opens a PR) can now trigger CI/CD workflows, as of 2026-06-11. But the run doesn't start automatically: a repository collaborator with write access has to approve it first, the same gate already used for Copilot-authored PRs.
+
+## What was broken before this
+
+A common automation pattern: a scheduled workflow runs, makes some change (dependency bumps, generated docs, a lockfile refresh), commits it, and opens a pull request using `github-actions[bot]` as the author. Before this change, that bot-authored PR could not trigger the repo's own CI workflows at all, no lint, no test, no build check.
+
+That's a real gap. It meant bot-generated PRs either sat unchecked until someone manually re-ran the workflow, or worse, got merged without the same test/lint/build gate a human-authored PR would have gone through automatically. GitHub's own framing of the fix is direct about why the fix isn't "just let it run automatically" either:
+
+> "Requiring approval is a security measure to ensure generated code does not automatically run workflows which may have access to sensitive information."
+
+So the fix isn't unrestricted trust, it's a middle ground: bot PRs can now run workflows, but a human has to say so first, every time.
+
+## How the approval gate works in practice
+
+This builds on a setting that already existed: repository **Settings → Actions → General → Workflow permissions**, specifically the checkbox controlling whether GitHub Actions can create and approve pull requests. That checkbox is what lets a scheduled workflow open the PR in the first place. What's new as of 2026-06-11 is what happens after the PR exists.
+
+Once `github-actions[bot]` opens a PR against a workflow-triggering event (`pull_request`, for instance), the workflow run doesn't start immediately the way it would for a normal contributor with write access. It sits pending, waiting for approval, visible the same way a first-time contributor's workflow run already waited for maintainer approval before this change. A collaborator with write access reviews the PR's diff and clicks approve on the workflow run, and only then does CI actually execute.
+
+GitHub notes this matches an existing pattern rather than inventing a new one:
+
+> "This matches the behavior of Copilot-generated pull requests."
+
+If your team already reviews Copilot PRs' workflow runs this way, bot-authored PRs from your own scheduled automation now follow the identical flow.
+
+## Structural Comparison Matrix
+
+| Operational Aspect                           | Before                                 | After (2026-06-11+)               |
+| :------------------------------------------- | :------------------------------------- | :-------------------------------- |
+| **CI workflow trigger on a bot-authored PR** | Never triggered, no gate to pass       | Triggered, pending human approval |
+| **Risk of merging unchecked generated code** | Real: no CI ran unless manually re-run | Reduced: CI runs once approved    |
+| **Approval requirement**                     | N/A (nothing to approve)               | Collaborator with write access    |
+| **Consistency with Copilot-authored PRs**    | Different handling                     | Same approval flow                |
+
+## Reviewing and approving a pending run
+
+If your repo runs a scheduled workflow that opens PRs (a dependency-bump job, a generated-content refresh, anything committing via `GITHUB_TOKEN`), check for pending runs after this change ships rather than assuming CI already ran:
+
+1. Open the pull request from `github-actions[bot]` in the GitHub UI.
+2. Look for the workflow run status. A pending approval shows as a banner on the PR, distinct from a normal "in progress" or "queued" state.
+3. As a collaborator with write access, review the PR's actual diff first, this is the security check the changelog describes, not a rubber stamp.
+4. Click **Approve and run** on the workflow run to let it execute.
+
+If you want bot PRs to keep working exactly as before this change, and you're comfortable with the tradeoff, there's no toggle to bypass the approval step entirely; it's the intended behavior, not an opt-in feature.
+
+<Callout
+  type="info"
+  title="This doesn't change who can commit via GITHUB_TOKEN"
+>
+  The existing repository setting for whether Actions can create and approve
+  pull requests still governs whether a workflow can open a PR at all. This
+  change only affects what happens after that PR exists: whether its own
+  triggered workflow runs automatically or waits for a person.
+</Callout>
+
+## Source
+
+GitHub's [changelog entry on the bot-PR approval requirement](https://github.blog/changelog/2026-06-11-bot-created-pull-requests-can-run-workflows-if-approved/) (2026-06-11). Browse more posts like this in the [Dev Tools](/dev-tools) archive.

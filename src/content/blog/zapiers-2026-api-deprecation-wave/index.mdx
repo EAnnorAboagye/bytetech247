@@ -1,0 +1,63 @@
+---
+title: "Zapier's 2026 Deprecation Wave: Full Guide"
+description: "Zapier's Pipedrive, Functions, ChatGPT, and Greenhouse integrations all hit API deprecation deadlines in 2026. Full rundown of what breaks and the fix."
+date: 2026-08-13
+category: data-automation
+tags: ["zapier", "api", "deprecation", "automation"]
+relatedSlugs:
+  [
+    "automate-static-site-deploys-github-actions-cloudflare-workers",
+    "cloudflares-july-2026-api-deprecation-wave",
+  ]
+series: "Zapier's 2026 Integration Deprecation Wave: What Breaks in Live Zaps"
+seriesOrder: 1
+coverImage: "./cover.png"
+coverImageAlt: "A dark comparison-matrix style cover listing Zapier's 2026 integration deprecation wave across three groups: Pipedrive V1 API sunset, Zapier Functions shutdown, and ChatGPT/Greenhouse API migrations"
+faq:
+  - question: "Do all 10 of these affect every Zapier user?"
+    answer: "No. Each one only bites if a live Zap actually uses that specific integration or feature: Pipedrive, Zapier Functions (Python code steps), ChatGPT/OpenAI actions, Greenhouse, or HubSpot's older list-management actions. Check the table below against what your own Zaps actually call."
+  - question: "Does ByteTech247 run any of these Zaps itself?"
+    answer: "No, and every linked post says so directly rather than implying otherwise. This site's own automation runs on Cloudflare Workers and GitHub Actions, not Zapier. This pillar is a structural breakdown of real, dated deprecation notices affecting a widely used automation platform, not a first-person account of fixing our own Zaps."
+---
+
+## Quick Answer
+
+Between 2026-05-29 and 2026-07-27, Zapier published four distinct "action required" advisories covering integrations whose underlying APIs are sunsetting: Pipedrive's V1 API (deadline 2026-07-31), Zapier's own built-in Functions feature (shuts down 2026-09-01), OpenAI's Assistants API powering several ChatGPT actions (deadline 2026-08-26), and Greenhouse's Harvest API v1/v2 (deadline 2026-08-26). A tenth, older HubSpot break rounds out the wave. None of these fail loudly on their own — Zapier either relabels a step, auto-migrates it into a disabled state, or says nothing at all, so a Zap can sit silently broken well past the deadline with no alert. Check the table below against what your own Zaps actually call.
+
+This site (bytetech247.com) doesn't run Zapier — its own automation is Cloudflare Workers and GitHub Actions, covered in this category's other pillar, [Cloudflare's July 2026 API Deprecation Wave](/data-automation/cloudflares-july-2026-api-deprecation-wave/). Worth saying plainly rather than implying otherwise: this pillar exists because it's the same structural shape (automation breaking silently when the API underneath it sunsets) on a different, extremely widely used platform, not because this site operates these Zaps itself. Every fact below traces to Zapier's own Help Center or Community advisories, not a remembered or assumed behavior.
+
+## Structural Comparison Matrix
+
+| #   | Integration                    | What breaks                                           | Deadline                  | Signal type                                    |
+| :-- | :----------------------------- | :---------------------------------------------------- | :------------------------ | :--------------------------------------------- |
+| 1   | Pipedrive (steps)              | V1-backed steps relabeled, cosmetic until fixed       | 2026-07-31                | Literal `[DEPRECATING...]` marker in step name |
+| 2   | Pipedrive (data)               | V2 API returns fewer fields (e.g. `deal_title`)       | 2026-07-31                | Silent missing-field regression                |
+| 3   | Zapier Functions (runtime)     | Python `requests`-based HTTP calls need `fetch()`     | 2026-09-01                | Feature shutdown, migration guide              |
+| 4   | Zapier Functions (triggers)    | Multi-trigger functions must split into separate Zaps | 2026-09-01                | Architectural, no error until missed           |
+| 5   | Zapier Functions (secrets)     | Hardcoded credentials must move to a connection       | 2026-09-01                | Silent auth failure or exposed secret          |
+| 6   | ChatGPT (Conversation)         | Auto-migrated but left switched off pending review    | 2026-08-26                | Zap silently disabled                          |
+| 7   | ChatGPT (Assistant management) | No auto-migration path, full rebuild required         | 2026-08-26                | "No direct replacement"                        |
+| 8   | Greenhouse (auth)              | API-key auth replaced by OAuth 2.0                    | 2026-08-26                | Auth-layer failure on old connection           |
+| 9   | Greenhouse (data)              | Harvest v3 field/schema changes across multiple steps | 2026-08-26                | No single marker, manual cross-check needed    |
+| 10  | HubSpot                        | v1 Lists API sunset, no dedicated advisory            | 2026-04-30 (already past) | Buried in a monthly community digest           |
+
+Every row traces to Zapier's own Help Center or Community advisory for that integration, quoted with its real update date, not summarized from memory.
+
+## The 10 breaks, in detail
+
+1. **[Fix Pipedrive Zaps Tagged \[DEPRECATING JULY 31 2026\]](/data-automation/pipedrive-zaps-tagged-deprecating-july-31-2026/)**: Zapier relabels affected steps with a literal marker, but the step keeps running on V1 until you manually remap it.
+2. **[Pipedrive V2 API Drops Fields Like deal_title](/data-automation/pipedrive-v2-api-drops-fields-like-deal-title/)**: remapping the step alone isn't enough — V2 returns less data, so downstream steps can silently read `undefined`.
+3. **[Migrate Zapier Functions Python Code to fetch()](/data-automation/migrate-zapier-functions-python-code-to-fetch/)**: Functions shuts down entirely; authenticated HTTP calls need `API by Zapier`, not a naive `fetch()` swap.
+4. **[Zapier Functions: Split Multi-Trigger Functions](/data-automation/zapier-functions-split-multi-trigger-functions/)**: a function with multiple triggers has to become multiple Zaps — Code by Zapier allows only one trigger per Zap.
+5. **[Zapier Functions Secrets Move to API by Zapier](/data-automation/zapier-functions-secrets-move-to-api-by-zapier/)**: hardcoded API keys have to move into a proper connection, or risk a live credential sitting in plaintext.
+6. **[Fix ChatGPT Conversation With Assistant Migration](/data-automation/fix-chatgpt-conversation-with-assistant-migration/)**: Zapier auto-migrates this action but leaves the Zap switched off until someone manually reviews and re-enables it.
+7. **[Rebuild ChatGPT Create Assistant Zaps by Aug 26](/data-automation/rebuild-chatgpt-create-assistant-zaps/)**: four actions have no automatic migration path at all — a full rebuild around the Responses API, not a remap.
+8. **[Reconnect Greenhouse Zaps to OAuth 2.0 by Aug 26](/data-automation/reconnect-greenhouse-zaps-to-oauth-2-0/)**: the new Greenhouse app version authenticates differently, so every step on the old connection fails at the auth layer until reconnected.
+9. **[Fix Greenhouse Zaps for Harvest v3 Field Changes](/data-automation/fix-greenhouse-zaps-for-harvest-v3-field-changes/)**: separate from the auth problem, a payload/schema issue across a specific list of triggers, actions, and searches.
+10. **[Fix HubSpot Add Contact to List After V1 Sunset](/data-automation/fix-hubspot-add-contact-to-list-after-v1-sunset/)**: the weakest-sourced break in this pillar — no dedicated advisory exists, only one line in a monthly digest, which is itself part of the problem.
+
+## Why this happened across one summer
+
+Zapier sits on top of hundreds of third-party APIs it doesn't control, and 2026 saw several of them retire older API versions within weeks of each other: Pipedrive's V1-to-V2 migration, OpenAI's Assistants-API deprecation in favor of the Responses API, and Greenhouse's Harvest v1/v2 sunset all landed inside the same rough window, alongside Zapier's own decision to shut down its Functions feature. None of the dates or quoted marker text above are estimated — they come directly from [Zapier's Help Center](https://help.zapier.com/hc/en-us/categories/13951101412877-Product-updates) and Community advisories, cross-checked per cluster against the individual article's own stated update date.
+
+Browse the rest of the [Data Automation](/data-automation) archive for more pipeline and API-breakage coverage.

@@ -1,0 +1,86 @@
+---
+title: "Pipedrive V2 API Drops Fields Like deal_title"
+description: "Pipedrive's V2 API returns fewer fields than V1, including deal_title. Here's why remapping the trigger alone isn't enough, and how to backfill it."
+date: 2026-08-13
+category: data-automation
+tags: ["zapier", "pipedrive", "api", "webhook"]
+relatedSlugs:
+  [
+    "pipedrive-zaps-tagged-deprecating-july-31-2026",
+    "automate-static-site-deploys-github-actions-cloudflare-workers",
+  ]
+series: "Zapier's 2026 Integration Deprecation Wave: What Breaks in Live Zaps"
+seriesOrder: 3
+coverImage: "./cover.png"
+coverImageAlt: "A terminal window showing the real Zapier Help Center warning that the Pipedrive V2 API returns less data than the V1 API, with deal_title given as the missing-field example"
+faq:
+  - question: "If I already remapped my Pipedrive step, do I still need to check for this?"
+    answer: "Yes. Remapping the step to a V2 event (covered in this series' previous post) clears the [DEPRECATING JULY 31 2026] label, but it doesn't restore fields V2 never returns. Those two problems look identical in the Zap editor and need separate checks: one is whether the step runs on V1 or V2, the other is whether every downstream field reference still resolves to real data."
+  - question: "Is deal_title the only field V2 drops?"
+    answer: "It's the field Zapier's own migration guide calls out by name as a worked example, tied to the New Activity trigger specifically. Zapier's guide states plainly that V2 returns less data than V1 overall, without listing every dropped field for every trigger, so the safe assumption is to check each trigger's actual V2 output against what downstream steps expect, not to assume deal_title is the only gap."
+---
+
+## Quick Answer
+
+Pipedrive's V2 API returns fewer fields per record than V1, including `deal_title` on activity records. Remapping a `[DEPRECATING JULY 31 2026]` step to its V2 event (covered in this series' previous post) fixes which API version runs, but not this: any downstream step reading a now-missing field gets `undefined` instead of an error, so the Zap keeps running while quietly producing wrong output.
+
+## A remap alone doesn't restore the missing data
+
+This is a different failure mode from the cosmetic relabeling covered in [the previous post in this series](/data-automation/pipedrive-zaps-tagged-deprecating-july-31-2026/). That one is about a step still calling an API version Pipedrive is about to shut off. This one is about what happens after you've already done the fix: Pipedrive's V2 API genuinely returns a smaller set of fields than V1 did.
+
+[Zapier's Help Center article on the Pipedrive deprecation](https://help.zapier.com/hc/en-us/articles/44170499172237) states the gap directly:
+
+> "The V2 API returns less data than the V1 API"
+
+The guide's own worked example is the New Activity trigger. Under V1, a Zap using that trigger could map a `deal_title` field straight from the trigger's output. Under V2, that field is gone, and Zapier's guide says as much: `deal_title` is "no longer available."
+
+<Callout type="warning" title="This fails silently, not loudly">
+  A missing field doesn't throw an error in most downstream steps. A Filter step
+  checking a condition against `deal_title` sees an empty value and either fails
+  the condition unexpectedly or passes it through blank. A Formatter step
+  concatenating it into a message just gets a gap in the output. Nothing in the
+  Zap history necessarily flags this as a failure, so it can run "successfully"
+  for weeks while producing bad data downstream.
+</Callout>
+
+## Structural Comparison Matrix
+
+| Operational Aspect             | Pipedrive V1     | Pipedrive V2                                         |
+| :----------------------------- | :--------------- | :--------------------------------------------------- |
+| **Data returned per record**   | Fuller field set | Reduced field set                                    |
+| **`deal_title` on activities** | Present          | Not returned                                         |
+| **Downstream behavior on gap** | N/A              | Field resolves to blank/`undefined`, no error thrown |
+| **Fix required**               | None             | Add a lookup step to backfill the missing field      |
+
+## Fix it: backfill with a Pipedrive search step
+
+The structural fix is to add a step that looks the missing field back up, rather than trying to force it out of the trigger. Pipedrive's `deal_id` is still present on the V2 activity trigger output, so a **Find Deal** search step keyed on that ID can pull the deal record and expose its `title` field for downstream steps to map instead:
+
+```text title="Zap structure: backfilling deal_title after the V2 migration"
+1. Trigger: New Activity in Pipedrive (V2)
+   -> outputs deal_id, but no deal_title
+
+2. Action: Find Deal in Pipedrive
+   -> Search value: {{deal_id from step 1}}
+   -> outputs the deal record, including `title`
+
+3. Downstream steps
+   -> map `title` from step 2 instead of `deal_title` from step 1
+```
+
+If a raw **API Request (Beta)** action is already part of the Zap for other reasons, calling Pipedrive's V2 deal-detail endpoint directly is an equally valid alternative to a dedicated Find Deal step. Either way, the fix is the same shape: fetch the deal explicitly instead of assuming the trigger step still carries it.
+
+<Callout type="info" title="This site doesn't run Zapier">
+  As stated elsewhere in this series: bytetech247.com's own automation is
+  Cloudflare Workers and GitHub Actions, not Zapier (see [this site's actual
+  deploy
+  automation](/data-automation/automate-static-site-deploys-github-actions-cloudflare-workers/)).
+  The fix above comes from Zapier's own published migration guidance, not from
+  running this pipeline ourselves.
+</Callout>
+
+Once the backfill step is in place, go back through every downstream step and confirm each field reference points at a field that still exists in the new output, not just the one field the migration guide happened to name as its example.
+
+## Confirmed version
+
+Sourced from [Zapier's official Help Center advisory on the Pipedrive V1 API deprecation](https://help.zapier.com/hc/en-us/articles/44170499172237), updated 2026-05-29, the same source as this series' previous post. Browse more posts like this in the [Data Automation](/data-automation) archive.
