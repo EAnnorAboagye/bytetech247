@@ -19,12 +19,27 @@ import { siteConfig } from "./src/config.ts";
 // GFM tables don't emit scope="col" on <th> by default — Phase 3 requires
 // it for accessibility/AI-GEO parsing of tabular content. GFM only ever
 // puts <th> in the header row, so every <th> is safely a column header.
+//
+// Every table also gets tabindex="0": the article template's own CSS
+// (.article-content table, [category]/[slug].astro) makes a wide table
+// horizontally scrollable instead of forcing the whole page wider on a
+// narrow viewport — same overflow-x:auto pattern as the AI Token
+// Counter's comparison table, where axe-core's scrollable-region-focusable
+// rule caught this exact gap live (only at a mobile viewport, via the
+// site's mobile-chrome-a11y Playwright project — a table narrow enough to
+// never overflow at desktop width never triggers this rule there). A
+// scrollable region has to be keyboard-reachable, not just swipeable, so
+// this is applied unconditionally rather than only to tables known to
+// overflow at some particular width.
 function rehypeTableHeaderScope() {
   /** @param {import("hast").Root} tree */
   return (tree) => {
     visit(tree, "element", (node) => {
       if (node.tagName === "th") {
         node.properties = { ...node.properties, scope: "col" };
+      }
+      if (node.tagName === "table") {
+        node.properties = { ...node.properties, tabIndex: 0 };
       }
     });
   };
