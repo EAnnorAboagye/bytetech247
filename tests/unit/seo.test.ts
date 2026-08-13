@@ -8,9 +8,9 @@ import { pageTitle } from "../../src/lib/seo";
 // has to hold for the real, final string.
 describe("pageTitle", () => {
   it("appends the suffix when the combined string fits maxLength", () => {
-    expect(pageTitle("Git Worktrees for Parallel Feature Development", "Dev Tools")).toBe(
-      "Git Worktrees for Parallel Feature Development — Dev Tools",
-    );
+    expect(
+      pageTitle("Git Worktrees for Parallel Feature Development", "Dev Tools"),
+    ).toBe("Git Worktrees for Parallel Feature Development — Dev Tools");
   });
 
   it("returns the base title unchanged when there is no suffix", () => {
