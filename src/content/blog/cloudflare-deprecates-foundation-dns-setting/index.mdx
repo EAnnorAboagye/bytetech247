@@ -22,11 +22,11 @@ Cloudflare deprecates the `foundation_dns` boolean in the DNS settings endpoints
 
 ## What's actually changing
 
-Cloudflare's changelog states the change directly:
+[Cloudflare's changelog](https://developers.cloudflare.com/fundamentals/api/reference/deprecations/) states the change directly:
 
 > "The `foundation_dns` boolean is deprecated in the DNS settings endpoints for zone settings and account defaults"
 
-Foundation DNS itself, Cloudflare's enterprise-grade authoritative DNS offering enabled via `"foundation_dns": true` on the DNS settings endpoint, isn't described as being discontinued. What's deprecated is specifically this boolean field on `/zones/{zone_id}/dns_settings` and `/accounts/{account_id}/dns_settings`, published and made effective the same day, 2026-07-27, with a longer runway before removal, 2026-11-23.
+Foundation DNS itself, Cloudflare's enterprise-grade authoritative DNS offering enabled via `"foundation_dns": true` on the DNS settings endpoint, isn't described as being discontinued. What's deprecated is specifically this boolean field on the [`/zones/{zone_id}/dns_settings` and `/accounts/{account_id}/dns_settings`](https://developers.cloudflare.com/api/resources/dns/subresources/settings/) endpoints, published and made effective the same day, 2026-07-27, with a longer runway before removal, 2026-11-23.
 
 <Callout type="warning" title="Don't guess the replacement field name">
   Cloudflare's own changelog entry for this specific deprecation doesn't name an

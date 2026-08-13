@@ -23,7 +23,7 @@ faq:
 
 ## Quick Answer
 
-The MCP 2026-07-28 specification deprecates three feature areas: Roots, Sampling, and Logging. All three keep working for at least twelve months from this release, per the spec's own deprecation policy, so there's no forced break yet. Each has a real suggested migration: Roots to tool parameters, resource URIs, or config; Sampling to the new Multi Round-Trip Requests pattern; Logging to stderr and OpenTelemetry.
+The MCP 2026-07-28 specification deprecates three feature areas: Roots, Sampling, and Logging. All three keep working for at least twelve months from this release, per [the specification's deprecated features registry](https://modelcontextprotocol.io/specification/2026-07-28/deprecated), so there's no forced break yet. Each has a real suggested migration: Roots to tool parameters, resource URIs, or config; Sampling to the new Multi Round-Trip Requests pattern; Logging to stderr and OpenTelemetry.
 
 ## What's actually changing, and the real migration path for each
 
@@ -35,7 +35,7 @@ Each deprecated feature has a distinct, real replacement, not a vague "figure it
 
 - **Roots**: move to tool parameters, resource URIs, or plain configuration instead of the dedicated Roots mechanism.
 - **Sampling**: replaced by [the Multi Round-Trip Requests pattern](/ai-productivity/mcp-requires-resulttype-on-every-result/) (tracked under SEP-2322). A server that used to initiate a sampling call back to the client now returns an `InputRequiredResult` carrying `inputRequests`, and the client gathers answers and re-issues the original call with `inputResponses`, the same mechanism this pillar's `resultType` post covers in depth.
-- **Logging**: move to stderr and OpenTelemetry instead of the protocol-level logging feature, which connects to [the removal of the `logging/setLevel` method](/ai-productivity/mcp-removes-ping-and-logging-setlevel-methods/) already covered in this pillar.
+- **Logging**: move to [stderr and OpenTelemetry](https://modelcontextprotocol.io/specification/2026-07-28/server/utilities/logging) instead of the protocol-level logging feature, which connects to [the removal of the `logging/setLevel` method](/ai-productivity/mcp-removes-ping-and-logging-setlevel-methods/) already covered in this pillar.
 
 ## Structural Comparison Matrix
 

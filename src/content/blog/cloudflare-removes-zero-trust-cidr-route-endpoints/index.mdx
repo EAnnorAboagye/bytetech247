@@ -26,7 +26,7 @@ Cloudflare removes the CIDR-encoded route endpoints in the Zero Trust Networks A
 
 ## What's actually changing
 
-Two related changes land on the same date across the Zero Trust Networks API and Cloudflare Tunnel API. This post covers the route-endpoint removal; the other, a response field drop, is covered separately since it's a distinct technical change with its own fix.
+Two related changes, [detailed in Cloudflare's official changelog](https://developers.cloudflare.com/changelog/post/2026-07-09-tunnel-routes-and-connections-api-changes/), land on the same date across the Zero Trust Networks API and Cloudflare Tunnel API. This post covers the route-endpoint removal; the other, a response field drop, is covered separately since it's a distinct technical change with its own fix.
 
 The CIDR-encoded route endpoints, which addressed a route by URL-encoding its IP network directly into the path, are being deprecated in favor of the `route_id`-based endpoints that already exist today:
 

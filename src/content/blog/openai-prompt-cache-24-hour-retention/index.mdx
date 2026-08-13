@@ -6,7 +6,7 @@ category: ai-productivity
 tags: ["tokens", "gpt", "prompt-caching", "openai"]
 relatedSlugs:
   ["2026-llm-token-pricing-reset", "gpt-5-6-prompt-cache-write-premium"]
-series: "2026-llm-token-pricing-reset"
+series: "The 2026 LLM Token & Pricing Reset: GPT-5.6, Claude Opus 4.8, Gemini 3.6"
 seriesOrder: 13
 coverImage: "./cover.png"
 coverImageAlt: "A dark comparison-matrix style cover reading OpenAI Extends Prompt Cache Retention to 24 Hours, listing three row summaries: before a few-minute default cache lifetime, after up to 24 hours, and short-TTL workarounds now likely unnecessary"
@@ -25,7 +25,7 @@ OpenAI extended prompt cache retention from a short, few-minute default to up to
 
 Third-party cost-analysis coverage (effloow.com), dated 2026-05-29, reports that OpenAI moved the default prompt-cache lifetime from a few minutes to up to 24 hours. That is a meaningfully longer window for anything that reuses the same prompt prefix across separate calls that are not tightly clustered in time.
 
-This is paraphrased from measured third-party analysis, not confirmed against OpenAI's own primary documentation directly, and is stated honestly as such. The mechanism it changes is retention duration specifically, distinct from the cache-write premium and breakpoint requirements covered separately.
+This is paraphrased from measured third-party analysis, not confirmed against OpenAI's own primary documentation directly, and is stated honestly as such. The mechanism it changes is retention duration specifically, distinct from the cache-write premium and breakpoint requirements covered separately, and [OpenAI's own prompt caching guide](https://platform.openai.com/docs/guides/prompt-caching) documents an up-to-24-hour extended retention window using the same figure for eligible models.
 
 ## Structural Comparison Matrix
 

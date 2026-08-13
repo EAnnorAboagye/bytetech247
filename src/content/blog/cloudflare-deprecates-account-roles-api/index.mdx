@@ -22,11 +22,11 @@ Cloudflare deprecates the Account Roles API (`GET /accounts/{account_id}/roles` 
 
 ## What's actually changing
 
-Cloudflare's own reasoning for the deprecation is a real functional gap, not just a naming preference:
+[Cloudflare's own changelog entry](https://developers.cloudflare.com/changelog/post/2026-07-21-account-role-api-deprecated/) gives a real functional gap as its reasoning for the deprecation, not just a naming preference:
 
 > "The Account Roles API only returns account-level roles today, and is deprecated in favor of the Permission Groups API"
 
-The Account Roles API's whole limitation was scope: it only ever surfaced account-level roles, a flat list like "Administrator" or "Billing." The Permission Groups API, confirmed live at `GET /accounts/{account_id}/iam/permission_groups`, returns a paginated array of permission groups, each a named group of fine-grained permissions mapped to specific operations against specific resources, a genuinely different and more expressive model.
+The Account Roles API's whole limitation was scope: it only ever surfaced account-level roles, a flat list like "Administrator" or "Billing." The [Permission Groups API](https://developers.cloudflare.com/api/resources/iam/subresources/permission_groups/methods/list/), confirmed live at `GET /accounts/{account_id}/iam/permission_groups`, returns a paginated array of permission groups, each a named group of fine-grained permissions mapped to specific operations against specific resources, a genuinely different and more expressive model.
 
 ## Structural Comparison Matrix
 

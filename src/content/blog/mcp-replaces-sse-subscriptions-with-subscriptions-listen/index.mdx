@@ -18,7 +18,7 @@ faq:
 
 ## Quick Answer
 
-The MCP 2026-07-28 specification replaces the old SSE GET endpoint for server-to-client notifications with `subscriptions/listen`, a single long-lived POST-response stream. Unlike the old model, notifications aren't delivered by default: clients must opt into specific types (`toolsListChanged`, `promptsListChanged`, `resourcesListChanged`, `resourceSubscriptions`) when opening the stream, or they simply don't arrive.
+The MCP 2026-07-28 specification replaces the old SSE GET endpoint for server-to-client notifications with [`subscriptions/listen`](https://modelcontextprotocol.io/specification/2026-07-28/basic/patterns/subscriptions), a single long-lived POST-response stream. Unlike the old model, notifications aren't delivered by default: clients must opt into specific types (`toolsListChanged`, `promptsListChanged`, `resourcesListChanged`, `resourceSubscriptions`) when opening the stream, or they simply don't arrive.
 
 ## What's actually changing
 

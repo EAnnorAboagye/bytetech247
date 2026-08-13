@@ -22,11 +22,11 @@ Cloudflare deprecates the legacy Registrar domain management endpoints, `GET`/`P
 
 ## What's actually changing
 
-Cloudflare's changelog states the change and its deadline directly:
+[Cloudflare's changelog](https://developers.cloudflare.com/fundamentals/api/reference/deprecations/) states the change and its deadline directly:
 
 > "The legacy Registrar domain management endpoints are deprecated and will reach their end of life on September 27, 2026"
 
-Unlike the Workers KV deprecation earlier in this pillar, which is a pure URL path swap with an identical request/response shape, this migration points to a genuinely newer, broader API: Cloudflare describes the replacement Registrar API as adding domain search and availability checking alongside registration and management, not just the same operations at a new path.
+Unlike the Workers KV deprecation earlier in this pillar, which is a pure URL path swap with an identical request/response shape, this migration points to a genuinely newer, broader API: Cloudflare describes the [replacement Registrar API](https://developers.cloudflare.com/registrar/registrar-api/) as adding domain search and availability checking alongside registration and management, not just the same operations at a new path.
 
 <Callout type="warning" title="Confirm the exact new endpoint shape yourself">
   This deprecation doesn't reduce to a mechanical path substitution the way the

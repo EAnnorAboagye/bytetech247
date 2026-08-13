@@ -18,7 +18,7 @@ faq:
 
 ## Quick Answer
 
-The MCP 2026-07-28 specification deprecates the OAuth 2.0 Dynamic Client Registration Protocol (RFC 7591) in favor of Client ID Metadata Documents (CIMD, tracked under SEP-991). Instead of an authorization server minting a new `client_id` at registration time, the client hosts a JSON metadata document at a stable HTTPS URL it controls, and that URL becomes the `client_id` directly. DCR still works for backward compatibility, but CIMD is now the preferred default.
+The MCP 2026-07-28 specification deprecates the OAuth 2.0 Dynamic Client Registration Protocol (RFC 7591) in favor of [Client ID Metadata Documents](https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization/client-registration#client-id-metadata-documents) (CIMD, tracked under SEP-991). Instead of an authorization server minting a new `client_id` at registration time, the client hosts a JSON metadata document at a stable HTTPS URL it controls, and that URL becomes the `client_id` directly. DCR still works for backward compatibility, but CIMD is now the preferred default.
 
 ## What's actually changing, and why
 
@@ -52,10 +52,12 @@ The URL where this document is hosted, for example `https://client.example.com/.
 
 <Callout type="warning" title="DCR still works, this isn't a hard break yet">
   Dynamic Client Registration continues to function for backward compatibility
-  per the changelog, so an existing DCR-based integration isn't broken today.
-  Treat this as a signal to plan the CIMD migration, not an emergency fix,
-  unless you're building new client integrations, where CIMD should be the
-  default from the start.
+  per [the specification's deprecated features
+  registry](https://modelcontextprotocol.io/specification/2026-07-28/deprecated),
+  so an existing DCR-based integration isn't broken today. Treat this as a
+  signal to plan the CIMD migration, not an emergency fix, unless you're
+  building new client integrations, where CIMD should be the default from the
+  start.
 </Callout>
 
 ## Confirmed version

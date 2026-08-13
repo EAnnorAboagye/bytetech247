@@ -1,6 +1,6 @@
 ---
 title: "Fixing <details> Dropdowns That Won't Close on Outside Click"
-description: "Native <details>/<summary> dropdowns only toggle via their own <summary> — click anywhere else and it stays open. Here's the small, dependency-free fix."
+description: "Native <details>/<summary> dropdowns only toggle via their own <summary>. Click anywhere else and it stays open. Here's the small, dependency-free fix."
 date: 2026-07-30
 category: guides-fixes
 tags: ["html", "javascript", "accessibility", "bug-fix"]
@@ -9,18 +9,18 @@ coverImage: "./cover.png"
 coverImageAlt: "Diagram of a details/summary dropdown menu with an X marking a click outside it, and an arrow showing the dropdown closing in response"
 faq:
   - question: "Why doesn't a native <details> dropdown close when you click outside it?"
-    answer: "The HTML spec only wires up one interaction for <details>: toggling via its own <summary>. For a plain collapsible section — an FAQ answer, a spoiler — staying open no matter where else a reader clicks is the correct behavior, and the browser has no way to know a page is using it as a dropdown menu instead."
+    answer: "The HTML spec only wires up one interaction for <details>: toggling via its own <summary>. For a plain collapsible section (an FAQ answer, a spoiler), staying open no matter where else a reader clicks is the correct behavior, and the browser has no way to know a page is using it as a dropdown menu instead."
   - question: "How do you make a <details> dropdown close on outside click and Escape?"
     answer: "Add a document-wide click listener that closes any open <details> unless the click happened inside that same element, and a separate keydown listener that closes every open <details> when Escape is pressed, regardless of where focus currently sits."
 ---
 
-A native `<details>` element only toggles when you click its own `<summary>`. Click anywhere else — a different dropdown, a button, empty page space — and it stays open, because the browser never wired up outside-click handling for it. The fix is a small, dependency-free script: on every click anywhere in the document, close any open `<details>` unless the click happened inside that same element.
+A native `<details>` element only toggles when you click its own `<summary>`. Click anywhere else (a different dropdown, a button, empty page space) and it stays open, because the browser never wired up outside-click handling for it. The fix is a small, dependency-free script: on every click anywhere in the document, close any open `<details>` unless the click happened inside that same element.
 
 This isn't a bug in the browser. It's a real gap between what `<details>` was built for (a simple content disclosure, like a spoiler) and what people actually reach for it to do (a dropdown menu), and the second use case needs code the first one never required.
 
 ## Why `<details>` doesn't close on its own
 
-The HTML spec gives `<details>` exactly one interaction: clicking (or pressing Enter/Space on) its `<summary>` toggles the `open` attribute. That's it. There's no concept of "outside" built in, because for a plain collapsible section — an FAQ answer, a spoiler tag — staying open regardless of where else the reader clicks is the _correct_ behavior. A dropdown menu wants the opposite, and the browser has no way to know which one you're building.
+The HTML spec gives `<details>` exactly one interaction: clicking (or pressing Enter/Space on) its `<summary>` toggles the `open` attribute. That's it. There's no concept of "outside" built in, because for a plain collapsible section (an FAQ answer, a spoiler tag), staying open regardless of where else the reader clicks is the _correct_ behavior. A dropdown menu wants the opposite, and the browser has no way to know which one you're building.
 
 ## The fix: close on any outside click
 
@@ -48,7 +48,7 @@ document.addEventListener("keydown", (event) => {
 });
 ```
 
-No exception argument here. Escape means close everything that's open, regardless of where focus currently sits — there's no sibling dropdown to preserve, so the conditional the click handler needs doesn't apply.
+No exception argument here. Escape means close everything that's open, regardless of where focus currently sits. There's no sibling dropdown to preserve, so the conditional the click handler needs doesn't apply.
 
 <Callout type="tip" title="Scope the selector to what you actually built">
   Query a scoped selector like `.site-header details[open]`, not every
@@ -64,8 +64,8 @@ No dependency, no bundle weight, and it scales to every dropdown on the page for
 
 ## How to verify it actually works
 
-Three checks cover the real failure modes: open one dropdown, click something that isn't a dropdown (a button, the page body) — it should close. Open one dropdown, then click a sibling dropdown's own `<summary>` — the first should close and the second should open, in that single click. Press Escape while one is open — it should close. If any of those three don't hold, the exception logic or the selector scope is the first place to look.
+Three checks cover the real failure modes: open one dropdown, click something that isn't a dropdown (a button, the page body), and it should close. Open one dropdown, then click a sibling dropdown's own `<summary>`; the first should close and the second should open, in that single click. Press Escape while one is open, and it should close. If any of those three don't hold, the exception logic or the selector scope is the first place to look.
 
-Reach for this exact pattern anywhere `<details>` is standing in for a dropdown menu — navigation, a filter panel, an actions menu — wherever outside-click-to-close is the behavior a user already expects from every other menu on the web. Skip it for a genuine collapsible content section, where staying open no matter what else gets clicked is the whole point.
+Reach for this exact pattern anywhere `<details>` is standing in for a dropdown menu (navigation, a filter panel, an actions menu), wherever outside-click-to-close is the behavior a user already expects from every other menu on the web. Skip it for a genuine collapsible content section, where staying open no matter what else gets clicked is the whole point.
 
 See the [MDN reference for the `<details>` element](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/details) for the native toggle behavior this fix builds on, and [the Astro whitespace-collapse bug](/guides-fixes/astro-whitespace-collapse-expression-bug/) for another small, real bug from this same site's header.

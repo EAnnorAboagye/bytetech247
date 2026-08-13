@@ -9,7 +9,7 @@ relatedSlugs:
     "2026-llm-token-pricing-reset",
     "same-prompt-different-bill-gpt-claude-gemini",
   ]
-series: "2026-llm-token-pricing-reset"
+series: "The 2026 LLM Token & Pricing Reset: GPT-5.6, Claude Opus 4.8, Gemini 3.6"
 seriesOrder: 12
 coverImage: "./cover.png"
 coverImageAlt: "A dark comparison-matrix style cover reading GPT-5.6 Ends Free Prompt-Cache Writes, a 1.25x premium with a 30-minute minimum TTL, listing three row summaries: before automatic free caching, after explicit breakpoints with a 1.25x write cost, and cache reads staying at roughly 90% off unchanged"
@@ -28,7 +28,7 @@ GPT-5.6 replaced OpenAI's free, automatic prompt caching with explicit cache bre
 
 Third-party cost-analysis coverage reports that GPT-5.6 changed prompt caching from a free, invisible optimization into an explicit, configured one. Previously, OpenAI cached repeated prompt prefixes automatically at no extra cost. Under GPT-5.6, a request has to declare cache breakpoints explicitly, and writing to the cache for the first time now carries a 1.25x premium over the standard input-token rate. This detail is paraphrased from third-party cost analysis (effloow.com), tied to GPT-5.6's 2026-07-09 general availability, not confirmed against OpenAI's own primary pricing documentation directly.
 
-The cache's minimum lifetime also moved to 30 minutes. Cache reads keep roughly the same 90% discount off the standard input-token rate that caching offered before this change, so the discount itself did not shrink, only the path to earning it did.
+The cache's minimum lifetime also moved to 30 minutes. Cache reads keep roughly the same 90% discount off the standard input-token rate that caching offered before this change, so the discount itself did not shrink, only the path to earning it did, details now documented directly on [OpenAI's own prompt caching guide](https://platform.openai.com/docs/guides/prompt-caching).
 
 ## Structural Comparison Matrix
 

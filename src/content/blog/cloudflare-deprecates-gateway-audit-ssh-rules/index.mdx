@@ -18,7 +18,7 @@ faq:
 
 ## Quick Answer
 
-Cloudflare's Gateway `audit_ssh` network policy action is fully gone as of 2026-07-15, the end of a staged rollout that started in December 2024. If Terraform-managed Gateway policies referencing `action: "audit_ssh"` started failing to apply months before the final cutoff, that's expected: API and Terraform rule creation was already disabled on 2025-11-03, and editing existing rules stopped on 2026-01-15. Migrate to SSH with Access for Infrastructure, Cloudflare's stated replacement.
+Cloudflare's Gateway `audit_ssh` network policy action is fully gone as of 2026-07-15, [the end of a staged rollout](https://developers.cloudflare.com/fundamentals/api/reference/deprecations/) that started in December 2024. If Terraform-managed Gateway policies referencing `action: "audit_ssh"` started failing to apply months before the final cutoff, that's expected: API and Terraform rule creation was already disabled on 2025-11-03, and editing existing rules stopped on 2026-01-15. Migrate to SSH with Access for Infrastructure, Cloudflare's stated replacement.
 
 ## The actual timeline, staged over 19 months
 
@@ -46,7 +46,7 @@ For a policy-as-code pipeline that only creates or edits Gateway rules occasiona
 grep -rln "audit_ssh" --include="*.tf" .
 ```
 
-Cloudflare's stated replacement is SSH with Access for Infrastructure, described as providing deeper functionality than the old Gateway network policy action rather than being a like-for-like field rename. Treat this as a genuine migration to a different feature area, not a config tweak: any Terraform module referencing `audit_ssh` needs its resource block replaced with the Access for Infrastructure equivalent, not just a renamed action string.
+Cloudflare's stated replacement is [SSH with Access for Infrastructure](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/use-cases/ssh/ssh-infrastructure-access/), described as providing deeper functionality than the old Gateway network policy action rather than being a like-for-like field rename. Treat this as a genuine migration to a different feature area, not a config tweak: any Terraform module referencing `audit_ssh` needs its resource block replaced with the Access for Infrastructure equivalent, not just a renamed action string.
 
 <Callout
   type="warning"

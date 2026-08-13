@@ -28,9 +28,9 @@ Starting 2026-10-05, Cloudflare Tunnel and Cloudflare Mesh (the `cfd_tunnel` and
 
 This is a distinct technical change from [the CIDR-encoded route endpoint removal](/data-automation/cloudflare-removes-zero-trust-cidr-route-endpoints/) bundled into the same Cloudflare changelog post and taking effect on the same date. That one is about how a route is addressed; this one is about what fields come back in a response.
 
-Cloudflare's own stated reasoning is a real performance problem: a Tunnel or Mesh node with many active connections was inflating the response body of every list and get call, since full connection detail came back regardless of whether the caller needed it. Splitting connection detail into its own endpoint means smaller, faster default responses, with connection detail fetched only when actually requested.
+[Cloudflare's own changelog](https://developers.cloudflare.com/changelog/post/2026-07-09-tunnel-routes-and-connections-api-changes/) gives a real performance problem as its stated reasoning: a Tunnel or Mesh node with many active connections was inflating the response body of every list and get call, since full connection detail came back regardless of whether the caller needed it. Splitting connection detail into its own endpoint means smaller, faster default responses, with connection detail fetched only when actually requested.
 
-The dedicated replacement endpoint, confirmed from Cloudflare's own API reference, returns connection records shaped as:
+The dedicated replacement endpoint, confirmed from [Cloudflare's own API reference](https://developers.cloudflare.com/api/resources/zero_trust/subresources/tunnels/subresources/cloudflared/subresources/connections/), returns connection records shaped as:
 
 ```json title="GET /accounts/{account_id}/cfd_tunnel/{tunnel_id}/connections (response shape)"
 {

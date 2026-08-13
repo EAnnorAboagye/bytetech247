@@ -18,7 +18,7 @@ faq:
 
 ## Quick Answer
 
-The MCP 2026-07-28 specification eliminates the `Mcp-Session-Id` header and protocol-level sessions from the Streamable HTTP transport. Servers that held state across tool calls using that header need to switch to explicit, server-minted handles instead: mint an opaque identifier from one tool call, return it in the result, and have the client pass it back as an ordinary argument on later calls.
+The MCP 2026-07-28 specification [eliminates the `Mcp-Session-Id` header](https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/streamable-http#backward-compatibility) and protocol-level sessions from the Streamable HTTP transport. Servers that held state across tool calls using that header need to switch to explicit, server-minted handles instead: mint an opaque identifier from one tool call, return it in the result, and have the client pass it back as an ordinary argument on later calls.
 
 ## What's actually changing
 

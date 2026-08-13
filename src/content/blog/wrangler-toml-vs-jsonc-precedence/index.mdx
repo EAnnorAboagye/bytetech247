@@ -50,7 +50,7 @@ The error came from the `jsonc` file's broken `main` path, not the `toml` file's
 
 ## Why this keeps happening
 
-Cloudflare's own docs recommend `wrangler.jsonc` for new projects and note that some newer Wrangler features are JSON-config-only, but there's no enforced migration path. `cloudflare/workers-sdk` issue #14501, opened 2026-07-01, asks for exactly the tooling that's missing:
+Cloudflare's own docs recommend `wrangler.jsonc` for new projects and note that some newer Wrangler features are JSON-config-only, but there's no enforced migration path. [`cloudflare/workers-sdk` issue #14501](https://github.com/cloudflare/workers-sdk/issues/14501), opened 2026-07-01, asks for exactly the tooling that's missing:
 
 > A proposal for a `wrangler config migrate` subcommand that would rewrite `wrangler.toml` to `wrangler.jsonc` in place while preserving comments where jsonc allows.
 

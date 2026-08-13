@@ -18,7 +18,7 @@ faq:
 
 ## Quick Answer
 
-The MCP 2026-07-28 specification moves long-running Tasks out of the experimental protocol core and into a formal, official extension, `io.modelcontextprotocol/tasks` (SEP-2663). The blocking `tasks/result` call is replaced by polling: call `tasks/get` with a `taskId`, respecting the server's `pollIntervalMs`, until the task reaches a terminal status carrying the final result or error. A new `tasks/update` and `tasks/cancel` round out the extension.
+The MCP 2026-07-28 specification moves long-running Tasks out of the experimental protocol core and into [a formal, official extension](https://modelcontextprotocol.io/extensions/tasks/overview), `io.modelcontextprotocol/tasks` (SEP-2663). The blocking `tasks/result` call is replaced by polling: call `tasks/get` with a `taskId`, respecting the server's `pollIntervalMs`, until the task reaches a terminal status carrying the final result or error. A new `tasks/update` and `tasks/cancel` round out the extension.
 
 ## What's actually changing
 

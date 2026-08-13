@@ -10,20 +10,20 @@ coverImageCredit:
   { name: "Christina Morillo", url: "https://www.pexels.com/@divinetechygirl" }
 ---
 
-Every developer knows the interruption: you're mid-feature, half your files are edited, and a teammate needs an urgent fix on `main`. The usual move is `git stash`, switch branches, fix the bug, switch back, `git stash pop`, and hope nothing conflicts. It works, but it's friction you pay every single time context-switching happens — and on a bad day it happens five times before lunch.
+Every developer knows the interruption: you're mid-feature, half your files are edited, and a teammate needs an urgent fix on `main`. The usual move is `git stash`, switch branches, fix the bug, switch back, `git stash pop`, and hope nothing conflicts. It works, but it's friction you pay every single time context-switching happens, and on a bad day it happens five times before lunch.
 
 `git worktree` removes the friction entirely. Instead of one working directory that can only ever point at one branch, a worktree lets you check out several branches into separate folders at the same time, all sharing the same underlying repository.
 
 ## What a worktree actually is
 
-A normal clone has one working directory and one `.git` folder. `git worktree add` creates an additional working directory linked to that same `.git` — same commit history, same remotes, same config — but checked out to a different branch. Nothing is duplicated except the files themselves.
+A normal clone has one working directory and one `.git` folder. [`git worktree add`](https://git-scm.com/docs/git-worktree) creates an additional working directory linked to that same `.git`: same commit history, same remotes, same config, but checked out to a different branch. Nothing is duplicated except the files themselves.
 
 ```bash
 # from inside your existing repo
 git worktree add ../myproject-hotfix main
 ```
 
-That command creates a sibling folder, `../myproject-hotfix`, already checked out to `main`, ready to work in immediately — no stash, no losing your place in the feature branch sitting untouched in the original folder.
+That command creates a sibling folder, `../myproject-hotfix`, already checked out to `main`, ready to work in immediately: no stash, no losing your place in the feature branch sitting untouched in the original folder.
 
 ## The core commands
 
@@ -47,7 +47,7 @@ git worktree prune
 <Callout type="tip" title="Skip the manual folder delete">
   Always remove a worktree with `git worktree remove`, not by deleting the
   folder yourself. If you do delete it manually, Git still thinks it exists
-  until you run `git worktree prune` — and until then, commands like `git branch
+  until you run `git worktree prune`, and until then, commands like `git branch
   -d` on that branch will refuse, claiming it's checked out somewhere.
 </Callout>
 
@@ -75,7 +75,7 @@ git worktree prune
   </Fragment>
 </CodeTabs>
 
-Commit history, branches, tags, and remotes are shared instantly across every worktree — a commit made in one is visible to `git log` in all the others right away. What's **not** shared is anything outside Git's own tracking: `node_modules`, build output, `.env` files. Each worktree needs its own `npm install` and its own build. That's the most common surprise for people trying worktrees for the first time — the code appears instantly, but the project isn't actually runnable until dependencies are installed in that specific folder.
+Commit history, branches, tags, and remotes are shared instantly across every worktree: a commit made in one is visible to `git log` in all the others right away. What's **not** shared is anything outside Git's own tracking: `node_modules`, build output, `.env` files. Each worktree needs its own `npm install` and its own build. That's the most common surprise for people trying worktrees for the first time, the code appears instantly, but the project isn't actually runnable until dependencies are installed in that specific folder.
 
 <Callout type="warning" title="Cloud-synced folders and stale locks">
   If your repository lives inside a cloud-synced folder (OneDrive, Dropbox,
@@ -83,7 +83,7 @@ Commit history, branches, tags, and remotes are shared instantly across every wo
   `.git` directory. A sync client racing a git command mid-write can leave a
   stale `index.lock` or `HEAD.lock` file behind. If a worktree command fails
   with a `File exists` error on a `.lock` file, confirm nothing else is actually
-  mid-operation before removing it by hand — and consider keeping active repos
+  mid-operation before removing it by hand, and consider keeping active repos
   outside the synced folder, or excluding `.git` from sync, if this happens
   often.
 </Callout>
@@ -91,3 +91,5 @@ Commit history, branches, tags, and remotes are shared instantly across every wo
 ## When it's not worth it
 
 Worktrees shine for genuinely parallel work: a long-running feature branch plus an urgent hotfix, or reviewing a colleague's PR without disturbing your own uncommitted changes. For a thirty-second fix you were going to make anyway, a plain `git stash` is still less typing. Reach for worktrees when the interruption is long enough that losing your place would actually cost you something.
+
+Browse more posts like this in the [Dev Tools](/dev-tools) archive.

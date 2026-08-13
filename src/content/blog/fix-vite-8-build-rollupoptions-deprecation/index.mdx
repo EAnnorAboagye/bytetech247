@@ -23,7 +23,7 @@ Vite 8 renames `build.rollupOptions` to `build.rolldownOptions` (and `worker.rol
 
 Rolldown, not Rollup, is Vite 8's production bundler. [Vite's migration guide](https://vite.dev/guide/migration) lists the rename directly under "Deprecated Options": `build.rollupOptions` → `build.rolldownOptions`, alongside the same rename for `worker.rollupOptions` → `worker.rolldownOptions`.
 
-`build.rollupOptions` is one of the single most commonly customized Vite options — it's where `manualChunks`, `external`, and custom `output` naming patterns live for most real projects. That popularity is exactly why this deprecation is loud: any project with a nontrivial build config sees the warning on every single build the moment it upgrades to Vite 8, even though nothing is actually broken yet.
+`build.rollupOptions` is one of the single most commonly customized Vite options. It's where `manualChunks`, `external`, and custom `output` naming patterns live for most real projects. That popularity is exactly why this deprecation is loud: any project with a nontrivial build config sees the warning on every single build the moment it upgrades to Vite 8, even though nothing is actually broken yet.
 
 ## Fix it: rename the key
 
@@ -63,7 +63,7 @@ Nothing inside the object changes. If your project also customizes `worker.rollu
 
 <Callout type="tip" title="Check manualChunks while you're in there">
   If your `manualChunks` uses the older object-map shorthand instead of a
-  function, the rename alone won't fix your build — Rolldown only supports the
+  function, the rename alone won't fix your build. Rolldown only supports the
   function form. See [Fix Vite 8 manualChunks Object Form
   Removed](/guides-fixes/fix-vite-8-manualchunks-object-form-removed/) for that
   separate, sharper break.
@@ -71,4 +71,4 @@ Nothing inside the object changes. If your project also customizes `worker.rollu
 
 ## Confirmed version range
 
-Documented in Vite's own current migration guide as an intentional Vite 8 rename, auto-mapped for backward compatibility today. This site's own `astro.config.mjs` doesn't customize `build.rollupOptions` at all, so this specific deprecation warning doesn't fire on this repo's own build — the rename still applies to any project that does customize it, which is common enough to be worth fixing proactively rather than waiting for a future major version to remove the old key outright. Browse more posts like this in the [Guides & Fixes](/guides-fixes) archive.
+Documented in Vite's own current migration guide as an intentional Vite 8 rename, auto-mapped for backward compatibility today. This site's own `astro.config.mjs` doesn't customize `build.rollupOptions` at all, so this specific deprecation warning doesn't fire on this repo's own build. The rename still applies to any project that does customize it, which is common enough to be worth fixing proactively rather than waiting for a future major version to remove the old key outright. Browse more posts like this in the [Guides & Fixes](/guides-fixes) archive.

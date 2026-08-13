@@ -30,7 +30,7 @@ Not implemented
   at PluginContextImpl.generateBundle (vite/dist/node/chunks/node.js:33847)
 ```
 
-The crash was reported directly: "[vite rolldown compatibility issue](https://github.com/withastro/astro/issues/16636)," opened 2026-05-07 against Astro 6.2.2 and Vite 8.0.11. It was closed as not planned — a workaround shipped for one specific project's own config, not a fix to Astro's dev-toolbar plugin itself.
+The crash was reported directly: "[vite rolldown compatibility issue](https://github.com/withastro/astro/issues/16636)," opened 2026-05-07 against Astro 6.2.2 and Vite 8.0.11. It was closed as not planned; a workaround shipped for one specific project's own config, not a fix to Astro's dev-toolbar plugin itself.
 
 <Callout
   type="info"
@@ -43,7 +43,7 @@ The crash was reported directly: "[vite rolldown compatibility issue](https://gi
   doesn't appear to trigger from Astro's own dev-toolbar integration on current
   7.x releases. It's still real and worth knowing the fix for if you're on an
   older Astro 6.x project, or if a *different* plugin in your app sets an
-  esbuild `onEnd` callback that reads `result.metafile` — the fix below is
+  esbuild `onEnd` callback that reads `result.metafile`, the fix below is
   defensive against that exact pattern regardless of which plugin triggers it.
 </Callout>
 
@@ -80,10 +80,10 @@ export default defineConfig({
 });
 ```
 
-This runs at config-resolution time, before the dev server starts optimizing dependencies, so it removes the broken callback before anything can invoke it. The dev toolbar itself keeps working — only the specific esbuild `onEnd` hook that Rolldown can't satisfy gets cleared.
+This runs at config-resolution time, before the dev server starts optimizing dependencies, so it removes the broken callback before anything can invoke it. The dev toolbar itself keeps working; only the specific esbuild `onEnd` hook that Rolldown can't satisfy gets cleared.
 
 <Callout type="warning" title="This edits a live config object">
-  `configResolved` receives Vite's final, merged config — mutating
+  `configResolved` receives Vite's final, merged config; mutating
   `optimizeDeps.esbuildOptions.plugins` here only removes the array Astro's
   dev-toolbar integration already pushed onto, not anything you configured
   yourself under a different plugin name. If you also rely on other
@@ -93,4 +93,4 @@ This runs at config-resolution time, before the dev server starts optimizing dep
 
 ## Confirmed version range
 
-Reported against Astro 6.2.2 and Vite 8.0.11. Checked directly against this site's own `astro@7.1.3` install: its dev-toolbar plugin's `config()` hook has already moved away from setting `optimizeDeps.esbuildOptions.plugins`, so the specific crash reported in the original issue doesn't reproduce from Astro's own integration on current 7.x. If you're on Astro 6.x, or hitting the identical `Not implemented` error from a different plugin, the fix above still applies — the trigger is any esbuild plugin with an `onEnd` callback reading `result.metafile`, not something specific to the dev toolbar itself. Browse more posts like this in the [Guides & Fixes](/guides-fixes) archive.
+Reported against Astro 6.2.2 and Vite 8.0.11. Checked directly against this site's own `astro@7.1.3` install: its dev-toolbar plugin's `config()` hook has already moved away from setting `optimizeDeps.esbuildOptions.plugins`, so the specific crash reported in the original issue doesn't reproduce from Astro's own integration on current 7.x. If you're on Astro 6.x, or hitting the identical `Not implemented` error from a different plugin, the fix above still applies: the trigger is any esbuild plugin with an `onEnd` callback reading `result.metafile`, not something specific to the dev toolbar itself. Browse more posts like this in the [Guides & Fixes](/guides-fixes) archive.

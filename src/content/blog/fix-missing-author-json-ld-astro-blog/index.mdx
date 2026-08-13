@@ -10,22 +10,22 @@ coverImageCredit:
   { name: "Godfrey Atima", url: "https://www.pexels.com/@godiatima" }
 faq:
   - question: "Why does Google's Rich Results Test flag a missing author field when the page already shows a byline?"
-    answer: 'Rich results are read from the page''s JSON-LD script block, not the rendered HTML. A page can display "By Jane Doe" in plain text while emitting no author property in its structured data at all, and the two are never reconciled automatically — that mismatch is exactly what the warning is catching.'
+    answer: 'Rich results are read from the page''s JSON-LD script block, not the rendered HTML. A page can display "By Jane Doe" in plain text while emitting no author property in its structured data at all, and the two are never reconciled automatically; that mismatch is exactly what the warning is catching.'
   - question: "What does an Article's JSON-LD need to resolve the missing-author warning?"
     answer: "An author property with a Person object that has at minimum a name (ideally linking to a real About or author-bio page), plus a publisher property with an Organization object that includes a name and a resolvable logo image URL."
 ---
 
-You run a post through Google's [Rich Results Test](https://search.google.com/test/rich-results) and the `Article` and `BreadcrumbList` blocks both come back valid — but there's a note sitting under Article: **"Missing field 'author' (optional but recommended)."** The page visibly shows a byline. So why is Google saying the field is missing?
+You run a post through Google's [Rich Results Test](https://search.google.com/test/rich-results) and the `Article` and `BreadcrumbList` blocks both come back valid, but there's a note sitting under Article: **"Missing field 'author' (optional but recommended)."** The page visibly shows a byline. So why is Google saying the field is missing?
 
 ## Why this happens
 
-A byline you can see on the page and an `author` field in the page's structured data are two unrelated things. Rich results are read from a `<script type="application/ld+json">` block, not from the rendered HTML — so a page can display "By Jane Doe" in plain text while emitting no `author` property in its JSON-LD at all, and the two will never be reconciled automatically. This is exactly what happens on a lot of Astro blogs: the visual layout was built first, structured data was never added, and everything looks correct until you check what Google actually parses.
+A byline you can see on the page and an `author` field in the page's structured data are two unrelated things. Rich results are read from a `<script type="application/ld+json">` block, not from the rendered HTML, so a page can display "By Jane Doe" in plain text while emitting no `author` property in its JSON-LD at all, and the two will never be reconciled automatically. This is exactly what happens on a lot of Astro blogs: the visual layout was built first, structured data was never added, and everything looks correct until you check what Google actually parses.
 
-The `Article` type's `author` property expects a `Person` (or `Organization`) object with, at minimum, a `name`. Google also recommends a `publisher` — an `Organization` with its own `name` and `logo` — since that's what ties the article to the site as a whole rather than just the individual page.
+The `Article` type's `author` property expects a `Person` (or `Organization`) object with, at minimum, a `name`. Google also recommends a `publisher` (an `Organization` with its own `name` and `logo`) since that's what ties the article to the site as a whole rather than just the individual page.
 
 ## The fix
 
-Build the JSON-LD from the same data already driving the page — the post's frontmatter and the site's config — rather than hand-typing it per post. In an Astro layout:
+Build the JSON-LD from the same data already driving the page (the post's frontmatter and the site's config) rather than hand-typing it per post. In an Astro layout:
 
 ```astro title="src/layouts/BaseLayout.astro"
 ---
@@ -53,7 +53,7 @@ const jsonLd = {
 <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
 ```
 
-Two details matter here. First, `author` links to a real URL — typically an About or author-bio page — because Google treats an author with a resolvable page as a stronger, more trustworthy signal than a bare name string. Second, `publisher.logo` needs a real image URL that actually resolves; a broken or placeholder logo link can cause its own separate validation warning.
+Two details matter here. First, `author` links to a real URL (typically an About or author-bio page) because Google treats an author with a resolvable page as a stronger, more trustworthy signal than a bare name string. Second, `publisher.logo` needs a real image URL that actually resolves; a broken or placeholder logo link can cause its own separate validation warning.
 
 <Callout
   type="warning"
@@ -69,11 +69,13 @@ Two details matter here. First, `author` links to a real URL — typically an Ab
 
 ## Verifying the fix
 
-After deploying, run the live URL back through the Rich Results Test. The "Missing field 'author'" note should be gone, and Google's own [Structured Data Markup Helper](https://support.google.com/webmasters/answer/9007506) or [Schema Markup Validator](https://validator.schema.org/) will show the `author` and `publisher` objects present with their resolved values. It's worth checking a couple of different posts, not just one — a bug in how the layout pulls frontmatter (a missing `date`, for instance) can make the field present on some pages and absent on others, which is easy to miss if you only ever test the same one URL.
+After deploying, run the live URL back through the Rich Results Test. The "Missing field 'author'" note should be gone, and Google's own [Structured Data Markup Helper](https://support.google.com/webmasters/answer/3069489) or [Schema Markup Validator](https://validator.schema.org/) will show the `author` and `publisher` objects present with their resolved values. It's worth checking a couple of different posts, not just one. A bug in how the layout pulls frontmatter (a missing `date`, for instance) can make the field present on some pages and absent on others, which is easy to miss if you only ever test the same one URL.
 
 <Callout type="tip" title="One layout, every post">
   Because this lives in the shared layout and reads from `siteConfig` and each
   post's own frontmatter, every existing and future post gets correct `author`
-  and `publisher` data automatically — there's nothing to remember to add per
+  and `publisher` data automatically; there's nothing to remember to add per
   article.
 </Callout>
+
+Browse more posts like this in the [Guides & Fixes](/guides-fixes) archive.

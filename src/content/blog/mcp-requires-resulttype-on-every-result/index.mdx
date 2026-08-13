@@ -18,7 +18,7 @@ faq:
 
 ## Quick Answer
 
-The MCP 2026-07-28 specification makes `resultType` mandatory on every result a server returns: `"complete"` for an ordinary finished result, `"input_required"` for a new interim result type. This replaces the old pattern of a server initiating a mid-call request back to the client; instead, a call to `tools/call`, `prompts/get`, or `resources/read` can return an `InputRequiredResult` carrying `inputRequests` the client must fulfill, then re-issue the call with the answers.
+The MCP 2026-07-28 specification makes [`resultType` mandatory on every result](https://modelcontextprotocol.io/specification/2026-07-28/basic#resulttype) a server returns: `"complete"` for an ordinary finished result, `"input_required"` for a new interim result type. This replaces the old pattern of a server initiating a mid-call request back to the client; instead, a call to `tools/call`, `prompts/get`, or `resources/read` can return an [`InputRequiredResult`](https://modelcontextprotocol.io/specification/2026-07-28/basic/patterns/mrtr) carrying `inputRequests` the client must fulfill, then re-issue the call with the answers.
 
 ## What's actually changing
 

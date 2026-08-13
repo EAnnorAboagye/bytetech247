@@ -9,7 +9,7 @@ relatedSlugs:
     "2026-llm-token-pricing-reset",
     "claudes-tokenizer-counts-up-to-35-percent-more",
   ]
-series: "2026-llm-token-pricing-reset"
+series: "The 2026 LLM Token & Pricing Reset: GPT-5.6, Claude Opus 4.8, Gemini 3.6"
 seriesOrder: 17
 coverImage: "./cover.png"
 coverImageAlt: "A dark comparison-matrix style cover reading Claude Opus 4.7 Breaks temperature and top_p Params, listing three row summaries: temperature top_p and top_k together previously accepted, now reported to return HTTP 400 in some configurations, budget_tokens likewise reported to return HTTP 400, and Anthropic's own GA changelog does not mention this"
@@ -26,7 +26,7 @@ Third-party technical coverage reports that Claude Opus 4.7 introduced a breakin
 
 ## What's actually changing
 
-Third-party technical coverage of Opus 4.7, the same source cluster reporting the tokenizer change covered separately in this series, reports that certain sampling parameters now trigger HTTP 400 errors under some configurations: `temperature`, `top_p`, `top_k`, and `budget_tokens`. Previously valid combinations of these parameters are reported to fail outright rather than degrade gracefully or get silently ignored.
+Third-party technical coverage of Opus 4.7, the same source cluster reporting the tokenizer change covered separately in this series, reports that certain sampling parameters now trigger HTTP 400 errors under some configurations: `temperature`, `top_p`, `top_k`, and `budget_tokens`, a restriction independently confirmed for `temperature`, `top_p`, and `top_k` in [Anthropic's own API release notes](https://docs.claude.com/en/release-notes/api). Previously valid combinations of these parameters are reported to fail outright rather than degrade gracefully or get silently ignored.
 
 As with the tokenizer claim, this is explicitly not confirmed by Anthropic's own official GA changelog for Opus 4.7 (2026-04-16), which does not mention this behavior. Treat the exact trigger conditions as reported, not verified, and confirm against your own test calls before assuming a specific parameter combination is the cause.
 

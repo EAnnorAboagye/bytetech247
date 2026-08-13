@@ -21,11 +21,11 @@ Vite 8 removes format sniffing: it no longer inspects a package's actual file co
 
 ## Why the resolved file changes
 
-Some npm packages publish both a `browser` field and a `module` field in `package.json`, pointing at differently-shaped code — commonly a CJS-flavored `browser` build alongside an ESM `module` build, or vice versa. [Vite's migration guide](https://vite.dev/guide/migration) documents the removal directly, under "Module Resolution Updates": "Module resolution using format sniffing (selecting between `browser` and `module` fields based on content) has been removed."
+Some npm packages publish both a `browser` field and a `module` field in `package.json`, pointing at differently-shaped code, commonly a CJS-flavored `browser` build alongside an ESM `module` build, or vice versa. [Vite's migration guide](https://vite.dev/guide/migration) documents the removal directly, under "Module Resolution Updates": "Module resolution using format sniffing (selecting between `browser` and `module` fields based on content) has been removed."
 
-Vite 7 and earlier could look past a misconfigured or misleading `mainFields` order by inspecting the actual file content each field pointed to, and picking whichever one looked like the right format. That fallback papered over packages with an inconsistent `package.json` — the declared field order didn't have to be exactly right, because Vite would sniff its way to a working result anyway.
+Vite 7 and earlier could look past a misconfigured or misleading `mainFields` order by inspecting the actual file content each field pointed to, and picking whichever one looked like the right format. That fallback papered over packages with an inconsistent `package.json`. The declared field order didn't have to be exactly right, because Vite would sniff its way to a working result anyway.
 
-Vite 8 removes that inference entirely. `resolve.mainFields`'s order is now followed literally, with no content-based override. A package that only resolved correctly before because of the sniffing fallback can now resolve to the wrong (or straight-up broken) entry point, with no signal from Vite itself that anything changed — it's still resolving _a_ file, just not the one that used to work.
+Vite 8 removes that inference entirely. `resolve.mainFields`'s order is now followed literally, with no content-based override. A package that only resolved correctly before because of the sniffing fallback can now resolve to the wrong (or straight-up broken) entry point, with no signal from Vite itself that anything changed. It's still resolving _a_ file, just not the one that used to work.
 
 ## Fix it: set an explicit, correct field order
 
@@ -54,7 +54,7 @@ The right order depends on your build target, not a universal default. A browser
 
 <Callout type="tip" title="Diagnosing which field a package actually needs">
   Open the affected package's own `package.json` and compare what each of
-  `browser`, `module`, and `main` actually points to — sometimes one of them is
+  `browser`, `module`, and `main` actually points to. Sometimes one of them is
   stale or simply wrong, which sniffing used to mask. If the package itself has
   the mismatch, report it upstream; reordering `mainFields` on your end is a
   workaround for their config, not a fix for it.
@@ -62,4 +62,4 @@ The right order depends on your build target, not a universal default. A browser
 
 ## Confirmed version range
 
-Documented in Vite's own current migration guide as an intentional Vite 8 removal, not a bug to be patched. This site's own dependency tree doesn't include a package relying on browser/module format sniffing, so this specific resolution change wasn't independently reproducible against this repo's own build — the mechanism applies to any Vite 8 project depending on a dual-published package whose `package.json` field order doesn't already match what `resolve.mainFields` expects. Cross-reference this with [Fix Vite 8 Lightning CSS Dropping backdrop-filter](/guides-fixes/fix-vite-8-lightning-css-backdrop-filter/) — a different silent default-behavior change in the same Vite 8 build step. Browse more posts like this in the [Guides & Fixes](/guides-fixes) archive.
+Documented in Vite's own current migration guide as an intentional Vite 8 removal, not a bug to be patched. This site's own dependency tree doesn't include a package relying on browser/module format sniffing, so this specific resolution change wasn't independently reproducible against this repo's own build. The mechanism applies to any Vite 8 project depending on a dual-published package whose `package.json` field order doesn't already match what `resolve.mainFields` expects. Cross-reference this with [Fix Vite 8 Lightning CSS Dropping backdrop-filter](/guides-fixes/fix-vite-8-lightning-css-backdrop-filter/), a different silent default-behavior change in the same Vite 8 build step. Browse more posts like this in the [Guides & Fixes](/guides-fixes) archive.

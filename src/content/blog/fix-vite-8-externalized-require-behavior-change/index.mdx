@@ -17,13 +17,13 @@ faq:
 
 ## Quick Answer
 
-Vite 8 stops rewriting `require()` calls for externalized dependencies into ESM `import` statements. A `require()` call now stays literal in the output, so ESM-only output (an `.mjs` build, or any Node context without CJS interop) can throw `ReferenceError: require is not defined` at runtime. Rolldown documents an `esmExternalRequirePlugin` as the opt-in path back to the old conversion — or sidestep it entirely by not marking the dependency external, or by using Node's own `createRequire` interop explicitly.
+Vite 8 stops rewriting `require()` calls for externalized dependencies into ESM `import` statements. A `require()` call now stays literal in the output, so ESM-only output (an `.mjs` build, or any Node context without CJS interop) can throw `ReferenceError: require is not defined` at runtime. Rolldown documents an `esmExternalRequirePlugin` as the opt-in path back to the old conversion, or sidestep it entirely by not marking the dependency external, or by using Node's own `createRequire` interop explicitly.
 
 ## Why the require() call survives untouched
 
-When a dependency is marked external — not bundled, common for SSR/Node-target builds and for libraries expecting the consumer to provide certain packages — the bundler still has to emit _something_ at every place your code imports it. [Vite's migration guide](https://vite.dev/guide/migration) documents exactly what changed here: "Require calls for externalized modules are now preserved as require calls and not converted to import statements."
+When a dependency is marked external (not bundled, common for SSR/Node-target builds and for libraries expecting the consumer to provide certain packages), the bundler still has to emit _something_ at every place your code imports it. [Vite's migration guide](https://vite.dev/guide/migration) documents exactly what changed here: "Require calls for externalized modules are now preserved as require calls and not converted to import statements."
 
-Vite 7 and earlier rewrote a bundled `require("external-pkg")` call into a real ESM `import` statement targeting that external, so the output stayed valid ESM regardless of how the original source code referenced the dependency. Vite 8 stops doing that rewrite. Whatever form the original call took — `require()` or `import` — survives into the output unchanged.
+Vite 7 and earlier rewrote a bundled `require("external-pkg")` call into a real ESM `import` statement targeting that external, so the output stayed valid ESM regardless of how the original source code referenced the dependency. Vite 8 stops doing that rewrite. Whatever form the original call took, `require()` or `import`, survives into the output unchanged.
 
 That's a real problem specifically when the output itself is meant to run as ESM. A literal `require()` call in an `.mjs` file, or any module Node loads under `"type": "module"`, throws at runtime, because nothing in that file (or Node's own ESM loader) defines a `require` function by default.
 
@@ -31,9 +31,9 @@ That's a real problem specifically when the output itself is meant to run as ESM
 
 ### Option 1: don't mark the dependency external
 
-The most reliable fix is the one that doesn't depend on Vite's bundling behavior at all — if you don't specifically need the dependency to stay external, bundle it instead:
+The most reliable fix is the one that doesn't depend on Vite's bundling behavior at all. If you don't specifically need the dependency to stay external, bundle it instead:
 
-```js title="vite.config.ts — before"
+```js title="vite.config.ts - before"
 export default defineConfig({
   build: {
     rollupOptions: {
@@ -43,11 +43,11 @@ export default defineConfig({
 });
 ```
 
-```js title="vite.config.ts — after"
+```js title="vite.config.ts - after"
 export default defineConfig({
   build: {
     rollupOptions: {
-      // FIXED: not external — Vite bundles it, no require()/import
+      // FIXED: not external, Vite bundles it, no require()/import
       // mismatch possible because nothing is left unresolved
     },
   },
@@ -58,14 +58,14 @@ export default defineConfig({
 
 If the dependency genuinely needs to stay external (a peer dependency, or something environment-specific), don't rely on the bundler to paper over the CJS/ESM boundary. Handle it explicitly with Node's own supported interop:
 
-```js title="entry.mjs — explicit interop, works regardless of bundler behavior"
+```js title="entry.mjs - explicit interop, works regardless of bundler behavior"
 import { createRequire } from "node:module";
 const require = createRequire(import.meta.url);
 
 const somePkg = require("some-node-only-pkg"); // FIXED: real require, defined explicitly
 ```
 
-This is the same pattern Node itself documents for using `require()` inside an ESM module — it doesn't depend on Vite 8, Rolldown, or any bundler-specific compatibility plugin, so it keeps working even if this exact behavior changes again in a future Vite release.
+This is the same pattern Node itself documents for using `require()` inside an ESM module. It doesn't depend on Vite 8, Rolldown, or any bundler-specific compatibility plugin, so it keeps working even if this exact behavior changes again in a future Vite release.
 
 <Callout
   type="tip"
@@ -74,10 +74,10 @@ This is the same pattern Node itself documents for using `require()` inside an E
   Rolldown documents an `esmExternalRequirePlugin` specifically for converting
   external `require()` calls back into `import` statements. Check Rolldown's own
   current plugin documentation for the exact import path and usage before adding
-  it — plugin APIs for a tool this new can shift between releases faster than a
+  it. Plugin APIs for a tool this new can shift between releases faster than a
   bundler's stable config surface.
 </Callout>
 
 ## Confirmed version range
 
-Documented in Vite's own current migration guide as an intentional Vite 8 behavior change, under "External Module Requires." This site deploys as a static build with no SSR externals, so this specific behavior change wasn't independently reproducible against this repo's own build. The mechanism applies to any Vite 8 SSR or Node-target build with externalized CommonJS-style dependencies. See also [Fix Vite 8 CommonJS Default Import Breaking Change](/guides-fixes/fix-vite-8-commonjs-default-import-change/) — a related but distinct change to how Vite 8 handles the CJS/ESM boundary, from the import side rather than the require side. Browse more posts like this in the [Guides & Fixes](/guides-fixes) archive.
+Documented in Vite's own current migration guide as an intentional Vite 8 behavior change, under "External Module Requires." This site deploys as a static build with no SSR externals, so this specific behavior change wasn't independently reproducible against this repo's own build. The mechanism applies to any Vite 8 SSR or Node-target build with externalized CommonJS-style dependencies. See also [Fix Vite 8 CommonJS Default Import Breaking Change](/guides-fixes/fix-vite-8-commonjs-default-import-change/), a related but distinct change to how Vite 8 handles the CJS/ESM boundary, from the import side rather than the require side. Browse more posts like this in the [Guides & Fixes](/guides-fixes) archive.

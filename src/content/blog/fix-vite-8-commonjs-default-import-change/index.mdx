@@ -12,7 +12,7 @@ faq:
   - question: "Is legacy.inconsistentCjsInterop a permanent fix?"
     answer: "No, treat it as a temporary escape hatch, not a real fix. It restores Rollup's old, permissive interop behavior project-wide, papering over every affected package instead of fixing the one causing your error. Report the specific broken import to that package's maintainer, or send a fix upstream, and remove the flag once it's patched."
   - question: "How do I find which package is actually causing the crash?"
-    answer: "Read the stack trace on the TypeError — it names the file and import that failed. Check that package's own source for module.exports = someFunction without also setting module.exports.__esModule = true, which is exactly the pattern Rolldown's stricter interop no longer treats leniently."
+    answer: "Read the stack trace on the TypeError; it names the file and import that failed. Check that package's own source for module.exports = someFunction without also setting module.exports.__esModule = true, which is exactly the pattern Rolldown's stricter interop no longer treats leniently."
 ---
 
 ## Quick Answer
@@ -25,15 +25,15 @@ Rollup's CommonJS interop (Vite 7 and earlier) was permissive and could vary dep
 
 Older CommonJS packages commonly export a single function directly, without setting `module.exports.__esModule`:
 
-```js title="node_modules/some-legacy-lib/index.js — a real, older CJS pattern"
+```js title="node_modules/some-legacy-lib/index.js - a real, older CJS pattern"
 module.exports = function doThing() {
   /* ... */
 };
 ```
 
-Under Rollup's old interop, a default import from a package like this could resolve to the function itself in some cases. Under Rolldown's rule above, the same import now consistently resolves to `module.exports` as a whole — which, since it _is_ the function here, should still work, but plenty of real packages wrap their export differently enough that the resolved value stops being callable. The failure only shows up at the call site, once code tries to invoke something that's no longer a function:
+Under Rollup's old interop, a default import from a package like this could resolve to the function itself in some cases. Under Rolldown's rule above, the same import now consistently resolves to `module.exports` as a whole, which, since it _is_ the function here, should still work, but plenty of real packages wrap their export differently enough that the resolved value stops being callable. The failure only shows up at the call site, once code tries to invoke something that's no longer a function:
 
-```js title="your code — unchanged, but the import now resolves differently"
+```js title="your code - unchanged, but the import now resolves differently"
 import doThing from "some-legacy-lib";
 
 doThing(); // TypeError: doThing is not a function
@@ -65,11 +65,11 @@ export default defineConfig({
 <Callout type="warning" title="This only fixes one specific failure mode">
   `legacy.inconsistentCjsInterop` restores Rollup's permissive default-export
   resolution. It does nothing for other CJS/ESM interop differences, like
-  execution-order changes or dynamic `import()` regressions — if your crash
+  execution-order changes or dynamic `import()` regressions. If your crash
   doesn't match the exact "default import resolves to the wrong value" shape,
   this flag won't fix it.
 </Callout>
 
 ## Confirmed version range
 
-Documented in Vite's own current migration guide as an intentional Vite 8 behavior change, not a bug — `legacy.inconsistentCjsInterop` is the officially documented escape hatch, not a community workaround. This site's own dependencies are all modern ESM-first packages, so this specific interop change wasn't independently reproducible against this repo's own build; treat the fix above as effective for any Vite 8 project hitting the exact `TypeError: <x> is not a function` shape on a previously-working default import from a CommonJS dependency. See also [Fix Vite 8 Externalized require() Behavior Change](/guides-fixes/fix-vite-8-externalized-require-behavior-change/) — a related but distinct change to the same CJS/ESM boundary, from the require side rather than the import side. Browse more posts like this in the [Guides & Fixes](/guides-fixes) archive.
+Documented in Vite's own current migration guide as an intentional Vite 8 behavior change, not a bug. `legacy.inconsistentCjsInterop` is the officially documented escape hatch, not a community workaround. This site's own dependencies are all modern ESM-first packages, so this specific interop change wasn't independently reproducible against this repo's own build; treat the fix above as effective for any Vite 8 project hitting the exact `TypeError: <x> is not a function` shape on a previously-working default import from a CommonJS dependency. See also [Fix Vite 8 Externalized require() Behavior Change](/guides-fixes/fix-vite-8-externalized-require-behavior-change/), a related but distinct change to the same CJS/ESM boundary, from the require side rather than the import side. Browse more posts like this in the [Guides & Fixes](/guides-fixes) archive.

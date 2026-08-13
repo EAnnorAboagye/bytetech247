@@ -19,7 +19,7 @@ faq:
 
 ## Quick Answer
 
-The MCP 2026-07-28 specification removes the `initialize`/`notifications/initialized` handshake entirely. Protocol version and client capabilities now travel in every request's `_meta` field (`io.modelcontextprotocol/protocolVersion`, `io.modelcontextprotocol/clientCapabilities`), not negotiated once at connection start. A client or server built around "negotiate once, trust it for the session" needs to move that negotiation into per-request `_meta` handling instead.
+The MCP 2026-07-28 specification [removes the `initialize`/`notifications/initialized` handshake](https://modelcontextprotocol.io/specification/2026-07-28/basic/versioning) entirely. Protocol version and client capabilities now travel in every request's `_meta` field (`io.modelcontextprotocol/protocolVersion`, `io.modelcontextprotocol/clientCapabilities`), not negotiated once at connection start. A client or server built around "negotiate once, trust it for the session" needs to move that negotiation into per-request `_meta` handling instead.
 
 ## What's actually changing
 

@@ -18,7 +18,7 @@ faq:
     answer: 'Add an explicit {" "} expression where the space should be. A string literal containing one space is a real value, not whitespace-only text, so Astro renders it exactly as written regardless of how the surrounding lines wrap.'
 ---
 
-Astro collapses the whitespace between two expressions when they sit on separate lines with nothing but a line break between them. Write `{count}` and `{label}` as two lines inside a component, and the rendered page shows `5posts` instead of `5 posts` — the space silently disappears. The fix is a one-character addition: an explicit `{" "}` expression where the space used to be.
+Astro collapses the whitespace between two expressions when they sit on separate lines with nothing but a line break between them. Write `{count}` and `{label}` as two lines inside a component, and the rendered page shows `5posts` instead of `5 posts`. The space silently disappears. The fix is a one-character addition: an explicit `{" "}` expression where the space used to be.
 
 It's easy to miss because the source looks completely normal. The bug only shows up in the rendered output, and by the time a word runs together on the live page, the actual cause is several files and a formatting pass away from where you're looking.
 
@@ -34,21 +34,21 @@ This rule is controlled by the `compressHTML` config option, which defaults to `
 
 ## The fix: an explicit space expression
 
-```astro title="broken — renders as 5posts"
+```astro title="broken - renders as 5posts"
 <p>
   {count}
   {label}
 </p>
 ```
 
-```astro title="fixed — explicit space"
+```astro title="fixed - explicit space"
 <p>
   {count}{" "}
   {label}
 </p>
 ```
 
-`{" "}` is itself an expression — a string literal containing one space — so it's no longer whitespace-only text sitting between two expressions. It's a real value, and Astro renders it exactly as written.
+`{" "}` is itself an expression, a string literal containing one space, so it's no longer whitespace-only text sitting between two expressions. It's a real value, and Astro renders it exactly as written.
 
 <Callout
   type="warning"
@@ -56,7 +56,7 @@ This rule is controlled by the `compressHTML` config option, which defaults to `
 >
   Prettier collapses the explicit space placeholder from the fixed example above
   back down to a plain, single-line space whenever the whole tag's content fits
-  on one line — a single-line string there is unambiguous. The moment that same
+  on one line. A single-line string there is unambiguous. The moment that same
   content later wraps across multiple lines, whether from Prettier's own
   line-length limit, a longer word, or a prop added nearby, the placeholder
   becomes required again. Leave it out and the space vanishes with no change to
@@ -66,7 +66,7 @@ This rule is controlled by the `compressHTML` config option, which defaults to `
 
 ## How to actually confirm it's fixed
 
-Don't trust how the source looks — trust the built output. A missing space collapses invisibly in the editor; nothing about `{count}{"·"}\n{label}` versus `{count}\n{label}` reads differently at a glance. The only way to know for certain is to inspect the compiled HTML.
+Don't trust how the source looks. Trust the built output. A missing space collapses invisibly in the editor; nothing about `{count}{"·"}\n{label}` versus `{count}\n{label}` reads differently at a glance. The only way to know for certain is to inspect the compiled HTML.
 
 ```bash title="check the real rendered text"
 node -e "
@@ -77,10 +77,10 @@ console.log(match && match[1]);
 "
 ```
 
-If that prints `5 posts across 4 categories` with real spaces, it's fixed. If it prints `5postsacross4categories`, a `{" "}` is missing somewhere in that block — go find it before shipping, not after a reader points it out.
+If that prints `5 posts across 4 categories` with real spaces, it's fixed. If it prints `5postsacross4categories`, a `{" "}` is missing somewhere in that block. Go find it before shipping, not after a reader points it out.
 
 ## When this is actually worth checking
 
-Reach for this check wherever a paragraph or heading interleaves more than one expression with no static text holding them apart — counts, dates, or anything assembled from a few pieces like `{count} {label}`. A component that renders a single expression, or expressions already separated by real static text (`Posted on {date}`), never hits this rule and doesn't need it.
+Reach for this check wherever a paragraph or heading interleaves more than one expression with no static text holding them apart, counts, dates, or anything assembled from a few pieces like `{count} {label}`. A component that renders a single expression, or expressions already separated by real static text (`Posted on {date}`), never hits this rule and doesn't need it.
 
-This is one of a few Astro-specific gotchas this site has run into directly — see [fixing the Rich Results Test's missing-author error](/guides-fixes/fix-missing-author-json-ld-astro-blog/) for another one that only shows up after you've already shipped. For the full rundown of Astro's template expression syntax, see the [official Astro syntax docs](https://docs.astro.build/en/basics/astro-syntax/).
+This is one of a few Astro-specific gotchas this site has run into directly. See [fixing the Rich Results Test's missing-author error](/guides-fixes/fix-missing-author-json-ld-astro-blog/) for another one that only shows up after you've already shipped. For the full rundown of Astro's template expression syntax, see the [official Astro syntax docs](https://docs.astro.build/en/basics/astro-syntax/).

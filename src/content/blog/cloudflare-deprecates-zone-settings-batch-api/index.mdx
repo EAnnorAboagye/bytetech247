@@ -1,6 +1,6 @@
 ---
 title: "Cloudflare Deprecates the Zone Settings Batch API"
-description: "Cloudflare retires batched zone settings reads/writes on 2026-09-15. Automation using the single-request endpoint needs to switch to per-setting calls."
+description: "Cloudflare retires batched zone settings reads/writes on 2027-03-31. Automation using the single-request endpoint needs to switch to per-setting calls."
 date: 2026-08-06
 category: data-automation
 tags: ["cloudflare", "api", "deprecation", "zone-settings"]
@@ -18,15 +18,15 @@ faq:
 
 ## Quick Answer
 
-Cloudflare deprecates the Zone Settings Batch API, `GET`/`PATCH /zones/{zone_id}/settings`, which reads or edits multiple zone settings in a single request. It reaches end of life on 2026-09-15. Automation using that batch endpoint needs to migrate to per-setting endpoints (`/zones/{zone_id}/settings/{setting_name}`) before then, one call per setting instead of one call for all of them.
+Cloudflare deprecates the Zone Settings Batch API, `GET`/`PATCH /zones/{zone_id}/settings`, which reads or edits multiple zone settings in a single request. It reaches end of life on 2027-03-31 (Cloudflare extended this from an original 2026-09-15 date). Automation using that batch endpoint needs to migrate to per-setting endpoints (`/zones/{zone_id}/settings/{setting_name}`) before then, one call per setting instead of one call for all of them.
 
 ## What's actually changing
 
-Cloudflare's own changelog states the change plainly:
+[Cloudflare's own changelog](https://developers.cloudflare.com/fundamentals/api/reference/deprecations/) states the change plainly:
 
 > "The Zone Settings Batch API endpoints, which read and edit multiple zone settings in a single request, are deprecated"
 
-Unlike most of the other deprecations in this wave, this isn't a URL path swap with the same request/response shape. The batch endpoint's whole value was reading or writing several settings (SSL mode, always-use-HTTPS, minify, and so on) in one call. The per-setting endpoints Cloudflare points to instead follow the pattern `/zones/{zone_id}/settings/{setting_name}`, confirmed elsewhere in Cloudflare's own API deprecations data for individual settings like `cname_flattening`. Migrating means genuinely restructuring any code that built one batched request into a loop, or a series, of per-setting requests.
+Unlike most of the other deprecations in this wave, this isn't a URL path swap with the same request/response shape. The batch endpoint's whole value was reading or writing several settings (SSL mode, always-use-HTTPS, minify, and so on) in one call. The [per-setting endpoints](https://developers.cloudflare.com/api/resources/zones/subresources/settings/methods/edit/) Cloudflare points to instead follow the pattern `/zones/{zone_id}/settings/{setting_name}`, confirmed elsewhere in Cloudflare's own API deprecations data for individual settings like `cname_flattening`. Migrating means genuinely restructuring any code that built one batched request into a loop, or a series, of per-setting requests.
 
 ## Structural Comparison Matrix
 
@@ -34,7 +34,7 @@ Unlike most of the other deprecations in this wave, this isn't a URL path swap w
 | :----------------------------------- | :-------------------------- | :----------------------------------------- |
 | **Requests to configure N settings** | 1                           | N                                          |
 | **Endpoint shape**                   | `/zones/{zone_id}/settings` | `/zones/{zone_id}/settings/{setting_name}` |
-| **Available after 2026-09-15**       | Removed                     | Active                                     |
+| **Available after 2027-03-31**       | Removed                     | Active                                     |
 
 ## Fix it: loop over per-setting calls
 
@@ -69,4 +69,4 @@ curl -X PATCH \
 
 ## Confirmed version
 
-Sourced from Cloudflare's official changelog and API deprecations reference. Published dates for this entry vary slightly across Cloudflare's own summaries; the end-of-life date corroborated across multiple independent lookups is 2026-09-15, migrate before then rather than relying on a single source's stated date. Browse more posts like this in the [Data Automation](/data-automation) archive.
+Sourced from [Cloudflare's own API deprecations reference](https://developers.cloudflare.com/fundamentals/api/reference/deprecations/), re-checked 2026-08-13. That page now states the end-of-life date "has been extended to March 31, 2027 (previously September 15, 2026)": this post originally used the earlier date, corrected here to match Cloudflare's current published timeline. Migrate before the current 2027-03-31 date rather than the original one. Browse more posts like this in the [Data Automation](/data-automation) archive.

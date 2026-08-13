@@ -19,7 +19,7 @@ faq:
 
 ## Quick Answer
 
-The MCP 2026-07-28 specification removes three protocol methods outright: `ping`, `logging/setLevel`, and `notifications/roots/list_changed`. Log level now sets per-request through a `_meta` field (`io.modelcontextprotocol/logLevel`) instead of a standalone RPC call. There's no stated direct replacement for `ping` as a liveness check in this changelog entry.
+The MCP 2026-07-28 specification removes three protocol methods outright: `ping`, `logging/setLevel`, and `notifications/roots/list_changed`. Log level now sets per-request through a [`_meta` field](https://modelcontextprotocol.io/specification/2026-07-28/server/utilities/logging) (`io.modelcontextprotocol/logLevel`) instead of a standalone RPC call. There's no stated direct replacement for `ping` as a liveness check in [this changelog entry](https://modelcontextprotocol.io/specification/2026-07-28/changelog).
 
 ## What's actually changing
 

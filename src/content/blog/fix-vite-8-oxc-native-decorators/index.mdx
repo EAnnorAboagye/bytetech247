@@ -12,20 +12,20 @@ faq:
   - question: "Does this affect TypeScript's older experimentalDecorators feature too?"
     answer: "No, and that distinction matters. TypeScript's legacy experimentalDecorators (the widely-used, older decorator implementation) transforms fine under Oxc, same as it did under esbuild. This limitation is specifically about the newer TC39 native decorator proposal syntax, a different language feature that happens to look similar."
   - question: "Will Oxc add native decorator lowering in a future release?"
-    answer: "Possibly, but there's no committed timeline as of this research. If your build target already supports native decorators without lowering (a sufficiently new JS runtime), you don't need to wait on it at all — the limitation only matters when you need older-target compatibility."
+    answer: "Possibly, but there's no committed timeline as of this research. If your build target already supports native decorators without lowering (a sufficiently new JS runtime), you don't need to wait on it at all; the limitation only matters when you need older-target compatibility."
 ---
 
 ## Quick Answer
 
-Vite 8 replaces esbuild with Oxc for JavaScript transformation, and Oxc's transformer doesn't support lowering native decorators — the exact words from Vite's own migration guide. A build target that needed decorators downlevel-compiled to older JS now fails or ships unsupported syntax. If you don't need native decorator semantics specifically, switching to TypeScript's `experimentalDecorators` avoids the limitation entirely.
+Vite 8 replaces esbuild with Oxc for JavaScript transformation, and Oxc's transformer doesn't support lowering native decorators, the exact words from Vite's own migration guide. A build target that needed decorators downlevel-compiled to older JS now fails or ships unsupported syntax. If you don't need native decorator semantics specifically, switching to TypeScript's `experimentalDecorators` avoids the limitation entirely.
 
 ## Why Oxc can't lower this syntax
 
 Vite 8's [migration guide](https://vite.dev/guide/migration) states the limitation directly, under the section on replacing esbuild with Oxc for JavaScript transformation: "The Oxc transformer does not support lowering native decorators."
 
-"Lowering" means downlevel-compiling newer syntax into older, broadly-supported JavaScript for a build target that doesn't understand it natively — the same job esbuild used to do for decorators alongside everything else it transformed. Oxc, Vite 8's replacement for that transform step, doesn't implement this specific lowering pass.
+"Lowering" means downlevel-compiling newer syntax into older, broadly-supported JavaScript for a build target that doesn't understand it natively, the same job esbuild used to do for decorators alongside everything else it transformed. Oxc, Vite 8's replacement for that transform step, doesn't implement this specific lowering pass.
 
-This is easy to conflate with a different, much older feature: TypeScript's `experimentalDecorators`, the decorator implementation most real-world projects (Angular-style DI containers, some ORMs, class-based state management) have used for years. That's a separate TypeScript-level transform, unaffected by this Oxc gap — it keeps working the same as it always has. The limitation is specifically about TC39's newer native decorator proposal, a related but distinct syntax that TypeScript can also emit when `experimentalDecorators` is off.
+This is easy to conflate with a different, much older feature: TypeScript's `experimentalDecorators`, the decorator implementation most real-world projects (Angular-style DI containers, some ORMs, class-based state management) have used for years. That's a separate TypeScript-level transform, unaffected by this Oxc gap. It keeps working the same as it always has. The limitation is specifically about TC39's newer native decorator proposal, a related but distinct syntax that TypeScript can also emit when `experimentalDecorators` is off.
 
 ## Fix it: use the transform that already works
 
@@ -53,7 +53,7 @@ This is easy to conflate with a different, much older feature: TypeScript's `exp
 }
 ```
 
-`experimentalDecorators` changes which decorator semantics your code actually gets, not just how it's compiled — this is a real behavior difference, not a drop-in syntax swap, so check the library or framework you're using decorators for to confirm which mode it expects before flipping this setting.
+`experimentalDecorators` changes which decorator semantics your code actually gets, not just how it's compiled. This is a real behavior difference, not a drop-in syntax swap, so check the library or framework you're using decorators for to confirm which mode it expects before flipping this setting.
 
 <Callout
   type="warning"
@@ -68,4 +68,4 @@ This is easy to conflate with a different, much older feature: TypeScript's `exp
 
 ## Confirmed version range
 
-Documented in Vite's own current migration guide as a known limitation of Oxc's transformer in Vite 8, with no committed fix timeline. This site's own TypeScript config doesn't use class decorators in any form, so this limitation wasn't independently reproducible against this repo's own build — the distinction between native and `experimentalDecorators` syntax is the same regardless of which project hits it. Browse more posts like this in the [Guides & Fixes](/guides-fixes) archive.
+Documented in Vite's own current migration guide as a known limitation of Oxc's transformer in Vite 8, with no committed fix timeline. This site's own TypeScript config doesn't use class decorators in any form, so this limitation wasn't independently reproducible against this repo's own build. The distinction between native and `experimentalDecorators` syntax is the same regardless of which project hits it. Browse more posts like this in the [Guides & Fixes](/guides-fixes) archive.

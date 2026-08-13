@@ -10,7 +10,7 @@ relatedSlugs:
     "claude-opus-4-8-fast-mode-pricing",
     "same-prompt-different-bill-gpt-claude-gemini",
   ]
-series: "2026-llm-token-pricing-reset"
+series: "The 2026 LLM Token & Pricing Reset: GPT-5.6, Claude Opus 4.8, Gemini 3.6"
 seriesOrder: 16
 coverImage: "./cover.png"
 coverImageAlt: "A dark comparison-matrix style cover reading Claude's New Tokenizer Counts Up to 35% More, listing three row summaries: tokens for identical text up to 35% more reported, Anthropic's own GA changelog does not mention this change, and effective cost per prompt is higher if the claim holds even at an unchanged price per token"
@@ -27,7 +27,7 @@ Third-party technical coverage reports that Opus 4.7's tokenizer counts up to ro
 
 ## What's actually changing
 
-Third-party technical coverage (byteiota.com, developersdigest.tech) reports that Claude Opus 4.7 shipped an updated tokenizer counting roughly 1.0 to 1.35 times as many tokens, up to about 35% more, for the same input text compared to the tokenizer pre-4.7 models used.
+Third-party technical coverage (byteiota.com, developersdigest.tech) reports that Claude Opus 4.7 shipped an updated tokenizer counting roughly 1.0 to 1.35 times as many tokens, up to about 35% more, for the same input text compared to the tokenizer pre-4.7 models used, a range [Anthropic's own pricing documentation](https://docs.claude.com/en/docs/about-claude/pricing) corroborates in part, describing the newer tokenizer as producing approximately 30% more tokens for the same text.
 
 That claim is explicitly not confirmed by Anthropic's own materials. A direct fetch of Anthropic's official GitHub changelog announcing Opus 4.7's general availability (github.blog/changelog/2026-04-16-claude-opus-4-7-is-generally-available, dated 2026-04-16) contains no mention of a tokenizer or token-count change anywhere, only general performance claims. Stating that gap plainly matters more here than almost anywhere else in this series: a wrong number repeated with confidence does more damage than an honest "unconfirmed."
 

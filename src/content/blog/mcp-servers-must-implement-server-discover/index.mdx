@@ -22,7 +22,7 @@ faq:
 
 ## Quick Answer
 
-The MCP 2026-07-28 specification adds a mandatory `server/discover` RPC that every compliant server must implement, advertising its supported protocol versions, capabilities, and identity. This is the replacement discovery path for [the removed `initialize` handshake](/ai-productivity/mcp-replaces-initialize-handshake-with-meta-fields/): any existing server implementation needs a new handler added for this method before a 2026-07-28-compliant client can safely negotiate with it.
+The MCP 2026-07-28 specification adds [a mandatory `server/discover` RPC](https://modelcontextprotocol.io/specification/2026-07-28/server/discover) that every compliant server must implement, advertising its supported protocol versions, capabilities, and identity. This is the replacement discovery path for [the removed `initialize` handshake](/ai-productivity/mcp-replaces-initialize-handshake-with-meta-fields/): any existing server implementation needs a new handler added for this method before a 2026-07-28-compliant client can safely negotiate with it.
 
 ## What's actually changing
 

@@ -22,7 +22,7 @@ faq:
 
 ## Quick Answer
 
-The MCP 2026-07-28 specification eliminates the `Last-Event-ID` header and SSE event IDs entirely. Previously, a client whose SSE stream dropped mid-request could reconnect and resume from where it left off using `Last-Event-ID`. Under the new spec, a broken stream has no resumption path: the client has to re-issue the entire request as new.
+The MCP 2026-07-28 specification [eliminates the `Last-Event-ID` header](https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/streamable-http#backward-compatibility) and SSE event IDs entirely. Previously, a client whose SSE stream dropped mid-request could reconnect and resume from where it left off using `Last-Event-ID`. Under the new spec, a broken stream has no resumption path: the client has to re-issue the entire request as new.
 
 ## What's actually changing
 

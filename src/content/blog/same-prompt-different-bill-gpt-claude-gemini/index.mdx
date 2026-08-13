@@ -5,7 +5,7 @@ date: 2026-08-11
 category: ai-productivity
 tags: ["llm-pricing", "tokens", "gpt", "claude", "gemini"]
 relatedSlugs: ["2026-llm-token-pricing-reset"]
-series: "2026-llm-token-pricing-reset"
+series: "The 2026 LLM Token & Pricing Reset: GPT-5.6, Claude Opus 4.8, Gemini 3.6"
 seriesOrder: 20
 coverImage: "./cover.png"
 coverImageAlt: "A dark comparison-matrix style cover reading Same Prompt, Different Bill, GPT-5.6 vs Claude Opus 4.8 vs Gemini 3.6, listing three row summaries: GPT-5.6's 922K-token window and pricier caching, Claude Opus 4.8's unchanged price but heavier tokenizer, and Gemini 3.6 Flash's 17% output-token cut and new price"
@@ -49,16 +49,17 @@ The other change is quieter but hits every high-volume integration: OpenAI's ear
 <Callout type="warning" title="Legacy models have a real shutdown date">
   If anything in your codebase still points at `gpt-4`, `o1`, or `o4-mini`,
   those model IDs stop responding on **October 23, 2026**. This is confirmed
-  directly from OpenAI's own deprecations page, not third-party reporting:
-  OpenAI states a minimum six-month notice period for generally available
-  models, and lists `gpt-5.6-sol` and `gpt-5.6-terra` as the named replacements.
-  Migrating early also means re-checking token counts against the new
-  `o200k_base` encoding, not just swapping the model string.
+  directly from [OpenAI's own deprecations
+  page](https://platform.openai.com/docs/deprecations), not third-party
+  reporting: OpenAI states a minimum six-month notice period for generally
+  available models, and lists `gpt-5.6-sol` and `gpt-5.6-terra` as the named
+  replacements. Migrating early also means re-checking token counts against the
+  new `o200k_base` encoding, not just swapping the model string.
 </Callout>
 
 ## Anthropic: same sticker price, a heavier tokenizer
 
-Claude Opus 4.8 launched 2026-05-28 at the same base price as Opus 4.7: $5 per million input tokens, $25 per million output tokens. On its own, that reads as "no change." Fast Mode tells a different story: its price dropped from $30/$150 per million tokens to $10/$50, a real cut for anyone running latency-sensitive workloads that specifically pay for Fast Mode.
+Claude Opus 4.8 launched 2026-05-28 at the same base price as Opus 4.7: $5 per million input tokens, $25 per million output tokens, confirmed on [Anthropic's own Claude pricing page](https://docs.claude.com/en/docs/about-claude/pricing). On its own, that reads as "no change." Fast Mode tells a different story: its price dropped from $30/$150 per million tokens to $10/$50, a real cut for anyone running latency-sensitive workloads that specifically pay for Fast Mode.
 
 The harder number to verify is the tokenizer. Third-party technical coverage reports that the tokenizer Opus 4.7 introduced, and that Opus 4.8 inherited unchanged, counts up to roughly 35% more tokens for the same input text than the tokenizer pre-4.7 models used. A direct read of Anthropic's own official GitHub changelog announcing Opus 4.7's general availability does not mention a tokenizer change anywhere, only general performance claims. That gap is worth stating outright rather than papering over: the 35% figure is plausible, widely repeated, and unconfirmed by Anthropic directly.
 
@@ -68,7 +69,7 @@ Opus 4.7 also introduced a real breaking change worth flagging for anyone touchi
 
 ## Google: Gemini 3.6 Flash spends fewer tokens, not just less money
 
-Gemini 3.6 Flash launched 2026-07-21 at $1.50 per million input tokens and $7.50 per million output tokens, with a 1M-token context window. Reported separately from the price: it uses 17% fewer output tokens than Gemini 3.5 Flash for comparable tasks, according to tech-press launch coverage rather than a Google blog post directly.
+Gemini 3.6 Flash launched 2026-07-21 at $1.50 per million input tokens and $7.50 per million output tokens, pricing confirmed on [Google's own Gemini API pricing page](https://ai.google.dev/gemini-api/docs/pricing), with a 1M-token context window. Reported separately from the price: it uses 17% fewer output tokens than Gemini 3.5 Flash for comparable tasks, according to tech-press launch coverage rather than a Google blog post directly.
 
 That's two levers moving independently. A cheaper per-token rate lowers cost on its own. A model that genuinely produces fewer output tokens for the same task lowers cost again, on top of the rate change. Comparing only the sticker price between 3.5 Flash and 3.6 Flash understates the real difference, because it misses the second lever entirely.
 

@@ -22,9 +22,9 @@ Wrangler 4.111.0 removes the `legacy_env` configuration field entirely. If your 
 
 ## What actually changed
 
-Wrangler used to support two ways of handling named environments (`[env.staging]`, `[env.production]`) in one config file: the modern default, where each environment deploys as a completely separate Worker (`my-worker-staging`, `my-worker-production`), and a legacy mode, toggled by `legacy_env`, where every environment shared a single deployed Worker with environment-scoped variables layered on top.
+Wrangler used to support two ways of handling [named environments](https://developers.cloudflare.com/workers/wrangler/environments/) (`[env.staging]`, `[env.production]`) in one config file: the modern default, where each environment deploys as a completely separate Worker (`my-worker-staging`, `my-worker-production`), and a legacy mode, toggled by `legacy_env`, where every environment shared a single deployed Worker with environment-scoped variables layered on top.
 
-`wrangler@4.111.0`, released 2026-07-15, removes the legacy mode outright:
+[`wrangler@4.111.0`](https://github.com/cloudflare/workers-sdk/releases/tag/wrangler%404.111.0), released 2026-07-15, removes the legacy mode outright:
 
 > "Remove support for service environments and the `legacy_env` configuration field"
 

@@ -24,11 +24,11 @@ Wrangler 4.113.0 adds a `settings` export to the experimental `cloudflare.config
 
 `cloudflare.config.ts` is Wrangler's experimental TypeScript-based alternative to `wrangler.toml`/`wrangler.jsonc`, available behind `wrangler --experimental-new-config`. Before this change, everything, including account-level settings, lived in the file's single `default` export alongside the Worker's own bindings and routes.
 
-`wrangler@4.113.0`'s changelog states it plainly:
+[`wrangler@4.113.0`](https://github.com/cloudflare/workers-sdk/releases/tag/wrangler%404.113.0)'s changelog states it plainly:
 
 > "Add a `settings` export to the experimental `cloudflare.config.ts` config"
 
-The actual code shape, from the merged pull request (`cloudflare/workers-sdk#14724`, "Support settings export in new config," merged 2026-07-20):
+The actual code shape, from the merged pull request ([`cloudflare/workers-sdk#14724`](https://github.com/cloudflare/workers-sdk/pull/14724), "Support settings export in new config," merged 2026-07-20):
 
 ```ts title="cloudflare.config.ts"
 import { defineSettings } from "wrangler/config";
