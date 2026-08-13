@@ -6,6 +6,7 @@ import { wcagContrast, formatHex } from "culori";
 const NEUTRAL_H = 250;
 const NEUTRAL_C = 0.012;
 const ACCENT_H = 177;
+const LINK_H = 260;
 
 const tokens = {
   light: {
@@ -16,6 +17,7 @@ const tokens = {
     fg: { l: 0.19, c: NEUTRAL_C, h: NEUTRAL_H },
     accent: { l: 0.46, c: 0.11, h: ACCENT_H },
     accentFg: { l: 0.98, c: NEUTRAL_C, h: NEUTRAL_H },
+    link: { l: 0.5, c: 0.19, h: LINK_H },
   },
   dark: {
     bg: { l: 0.15, c: NEUTRAL_C, h: NEUTRAL_H },
@@ -25,6 +27,7 @@ const tokens = {
     fg: { l: 0.96, c: NEUTRAL_C, h: NEUTRAL_H },
     accent: { l: 0.78, c: 0.12, h: ACCENT_H },
     accentFg: { l: 0.15, c: NEUTRAL_C, h: NEUTRAL_H },
+    link: { l: 0.75, c: 0.14, h: LINK_H },
   },
 };
 
@@ -55,6 +58,9 @@ for (const mode of ["light", "dark"]) {
     allPass;
   allPass =
     check(mode, "accent on bg (link text)", t.accent, t.bg, 4.5) && allPass;
+  allPass =
+    check(mode, "link on bg (citation link text)", t.link, t.bg, 4.5) &&
+    allPass;
   allPass =
     check(
       mode,

@@ -1,0 +1,65 @@
+---
+title: "Vitest 5.0 Beta Breaking Changes: Full Guide"
+description: "Vitest 5.0 beta ships 10 breaking changes across mocking, config, and assertions. Full rundown, sourced to the official migration guide, plus fixes."
+date: 2026-08-13
+category: guides-fixes
+tags: ["vitest", "testing", "vite", "javascript"]
+relatedSlugs:
+  [
+    "fix-vitest-5-vi-mock-top-level-scope-error",
+    "fix-vitest-5-clearmocks-breaking-mock-state",
+  ]
+series: "Vitest 5.0 Beta: Breaking Changes and Migration Fixes"
+seriesOrder: 1
+coverImage: "./cover.png"
+coverImageAlt: "A dark comparison-matrix style cover listing Vitest 5.0 beta's breaking changes across three groups: mocking (vi.mock scope, clearMocks default flip), config (projects inheritance, parent-directory lookup), and assertions (expect.poll, async awaits, toThrow(''))"
+faq:
+  - question: "Do I need to fix all 10 of these before upgrading?"
+    answer: "No. Two changes (vi.mock's top-level scope enforcement, and expect.poll's timeout behavior) throw a real error the moment you hit them. The rest are silent default-behavior or config-shape changes that only bite if your suite actually uses that specific feature - clearMocks and toThrow('') are the two most likely to change what a test reports without throwing anything, so check those two even if nothing else in this list looks familiar."
+  - question: "Is Vitest 5.0 stable yet?"
+    answer: "No, not at the time this pillar was written. The latest release was v5.0.0-beta.7 (2026-07-24). Every post in this series is sourced to Vitest's own official migration guide and labeled honestly as covering pre-release software, not a stable version most projects are already running. This repo's own vitest.config.ts stays pinned to vitest@^3.0.0 and none of these changes were reproduced against this project's own test suite - treat every claim across this series as documented behavior from Vitest's primary source, not a first-party repro."
+---
+
+## Quick Answer
+
+Vitest 5.0 (currently beta, latest v5.0.0-beta.7) ships 10 breaking changes worth checking before you upgrade: two throw a new error outright (`vi.mock` scope enforcement, `expect.poll` timeouts), and eight change existing behavior or config shape silently. `clearMocks` defaulting to `true` and `toThrow('')` matching any error are the two most likely to change what your suite reports with zero visible code change. Check the table below against your own `vitest.config.ts` and test suite before upgrading.
+
+Vitest is the test runner behind this site's own `tests/unit` suite, currently pinned to `vitest@^3.0.0`. Vitest 5.0 is a real, substantial rework, not a routine bump: mocking defaults change, config inheritance changes, matcher behavior changes, and the benchmarking API is rewritten outright. None of the 10 posts below are speculative. Every one is sourced directly to [Vitest's own official migration guide](https://main.vitest.dev/guide/migration), a continuously-maintained primary source, corroborated as active right now by the July 2026 beta release. This repo hasn't upgraded yet, so nothing in this series claims a first-party reproduction - every technical claim traces back to Vitest's own documentation, stated honestly as such throughout.
+
+## Structural Comparison Matrix
+
+| #   | Change                                | Throws or silent? | Applies to you if...                                              |
+| :-- | :------------------------------------ | :----------------- | :------------------------------------------------------------------ |
+| 1   | `vi.mock` top-level scope enforcement | Throws              | You call `vi.mock`/`vi.unmock`/`vi.hoisted` inside a describe/test block |
+| 2   | `clearMocks` defaults to `true`       | Silent              | Any suite that asserts on mock call counts across multiple tests    |
+| 3   | `test.sequential` / `describe.sequential` removed | Throws (removed API) | You use either option instead of `{ concurrent: false }`       |
+| 4   | Config not found in parent directory  | Silent (CLI fails)  | You run `vitest` from a subdirectory relying on a parent config      |
+| 5   | `bench` no longer a top-level export  | Throws (removed API) | You use Vitest's benchmarking API                                  |
+| 6   | Unawaited async assertions fail       | Throws              | Your suite has an `expect(promise).resolves...` without `await`      |
+| 7   | `expect.poll` rejects on timeout      | Throws              | You use `expect.poll()` to wait on an async condition                |
+| 8   | 8 subpath entry points removed        | Throws (import error) | You import from `vitest/reporters`, `vitest/coverage`, etc. directly |
+| 9   | `toThrow('')` matches any error       | Silent               | Any test asserting `toThrow('')` expecting an empty-message-only match |
+| 10  | Inline `projects` inherit root config | Silent                | You use `test.projects` and relied on isolation from root config     |
+
+Every row is confirmed against Vitest's own migration guide, not summarized from memory. Full mechanism, exact error text where one exists, and the fix live in each linked post below.
+
+## The 10 changes, in detail
+
+1. **[Fix Vitest 5 vi.mock Top-Level Scope Error](/guides-fixes/fix-vitest-5-vi-mock-top-level-scope-error/)**: `vi.mock`, `vi.unmock`, and `vi.hoisted` now throw if called outside module top level, instead of just warning.
+2. **[Fix Vitest 5 clearMocks Breaking Mock State](/guides-fixes/fix-vitest-5-clearmocks-breaking-mock-state/)**: `clearMocks` flips to `true` by default, wiping mock call history before every test.
+3. **[Fix Vitest 5 test.sequential Removed Error](/guides-fixes/fix-vitest-5-test-sequential-removed-error/)**: `test.sequential`/`describe.sequential` are gone; use `{ concurrent: false }` instead.
+4. **[Fix Vitest 5 Config Not Found in Parent Directory](/guides-fixes/fix-vitest-5-config-not-found-parent-directory/)**: Vitest stops searching parent directories for a config file.
+5. **[Fix Vitest 5 bench No Longer Top-Level Export](/guides-fixes/fix-vitest-5-bench-no-longer-top-level-export/)**: benchmarks move inside `test()` as a context fixture; several `benchmark.*` config options are removed.
+6. **[Fix Vitest 5 Unawaited Async Assertion Error](/guides-fixes/fix-vitest-5-unawaited-async-assertion-error/)**: a forgotten `await` on an async assertion now fails the test instead of just warning.
+7. **[Fix Vitest 5 expect.poll Timeout Error](/guides-fixes/fix-vitest-5-expect-poll-timeout-error/)**: `expect.poll()` actively rejects on timeout instead of letting a late result still pass.
+8. **[Fix Vitest 5 Cannot Find Module vitest/reporters](/guides-fixes/fix-vitest-5-cannot-find-module-vitest-reporters/)**: eight subpath entry points (`vitest/reporters`, `vitest/coverage`, and more) are removed outright.
+9. **[Fix Vitest 5 toThrow('') Silently Passing Tests](/guides-fixes/fix-vitest-5-tothrow-empty-string-silently-passing/)**: an empty string is no longer special-cased, so it now matches any thrown error.
+10. **[Fix Vitest 5 Projects Not Inheriting Root Config](/guides-fixes/fix-vitest-5-projects-not-inheriting-root-config/)**: inline `test.projects` entries now inherit root Vite plugins and `setupFiles` by default.
+
+## Why cover a beta at all
+
+Most pillars on this site cover a stable release most readers are already running. This one doesn't, and that's worth being upfront about rather than glossing over: Vitest 5.0 was still in beta (v5.0.0-beta.7, 2026-07-24) at the time this was researched, and this repo's own test suite hasn't upgraded past `vitest@^3.0.0`. The case for covering it anyway: the migration guide already documents 33 distinct breaking changes against a real, shipping beta, not a speculative RFC, and several of them (the mocking defaults especially) are exactly the kind of silent behavior change that's worth knowing about before it surfaces as a confusing failure the week Vitest 5 goes stable and a dependency update pulls it in without anyone reading a changelog first.
+
+If you're evaluating whether to adopt the beta now versus wait for stable, that's a real decision this guide doesn't make for you - it only tries to make sure you're not surprised by what's actually in it either way.
+
+Browse the rest of the [Guides & Fixes](/guides-fixes) archive for more framework and tooling breaking-change coverage.

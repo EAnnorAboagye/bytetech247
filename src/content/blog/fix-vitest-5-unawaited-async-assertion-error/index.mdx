@@ -1,0 +1,73 @@
+---
+title: "Fix Vitest 5 Unawaited Async Assertion Error"
+description: "Vitest 5 fails tests outright on an unawaited async assertion instead of just warning. Here's why, and the one-line fix."
+date: 2026-08-13
+category: guides-fixes
+tags: ["vitest", "testing", "async", "bug-fix"]
+relatedSlugs: ["fix-vitest-5-expect-poll-timeout-error"]
+series: "Vitest 5.0 Beta: Breaking Changes and Migration Fixes"
+seriesOrder: 7
+coverImage: "./cover.png"
+coverImageAlt: "Terminal window showing a Vitest test with an unawaited resolves.toBe assertion, annotated with Vitest 4's pass-with-warning behavior versus Vitest 5's fail behavior, next to the one-line await fix"
+faq:
+  - question: "Which matchers does this apply to, not just resolves and rejects?"
+    answer: "Vitest's migration guide names resolves, rejects, and toMatchFileSnapshot specifically as the asynchronous assertions this affects. Any matcher that returns a Promise instead of resolving synchronously falls into the same category, so treat that as the general rule rather than assuming only those three are covered."
+  - question: "Does upgrading to Vitest 5 retroactively fail tests I haven't touched?"
+    answer: "Only tests that actually contain an unawaited async assertion. A test that already awaits every resolves or rejects call behaves identically in Vitest 4 and Vitest 5. The change only affects the specific case where the await was missing and Vitest was quietly cleaning up after it."
+---
+
+## Quick Answer
+
+Vitest 5 fails a test outright when an async assertion like `expect(promise).resolves.toBe(1)` is called without `await` in front of it. Vitest 4 auto-awaited that same call at the end of the test and only printed a warning, so the test still passed. Fix it by adding the missing `await` in front of every `resolves`, `rejects`, or `toMatchFileSnapshot` assertion.
+
+## Why a passing test suddenly fails after upgrading
+
+This isn't a new bug Vitest 5 introduces. It's an old bug Vitest 4 was quietly hiding. [Vitest's migration guide](https://main.vitest.dev/guide/migration) states it directly, under "Unawaited Asynchronous Assertions Fail the Test":
+
+> Asynchronous assertions, like `resolves`, `rejects` and `toMatchFileSnapshot`, now fail the test if they are not awaited.
+
+The guide's own example makes the before-and-after explicit:
+
+```ts title="async.test.ts"
+test("unawaited assertion", async () => {
+  // v4: prints a warning, the test passes
+  // v5: the test fails
+  expect(promise).resolves.toBe(1);
+  await expect(promise).resolves.toBe(1);
+});
+```
+
+The mechanical reason this matters: `resolves` and `rejects` don't run the comparison synchronously. Calling `expect(promise).resolves.toBe(1)` returns a `Promise` that has to settle before the assertion inside it actually runs. Skip the `await`, and the test function can finish and report success before that inner promise has resolved at all, which means the comparison it's supposed to make might never happen before Vitest moves on.
+
+Vitest 4 papered over that gap. It tracked pending assertion promises and auto-awaited them after the test body returned, so the check still ran, just late, with a console warning as the only sign anything was off. Vitest 5 removes that safety net and fails the test the moment it detects an assertion that was never awaited.
+
+## Why this is a real bug, not just stricter enforcement
+
+A forgotten `await` on an async matcher is a latent bug regardless of which Vitest version is running it. If the promise the assertion checks actually rejects, or resolves to something other than what `toBe` expects, an unawaited assertion in Vitest 4 could still report a green test, because the warning goes to the console, not to the test's pass/fail result, and nothing forces a developer to read console output on a passing CI run. Vitest 5 turns that same situation into a hard failure, which is the more honest outcome: a test that doesn't actually verify what it claims to verify shouldn't be counted as passing.
+
+## Fix it: add the missing await
+
+The fix is almost always a single keyword. Find the assertion, add `await`:
+
+```ts title="async.test.ts - before"
+test("resolves to the expected value", async () => {
+  expect(fetchUser(1)).resolves.toEqual({ id: 1 }); // BROKEN: promise never awaited
+});
+```
+
+```ts title="async.test.ts - after"
+test("resolves to the expected value", async () => {
+  await expect(fetchUser(1)).resolves.toEqual({ id: 1 }); // FIXED: assertion runs before the test ends
+});
+```
+
+<Callout type="tip" title="Search your suite for the pattern before running it">
+  Grep your test files for `resolves` and `rejects` and check each match for
+  a leading `await` or a `return` in front of it. Both work, since returning
+  the assertion promise from an `async` test function lets the test runner
+  wait on it the same way an explicit `await` would.
+</Callout>
+
+## Confirmed version range
+
+This behavior change is documented in [Vitest's own current migration guide](https://main.vitest.dev/guide/migration), under "Unawaited Asynchronous Assertions Fail the Test," as an intentional Vitest 5 change, corroborated as in-window against the beta release available at research time (v5.0.0-beta.7). This repo's own `vitest.config.ts` is pinned to `vitest@^3.0.0`, so this exact failure mode wasn't independently reproducible against this repo's own test suite. Treat the mechanics above as documented behavior from Vitest's primary source, not a first-party reproduction. If you're also hitting timing changes around `expect.poll()`, see [Fix Vitest 5 expect.poll Timeout Error](/guides-fixes/fix-vitest-5-expect-poll-timeout-error/) — a related but distinct Vitest 5 change to how long-running assertions are handled. Browse more posts like this in the [Guides & Fixes](/guides-fixes) archive.

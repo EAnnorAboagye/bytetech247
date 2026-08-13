@@ -26,6 +26,15 @@
   --color-fg-muted: oklch(0.46 0.012 250);
   --color-accent: oklch(0.46 0.11 177);
   --color-accent-fg: oklch(0.98 0.012 250);
+  /*
+   * A dedicated blue for in-prose links (citations/anchors), distinct from
+   * --color-accent's teal — readers expect "blue" as the universal signal
+   * for "this is a clickable link," and teal alone tested as too close to
+   * body text at a glance. Same lightness-pick pattern as --color-accent
+   * (light source here; dark override in the `tokens` layer below).
+   * Contrast validated by scripts/check-contrast.mjs.
+   */
+  --color-link: oklch(0.5 0.19 260);
 
   /*
    * Card elevation — plain box-shadow (cheap to paint, no backdrop-filter
@@ -125,6 +134,7 @@
       --color-fg-muted: oklch(0.68 0.012 250);
       --color-accent: oklch(0.78 0.12 177);
       --color-accent-fg: oklch(0.15 0.012 250);
+      --color-link: oklch(0.75 0.14 260);
       --shadow-card: 0 1px 2px rgb(0 0 0 / 0.3), 0 8px 20px rgb(0 0 0 / 0.35);
       --shadow-card-hover:
         0 2px 6px rgb(0 0 0 / 0.35), 0 16px 32px rgb(0 0 0 / 0.4);
@@ -143,6 +153,7 @@
     --color-fg-muted: oklch(0.68 0.012 250);
     --color-accent: oklch(0.78 0.12 177);
     --color-accent-fg: oklch(0.15 0.012 250);
+    --color-link: oklch(0.75 0.14 260);
     --shadow-card: 0 1px 2px rgb(0 0 0 / 0.3), 0 8px 20px rgb(0 0 0 / 0.35);
     --shadow-card-hover:
       0 2px 6px rgb(0 0 0 / 0.35), 0 16px 32px rgb(0 0 0 / 0.4);
@@ -160,6 +171,7 @@
     --color-fg-muted: oklch(0.46 0.012 250);
     --color-accent: oklch(0.46 0.11 177);
     --color-accent-fg: oklch(0.98 0.012 250);
+    --color-link: oklch(0.5 0.19 260);
     --shadow-card: 0 1px 2px rgb(0 0 0 / 0.04), 0 8px 20px rgb(0 0 0 / 0.06);
     --shadow-card-hover:
       0 2px 6px rgb(0 0 0 / 0.07), 0 16px 32px rgb(0 0 0 / 0.1);
@@ -486,11 +498,12 @@
      rendered in the same color as its surrounding text with no underline —
      visually indistinguishable from non-clickable text. Confirmed live: no
      rule anywhere in this codebase gave prose links a color outside of
-     @media print. Underline plus the site's own accent color, not color
-     alone, since color by itself isn't a reliable enough signal (WCAG 1.4.1
-     "Use of Color"). */
+     @media print. Underline plus a dedicated blue (--color-link, not
+     --color-accent's teal — blue is the color readers already associate
+     with "clickable"), not color alone, since color by itself isn't a
+     reliable enough signal (WCAG 1.4.1 "Use of Color"). */
   .legal a {
-    color: var(--color-accent);
+    color: var(--color-link);
     text-decoration: underline;
     text-underline-offset: 0.15em;
   }

@@ -1,0 +1,102 @@
+---
+title: "Fix Vitest 5 Projects Not Inheriting Root Config"
+description: "Vitest 5's extends option defaults to true, so inline test.projects now inherit root plugins and setupFiles automatically. Fix it with extends: false."
+date: 2026-08-13
+category: guides-fixes
+tags: ["vitest", "testing", "config", "bug-fix"]
+series: "Vitest 5.0 Beta: Breaking Changes and Migration Fixes"
+seriesOrder: 11
+coverImage: "./cover.png"
+coverImageAlt: "A dark code editor style panel titled vitest.config.ts - projects extends option, showing extends now defaults to true and listing what an inline project inherits automatically, with extends: false as the opt-out"
+faq:
+  - question: "Does this apply to projects that point at a separate config file, not an inline object?"
+    answer: "The migration guide's wording is specific to inline configuration objects inside test.projects. It doesn't cover projects defined by pointing at a separate config file path in the same section, so verify directly against the guide if that's your setup rather than assuming identical behavior."
+  - question: "Do array options like setupFiles get replaced or merged with the root's?"
+    answer: "Merged, not replaced. The guide states that arrays are merged: if the root config defines setupFiles, the project's own setupFiles are appended to the inherited ones rather than overriding them, so both the root's and the project's setup files end up running."
+---
+
+## Quick Answer
+
+Vitest 5 changes `test.projects` inheritance: the `extends` option now defaults to `true`, so every inline project automatically picks up the root's Vite plugins and `resolve.alias`. Arrays merge instead of override, so root `setupFiles` get appended, not replaced. A project relying on the old isolated-by-default behavior now needs `extends: false` explicitly.
+
+## Why inline projects suddenly inherit everything
+
+`test.projects` lets a single Vitest run cover multiple logically separate test configurations, unit tests with one setup, integration tests with another, inside one `vitest.config.ts`. In Vitest 4, an inline project entry in that array didn't automatically pick up the root configuration. If you wanted a project to share the root's Vite plugins or `setupFiles`, you had to wire that up yourself.
+
+[Vitest's migration guide](https://main.vitest.dev/guide/migration) documents that Vitest 5 flips the default:
+
+> "The `extends` option now defaults to `true`: every project defined as an inline configuration in `test.projects` inherits all options from the root configuration, including Vite options like `plugins` or `resolve.alias`."
+
+An inline project that previously ran in isolation from the root now automatically picks up its Vite plugins, its alias resolution, and more, without any config change on the project's side.
+
+That's the actual break. Nothing about the project's own config object changed. What changed is what Vitest does with it by default, so a project written under the old assumption can start behaving differently the moment the `vitest` dependency bumps to 5, with no diff to point at in the project's own definition.
+
+## What "inherits" means here: merged arrays, not a full copy
+
+Inheritance isn't a blunt overwrite. The guide is specific about how array-valued options combine:
+
+> "Arrays are merged, not overridden: if the root config defines `setupFiles`, the project's own `setupFiles` are appended to the inherited ones."
+
+A project that defines its own `setupFiles` doesn't lose them and doesn't silently swap to only the root's; both lists run, root first, then the project's own.
+
+That matters for diagnosing the symptom in practice. If a root-level setup file registers something global, a test double, a database connection, an environment variable, that global effect now shows up inside every inline project too, even one that never referenced that setup file itself. The project's tests aren't broken by a bug in their own code; they're picking up state from a setup file they never opted into, because the project object itself never said otherwise.
+
+## Fix it: opt back into isolation explicitly
+
+```ts title="vitest.config.ts - before (relies on Vitest 4's isolated-by-default behavior)"
+export default defineConfig({
+  plugins: [tsconfigPaths()],
+  test: {
+    setupFiles: ["./setup.global.ts"],
+    projects: [
+      {
+        test: {
+          name: "unit",
+          // BROKEN under Vitest 5: this project now also runs
+          // setup.global.ts automatically, which it was never meant to.
+          setupFiles: ["./setup.unit.ts"],
+        },
+      },
+    ],
+  },
+});
+```
+
+```ts title="vitest.config.ts - after (Vitest 5, isolation restored explicitly)"
+export default defineConfig({
+  plugins: [tsconfigPaths()],
+  test: {
+    setupFiles: ["./setup.global.ts"],
+    projects: [
+      {
+        extends: false, // FIXED: opts out of the new default inheritance
+        test: {
+          name: "unit",
+          setupFiles: ["./setup.unit.ts"], // runs alone again, as intended
+        },
+      },
+    ],
+  },
+});
+```
+
+The fix adds exactly one key. `extends: false` is the exact opt-out the migration guide names, and it applies per project, so a config with several inline projects can mix defaults: leave the ones that genuinely want the root's plugins and aliases alone, and set `extends: false` only on the one meant to stay isolated.
+
+<Callout type="tip" title="Read this as an opportunity, not just a fix">
+  For a project that always meant to share the root's Vite plugins and
+  aliases, the new default removes config that was arguably always
+  boilerplate. Only add `extends: false` to the projects where isolation was
+  the actual intent, not to every project reflexively.
+</Callout>
+
+## A related change: one shared Vite server, not one per project
+
+The same rework carries a second effect worth knowing about even though it isn't usually breaking on its own:
+
+> "Inline projects that don't modify the Vite config now reuse the Vite server of the config that declares them instead of resolving a new Vite config and creating a new server per project."
+
+That's a performance change, not a correctness one, fewer redundant dev servers spun up for projects that share an identical Vite setup, but it's the same underlying rework that produced the inheritance default above, so it's worth knowing both changes shipped together.
+
+## Confirmed version range
+
+This site's own `vitest.config.ts` pins `vitest@^3.0.0` and doesn't define any `test.projects` entries, so this exact inheritance change wasn't independently reproducible against this repo's own config; Vitest 5 isn't installed here. The behavior described above is attributed directly to [Vitest's migration guide](https://main.vitest.dev/guide/migration), under the guide's section covering this exact default-inheritance change for inline projects, current as of Vitest 5.0.0-beta.7 (2026-07-24). Audit every inline project in your own config for an implicit isolation assumption before upgrading, rather than discovering the overlap through a failing test. Browse more posts like this in the [Guides & Fixes](/guides-fixes) archive, or follow the rest of this Vitest 5 migration series under the [vitest tag](/tag/vitest).

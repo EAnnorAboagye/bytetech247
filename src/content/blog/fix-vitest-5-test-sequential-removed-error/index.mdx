@@ -1,0 +1,93 @@
+---
+title: "Fix Vitest 5 test.sequential Removed Error"
+description: "Fix Vitest 5 removing test.sequential, describe.sequential, and the sequential option. Replace them with concurrent: false."
+date: 2026-08-13
+category: guides-fixes
+tags: ["vitest", "testing", "javascript"]
+relatedSlugs:
+  [
+    "fix-vitest-5-vi-mock-top-level-scope-error",
+    "fix-vitest-5-config-not-found-parent-directory",
+  ]
+series: "Vitest 5.0 Beta: Breaking Changes and Migration Fixes"
+seriesOrder: 4
+coverImage: "./cover.png"
+coverImageAlt: "Code diff showing test.sequential and describe.sequential calls replaced with the concurrent: false option in Vitest 5"
+faq:
+  - question: "Does test.concurrent still work in Vitest 5?"
+    answer: "Yes. Only the sequential-flavored APIs are removed. concurrent stays as the single option controlling test parallelism; sequential was the redundant negation of it, which is exactly why Vitest removed it instead of keeping both."
+  - question: "What error do I get if I still call test.sequential after upgrading?"
+    answer: "Not independently verified as an exact string. Since the property is removed rather than deprecated, expect either a TypeScript type error at compile time on a typed project, or a plain \"is not a function\" JavaScript error at runtime on an untyped one. Vitest's migration guide documents the removal itself, not a specific runtime message for this case, so check the exact error against the Vitest version you're running rather than trusting an assumed string."
+---
+
+## Quick Answer
+
+Vitest 5 removes `test.sequential`, `describe.sequential`, and the `sequential` boolean option outright, not deprecated-with-warning. Vitest's migration guide doesn't document a specific runtime error for calling them; expect a type error or a plain "is not a function" failure, since it's no longer a recognized API surface. Replace `test.sequential('name', fn)` with `test('name', { concurrent: false }, fn)`.
+
+## Why this got removed instead of deprecated
+
+`concurrent` and `sequential` described the same thing from two directions. A test was either allowed to run concurrently with its siblings or it wasn't, and `sequential` only ever meant "not concurrent." [Vitest's own migration guide](https://main.vitest.dev/guide/migration) states the removal directly, in the section covering these removed options:
+
+> Vitest 5.0 removes the deprecated `test.sequential`, `describe.sequential`, and `sequential` test options. Use `concurrent: false` when you need a test or suite to opt out of inherited or globally configured concurrency.
+
+The redundancy is what made this a removal candidate rather than a permanent pair of options. [The GitHub issue that proposed this change](https://github.com/vitest-dev/vitest/issues/10180) lists out the full set of ways Vitest let you express test concurrency, including combinations like `{ sequential: false }`, and points out that having two independent flags that can contradict each other (is `{ concurrent: false, sequential: false }` concurrent or not?) creates internal churn and reader confusion for no real benefit. Collapsing to one flag, `concurrent`, removes the ambiguity entirely.
+
+<Callout type="warning" title="Not a warning, an outright removal">
+  This isn't the usual deprecate-then-remove cycle where a warning gives you
+  a release or two of runway. `test.sequential`, `describe.sequential`, and
+  the `sequential` option object key are gone in Vitest 5.0. If your suite
+  still calls any of them, the upgrade breaks that suite immediately, not on
+  some future major version.
+</Callout>
+
+## Fix it: switch to concurrent: false
+
+Vitest's migration guide documents the exact replacement pattern for all three removed forms. Each is a mechanical rename, not a behavior change.
+
+```ts title="calculator.test.ts - test.sequential (removed)"
+test.sequential("example", async () => {
+  /* ... */
+}); // BROKEN: test.sequential no longer exists in Vitest 5
+```
+
+```ts title="calculator.test.ts - concurrent: false (fixed)"
+test("example", { concurrent: false }, async () => {
+  /* ... */
+}); // FIXED: same effect, using the surviving option
+```
+
+`describe.sequential` follows the identical pattern:
+
+```ts title="calculator.test.ts - describe.sequential (removed)"
+describe.sequential("suite", () => {
+  /* ... */
+}); // BROKEN: describe.sequential no longer exists in Vitest 5
+```
+
+```ts title="calculator.test.ts - concurrent: false (fixed)"
+describe("suite", { concurrent: false }, () => {
+  /* ... */
+}); // FIXED: same effect, using the surviving option
+```
+
+If your code used the `sequential` option-object key instead of the chained method, the same replacement applies directly to that key:
+
+```ts title="calculator.test.ts - sequential: true option key (removed)"
+test("example", { sequential: true }, async () => {
+  /* ... */
+}); // BROKEN: sequential key no longer recognized
+```
+
+```ts title="calculator.test.ts - concurrent: false (fixed)"
+test("example", { concurrent: false }, async () => {
+  /* ... */
+}); // FIXED: negate the surviving flag instead
+```
+
+Search your suite for `.sequential(` and `sequential:` before you upgrade, not after. Every match needs this exact rename, and there's no runtime compatibility shim carrying the old name forward.
+
+## Confirmed version range
+
+Documented in [Vitest's own current migration guide](https://main.vitest.dev/guide/migration) as an intentional Vitest 5.0 removal, in the section covering the removed `sequential` options. Corroborated by [vitest-dev/vitest#10180](https://github.com/vitest-dev/vitest/issues/10180), the issue that proposed consolidating concurrency into the single `concurrent` flag. This repository's own `vitest.config.ts` is pinned to `vitest@^3.0.0`, so this removal wasn't independently reproduced against this project's build; every claim above traces back to Vitest's migration guide and the linked issue, not a local repro.
+
+More fixes like this one are in the [Guides & Fixes](/guides-fixes) archive, and every Vitest post is tagged under [vitest](/tag/vitest). If your suite is also hitting the hoisted-mocking change in the same upgrade, see [Fix Vitest 5 vi.mock Top-Level Scope Error](/guides-fixes/fix-vitest-5-vi-mock-top-level-scope-error/). Running `vitest` from a subdirectory in the same upgrade? See [Fix Vitest 5 Config Not Found in Parent Directory](/guides-fixes/fix-vitest-5-config-not-found-parent-directory/).

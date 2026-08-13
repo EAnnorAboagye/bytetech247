@@ -1,0 +1,103 @@
+---
+title: "Fix Vitest 5 vi.mock Top-Level Scope Error"
+description: "Fix Vitest 5's \"defined outside of the module's top level scope\" error thrown by vi.mock, vi.unmock, and vi.hoisted."
+date: 2026-08-13
+category: guides-fixes
+tags: ["vitest", "testing", "mocking", "javascript"]
+relatedSlugs: ["fix-vitest-5-clearmocks-breaking-mock-state"]
+series: "Vitest 5.0 Beta: Breaking Changes and Migration Fixes"
+seriesOrder: 2
+coverImage: "./cover.png"
+coverImageAlt: "Terminal output showing Vitest's documented error: 1 call in calculator.test.ts was defined outside of the module's top level scope, pointing at a nested vi.mock call"
+faq:
+  - question: "Does vi.fn() or vi.spyOn() throw this same error?"
+    answer: "No. Only vi.mock(), vi.unmock(), and vi.hoisted() are hoisted to the top of the file, so only those three throw this error when called in the wrong scope. vi.fn() and vi.spyOn() run exactly where they're written and aren't affected."
+  - question: "Does this happen on Vitest 4 too?"
+    answer: "Not as a thrown error. Vitest's own migration guide describes the Vitest 4 behavior as a warning only, logged when a hoisted call's written position didn't match its actual execution order. Vitest 5.0 turns that same mismatch into a thrown error instead of a warning."
+---
+
+## Quick Answer
+
+Vitest 5 throws this error when `vi.mock()`, `vi.unmock()`, or `vi.hoisted()` runs inside a function, `describe`, or `test` callback instead of at the top of the file:
+
+> 1 call in "file.test.ts" was defined outside of the module's top level scope
+
+Move the call to module top level, or switch to `vi.doMock()`/`vi.doUnmock()`, which are not hoisted and can run anywhere.
+
+## Why the call throws instead of just warning
+
+`vi.mock()`, `vi.unmock()`, and `vi.hoisted()` don't run where they're written. Vitest's compiler transform lifts them to the very top of the file at parse time, before any other module-level code, regardless of how deeply they're nested in the source. That's what makes them useful for mocking a module before your own imports even resolve.
+
+The problem is when the code around a hoisted call implies an order that isn't the order it actually runs in. [Vitest's own migration guide](https://main.vitest.dev/guide/migration) states the change plainly, in its "Hoisted Mocking Calls" section:
+
+> `vi.mock`, `vi.unmock`, and `vi.hoisted` are hoisted to the top of the file and run before any surrounding code. Calling them inside a function, block, or `describe`/`test` callback previously only logged a warning. Vitest 5.0 now throws, because the call does not execute where it is written.
+
+Vitest 4 tolerated the mismatch and just printed a warning. Vitest 5.0 stops tolerating it. The reported error names the exact offending call and its location, quoted here from the guide's own example:
+
+```
+1 call in "calculator.test.ts" was defined outside of the module's top level scope:
+
+- vi.mock("./calculator") at calculator.test.ts:2:3
+
+Although it appears nested, it will be hoisted and executed before anything
+in this file. Move it to the top level to reflect its actual execution order.
+```
+
+<Callout type="warning" title="This is a real behavior change, not a lint rule">
+  A test suite that ran clean under Vitest 4 with a `vi.mock()` nested inside
+  a `describe` block will fail outright after upgrading to Vitest 5, with no
+  code change on your side. The mock call itself was never broken. What
+  changed is that Vitest now refuses to let its written position disagree
+  with its real execution order.
+</Callout>
+
+## Fix it: move the call to module top level
+
+The guide's own example shows the pattern directly. A `vi.mock()` call sitting inside a `describe` block gets hoisted anyway, so writing it there is misleading even before Vitest 5 makes it an error.
+
+```ts title="calculator.test.ts - before"
+import { describe, expect, it, vi } from "vitest";
+
+describe("calculator", () => {
+  vi.mock("./calculator"); // BROKEN: nested, throws in Vitest 5
+  // ...tests
+});
+```
+
+```ts title="calculator.test.ts - after"
+import { describe, expect, it, vi } from "vitest";
+
+vi.mock("./calculator"); // FIXED: written at module top level, matches hoisted order
+
+describe("calculator", () => {
+  // ...tests
+});
+```
+
+The fix is mechanical: pull every `vi.mock()`, `vi.unmock()`, and `vi.hoisted()` call out to the top of the file, outside any `describe` or `test` callback. Nothing about the mock's behavior changes. Only its written position moves to match where it already ran.
+
+## When you actually need a mock set up at runtime
+
+Sometimes the whole point is deciding what to mock inside a test, based on something you only know at runtime, not at parse time. Hoisting a call there doesn't just look wrong, it's the wrong tool. Vitest's migration guide is explicit that the hoisted variants have a non-hoisted counterpart built for exactly this:
+
+> The dynamic variants `vi.doMock` and `vi.doUnmock` are not hoisted and may still be called anywhere.
+
+```ts title="calculator.test.ts - dynamic mocking, still legal anywhere"
+import { describe, expect, it, vi } from "vitest";
+
+describe("calculator", () => {
+  it("uses a mocked add() only for this test", async () => {
+    vi.doMock("./calculator", () => ({ add: () => 42 })); // OK: not hoisted, runs in place
+    const { add } = await import("./calculator");
+    expect(add(1, 2)).toBe(42);
+  });
+});
+```
+
+`vi.doMock()` and `vi.doUnmock()` take effect only for imports that happen after they run, so pair them with a dynamic `import()` inside the test rather than a static top-of-file import. That's a real difference from `vi.mock()`, not a cosmetic one. If your suite genuinely needs per-test mock variation, this is the supported path, not a workaround.
+
+## Confirmed version range
+
+This is documented in [Vitest's own current migration guide](https://main.vitest.dev/guide/migration) as an intentional Vitest 5.0 change, in the section covering hoisted mocking calls. This repository's own `vitest.config.ts` is pinned to `vitest@^3.0.0`, so this behavior wasn't independently reproduced against this project's build; every claim above is sourced directly from Vitest's migration guide, not a local repro. Check the [`vi.hoisted` API reference](https://main.vitest.dev/api/vi#vi-hoisted) if you're touching hoisted setup logic beyond `vi.mock`/`vi.unmock`, since the same top-level rule applies there too.
+
+If your suite also leans on `clearMocks`, see [Fix Vitest 5 clearMocks Breaking Mock State](/guides-fixes/fix-vitest-5-clearmocks-breaking-mock-state/) for the other Vitest 5 mocking default that changes silently on upgrade. More fixes like this one are in the [Guides & Fixes](/guides-fixes) archive, and the full list of Vitest posts is tagged under [vitest](/tag/vitest).

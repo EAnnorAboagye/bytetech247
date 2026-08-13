@@ -1,0 +1,86 @@
+---
+title: "Fix Vitest 5 toThrow('') Silently Passing Tests"
+description: "Vitest 5 changes toThrow('') to match any thrown error, not just an empty message. Fix the silent false-pass with toThrow(/^$/) or toThrow()."
+date: 2026-08-13
+category: guides-fixes
+tags: ["vitest", "testing", "assertions", "bug-fix"]
+series: "Vitest 5.0 Beta: Breaking Changes and Migration Fixes"
+seriesOrder: 10
+coverImage: "./cover.png"
+coverImageAlt: "A dark code editor style panel titled vitest.config.ts - toThrow matcher change, contrasting Vitest 4's empty-message-only match against Vitest 5's match-any-error behavior with the fix below it"
+faq:
+  - question: "Does this change also affect toThrowError?"
+    answer: "Yes. Vitest documents toThrowError as an alias of toThrow, so it inherits the exact same substring-matching behavior. Both matchers moved off the empty-string special case in the same Vitest 5 release; there's no version where one changed and the other didn't."
+  - question: "How do I find every place this could be silently affecting my suite?"
+    answer: "Grep every test file for toThrow('') and toThrowError(''). Vitest's migration guide doesn't document a built-in lint rule that flags this specific pattern, so a text search across the test suite is the reliable way to catch it before upgrading, not an automated check you can rely on to warn you."
+---
+
+## Quick Answer
+
+Vitest 4 special-cased `toThrow('')` to match only an empty error message. Vitest 5 removes that special case: an empty string now behaves like any substring, and it's "contained in every message." So `toThrow('')` silently matches any thrown error. Fix it with `toThrow(/^$/)` for an exact match, or `toThrow()` if you meant "did it throw."
+
+## Why an empty string used to be a special case
+
+`toThrow()` (and its alias `toThrowError()`) accepts a string argument and checks whether the thrown error's message contains it as a substring. That's normal, expected matcher behavior for every non-empty string you'd pass it. An empty string was always the edge case, because an empty substring is trivially present inside any string at all, including one that's completely unrelated to what the test author meant to check.
+
+[Vitest's migration guide](https://main.vitest.dev/guide/migration) confirms Vitest 4 carved out an explicit exception for exactly this reason:
+
+> "In Vitest 4 an empty string was special-cased to the `/^$/` pattern, so it matched only an error whose message was empty."
+
+That special case made `toThrow('')` behave the way most people reading it would assume: it asserted the error had no message at all, not "the error had any message whatsoever."
+
+Vitest 5 removes that special case. The guide states the new behavior plainly:
+
+> "`toThrow` now behaves like any other substring, and an empty string is contained in every message."
+
+Nothing distinguishes an empty-string argument from any other string argument anymore, and an empty string is a substring of every possible string, including one with no message and one with a hundred-character message.
+
+## Why this is the dangerous kind of breaking change
+
+Most breaking changes throw something: a removed API throws a resolution error, a stricter check throws a new failure. This one doesn't. A test written as `expect(fn).toThrow('')` compiles, runs, and reports green under Vitest 5, exactly like it did under Vitest 4. The difference is what that green result actually means.
+
+Under Vitest 4, that assertion meant "this function throws, and the error message is empty." Under Vitest 5, the same line means "this function throws," full stop, regardless of what the message says or whether there even is one. A test suite can upgrade to Vitest 5, pass every test, and quietly lose the specificity of every `toThrow('')` assertion it contains, with no failing test, no console warning, and no diff in the test file itself to flag it.
+
+## Fix it: assert what you actually meant
+
+### Case 1: you meant "the error has no message"
+
+```ts title="parser.test.ts - before"
+test("throws with no message on empty input", () => {
+  expect(() => parseConfig("")).toThrow(""); // BROKEN: now matches any message, not just an empty one
+});
+```
+
+```ts title="parser.test.ts - after"
+test("throws with no message on empty input", () => {
+  expect(() => parseConfig("")).toThrow(/^$/); // FIXED: explicit regex, matches only an empty message
+});
+```
+
+### Case 2: you meant "it throws, I don't care what the message says"
+
+```ts title="parser.test.ts - before"
+test("throws on malformed config", () => {
+  expect(() => parseConfig("{{{")).toThrow(""); // BROKEN: reads like a message check, isn't one
+});
+```
+
+```ts title="parser.test.ts - after"
+test("throws on malformed config", () => {
+  expect(() => parseConfig("{{{")).toThrow(); // FIXED: no argument, says exactly what it checks
+});
+```
+
+The second case is the more common one in practice. A lot of `toThrow('')` call sites were never trying to assert an empty message at all; they were written by someone who wanted "does it throw" and reached for an empty string as a stand-in for "any message," which happened to work under the old special case by coincidence rather than by design. Dropping the argument entirely says what the test actually checks.
+
+<Callout type="warning" title="Don't assume every hit is Case 2">
+  Read each call site before changing it. A test that genuinely depends on
+  catching a blank-message error (validation code that deliberately throws
+  `new Error("")` as a sentinel, for instance) needs the explicit
+  `toThrow(/^$/)` form, not a bare `toThrow()` that would now also pass for a
+  completely different, unrelated failure.
+</Callout>
+
+## Confirmed version range
+
+This site's own `vitest.config.ts` pins `vitest@^3.0.0`, so this behavior change wasn't independently reproducible against this repo's own test run; Vitest 5 isn't installed here. The matcher behavior described above is attributed directly to [Vitest's migration guide](https://main.vitest.dev/guide/migration), under its section titled `toThrow("") Matches Any Error Message`, current as of Vitest 5.0.0-beta.7 (2026-07-24). Grep your own suite for `toThrow('')` and `toThrowError('')` before upgrading rather than waiting to notice a coverage gap after the fact. Browse more posts like this in the [Guides & Fixes](/guides-fixes) archive, or follow the rest of this Vitest 5 migration series under the [vitest tag](/tag/vitest).

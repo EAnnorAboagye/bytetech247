@@ -1,0 +1,83 @@
+---
+title: "Fix Vitest 5 Config Not Found in Parent Directory"
+description: "Fix Vitest 5 no longer finding a vitest.config.ts in a parent directory when run from a subdirectory. Pass --config explicitly."
+date: 2026-08-13
+category: guides-fixes
+tags: ["vitest", "testing", "javascript", "monorepo"]
+relatedSlugs: ["fix-vitest-5-test-sequential-removed-error"]
+series: "Vitest 5.0 Beta: Breaking Changes and Migration Fixes"
+seriesOrder: 5
+coverImage: "./cover.png"
+coverImageAlt: "Command-line diff showing vitest run from a subdirectory failing to find a parent config, fixed by adding an explicit --config flag"
+faq:
+  - question: "Does this only affect monorepos?"
+    answer: "Monorepos are the most common way to hit it, since a subpackage running vitest without its own config file is exactly the setup that relied on the parent-directory search. Any project or CI script that runs vitest from a working directory other than the one holding vitest.config.ts is exposed, monorepo or not."
+  - question: "Does moving vitest.config.ts into the subdirectory also fix it?"
+    answer: "Yes, and it's arguably the cleaner fix if the subdirectory's tests genuinely need their own config rather than a shared one. Vitest still looks in the current working directory by default; it's only the upward search into parent directories that Vitest 5 removes."
+---
+
+## Quick Answer
+
+Vitest 5 stops searching parent directories for a config file. Running `vitest` from a subdirectory that only inherited config from a parent folder in Vitest 4 now fails to find or apply it. Pass the config explicitly with `vitest --config ../vitest.config.ts` instead of relying on the old upward search, and use `--dir` to scope which files it discovers.
+
+## Why running vitest from a subdirectory stops finding config
+
+Vitest 4 walked up the directory tree looking for a config file if the current working directory didn't have one. That made a certain style of monorepo or CI script "just work": `cd packages/api && vitest` would pick up a `vitest.config.ts` sitting at the repo root, even though nothing in that subdirectory pointed at it.
+
+[Vitest's own migration guide](https://main.vitest.dev/guide/migration) states the change plainly, in the section covering config file lookup:
+
+> Vitest no longer searches parent directories for config files. If you previously relied on running `vitest` from a subdirectory while using a config file from a parent directory, pass the config explicitly and scope test discovery with `--dir`.
+
+The guide's own example shows exactly what changes:
+
+```bash title="before: relies on the old upward search"
+$ cd subdir && vitest
+```
+
+```bash title="after: config path passed explicitly"
+$ cd subdir && vitest --config ../vitest.config.ts
+```
+
+The command that used to resolve config by walking upward now just doesn't find one, because that walk no longer happens. Whatever Vitest does when no config file is found (fall back to defaults, or fail outright) depends on the rest of your setup, but either way it isn't running with the config you meant it to use.
+
+<Callout type="warning" title="This is a workflow break, not a config-syntax error">
+  Nothing about your `vitest.config.ts` file changes here. The file is
+  correct and untouched. What breaks is the *working directory* a command
+  gets run from, which makes this the kind of failure that's easy to miss in
+  a code review, since the diff that breaks it is often in a CI YAML file or
+  a `package.json` script, not in the test config itself.
+</Callout>
+
+## Fix it: pass the config path (and scope) explicitly
+
+### Option 1: pass --config directly
+
+The direct fix, matching the guide's own example. Point the command at the config file explicitly instead of hoping it gets found:
+
+```json title="package.json - before (relies on parent-directory lookup)"
+{
+  "scripts": {
+    "test": "cd packages/api && vitest"
+  }
+}
+```
+
+```json title="package.json - after (explicit config path)"
+{
+  "scripts": {
+    "test": "cd packages/api && vitest --config ../../vitest.config.ts --dir ."
+  }
+}
+```
+
+`--dir` scopes which directory Vitest treats as the root for discovering test files, which matters once you're pointing `--config` somewhere outside the current directory. Confirm the exact `--dir` semantics against Vitest's own CLI reference for your version before copying this into a script wholesale, since flag behavior can shift between beta releases faster than stable config surface does.
+
+### Option 2: give the subdirectory its own config file
+
+If the subdirectory's tests don't genuinely need to share every setting from the parent config, moving (or adding) a `vitest.config.ts` directly in that directory sidesteps the whole issue. Vitest still checks the current working directory by default; only the upward search into parent directories is gone. A config file sitting right next to the code it tests never depended on that search in the first place.
+
+## Confirmed version range
+
+Documented in [Vitest's own current migration guide](https://main.vitest.dev/guide/migration) as an intentional Vitest 5.0 change, in the section covering config file lookup. This repository's own `vitest.config.ts` is pinned to `vitest@^3.0.0`, so this behavior wasn't independently reproduced against this project's build; every claim above traces back to Vitest's migration guide, not a local repro.
+
+More fixes like this one are in the [Guides & Fixes](/guides-fixes) archive, and every Vitest post is tagged under [vitest](/tag/vitest). If your upgrade is also hitting removed test options, see [Fix Vitest 5 test.sequential Removed Error](/guides-fixes/fix-vitest-5-test-sequential-removed-error/).

@@ -1,0 +1,94 @@
+---
+title: "Fix Vitest 5 expect.poll Timeout Error"
+description: "Vitest 5 throws 'expect.poll() function didn't resolve in time.' on timeout instead of letting a late result pass. Here's the fix."
+date: 2026-08-13
+category: guides-fixes
+tags: ["vitest", "testing", "expect-poll", "bug-fix"]
+relatedSlugs: ["fix-vitest-5-unawaited-async-assertion-error"]
+series: "Vitest 5.0 Beta: Breaking Changes and Migration Fixes"
+seriesOrder: 8
+coverImage: "./cover.png"
+coverImageAlt: "Vitest's documented expect.poll timeout error message, expect.poll() function didn't resolve in time, next to a code example passing the callback's new AbortSignal parameter to fetch"
+faq:
+  - question: "Does raising the timeout option make this error go away?"
+    answer: "Sometimes, but treat it as a last resort, not the fix. A higher timeout is correct when the thing you're polling genuinely takes longer than the default 1 second, like a slow external API. If the underlying condition never actually becomes true, a higher timeout just delays the same failure instead of fixing it."
+  - question: "Does this affect expect.poll() calls that already resolve quickly?"
+    answer: "No. This change only matters for the callback or assertion that doesn't settle before the deadline. A poll that succeeds well inside its timeout behaves the same in Vitest 4 and Vitest 5."
+---
+
+## Quick Answer
+
+Vitest 5's `expect.poll()` throws `expect.poll() function didn't resolve in time.` when the polled callback or its assertion doesn't settle within the configured timeout. Vitest 4 let a late-resolving poll still succeed if it eventually settled after the deadline passed. Fix it by using the callback's new `signal` parameter to cancel in-flight work on timeout, or by raising `timeout` only if the condition genuinely needs more time.
+
+## Why a poll that used to pass now throws
+
+[Vitest's migration guide](https://main.vitest.dev/guide/migration) documents this under "`expect.poll` Fails When It Times Out":
+
+> `expect.poll` now rejects when its callback, or the polled assertion, does not settle within `timeout`.
+
+The guide gives the exact error text a reader will see, depending on which part times out:
+
+> expect.poll() function didn't resolve in time.
+>
+> expect.poll() assertion didn't resolve in time.
+
+The first form fires when the polled callback itself never settles; the second fires when the callback settles but the assertion chained onto it (`.toBe(200)`, for example) never does.
+
+`expect.poll()` exists to retry a callback repeatedly until an assertion against its return value passes, which is the standard pattern for waiting on a condition that becomes true asynchronously, like an HTTP status flipping to `200` once a service finishes starting. In Vitest 4, the poll loop itself didn't treat the timeout as a hard stop. If a slow callback or a slow assertion was still in flight when the deadline passed, it could keep going and still report success once it eventually settled, deadline or not.
+
+Vitest 5 changes that to an active rejection. The moment `timeout` elapses without a settled, passing result, the poll stops and throws the error above instead of letting a late result count.
+
+## The new AbortSignal parameter
+
+The same change adds a way to react to that timeout instead of just discovering it after the fact. Vitest's guide shows the callback now receiving a `signal`:
+
+```ts title="status.test.ts"
+await expect
+  .poll(
+    async ({ signal }) => {
+      const response = await fetch("/api/status", { signal });
+      return response.status;
+    },
+    { timeout: 1000 },
+  )
+  .toBe(200);
+```
+
+That `signal` is a standard `AbortSignal` that aborts the moment the poll's timeout elapses. Passing it into `fetch` (or any API that accepts an `AbortSignal`) means the in-flight request actually stops instead of continuing to run in the background after Vitest has already decided the poll failed. Without it, a timed-out poll still leaves that last request hanging until it resolves or errors on its own, which wastes time and can leave dangling handles between tests.
+
+## Fix it: don't just chase the timeout number
+
+<Callout type="warning" title="A longer timeout can mask a real bug">
+  Bumping `timeout` from 1000ms to 5000ms makes the error disappear if the
+  condition eventually becomes true. It does nothing if the condition never
+  becomes true at all, which is the failure mode this change exists to
+  surface. Confirm the condition genuinely needs more time before treating a
+  longer timeout as the fix.
+</Callout>
+
+```ts title="status.test.ts - before"
+// BROKEN: no signal, so a timed-out request keeps running in the background
+await expect
+  .poll(async () => {
+    const response = await fetch("/api/status");
+    return response.status;
+  })
+  .toBe(200);
+```
+
+```ts title="status.test.ts - after"
+// FIXED: signal cancels the in-flight fetch the moment the poll times out
+await expect
+  .poll(
+    async ({ signal }) => {
+      const response = await fetch("/api/status", { signal });
+      return response.status;
+    },
+    { timeout: 5000 }, // raised only because this endpoint genuinely takes longer to come up
+  )
+  .toBe(200);
+```
+
+## Confirmed version range
+
+This error string and behavior change are documented in [Vitest's own current migration guide](https://main.vitest.dev/guide/migration), under "`expect.poll` Fails When It Times Out," as an intentional Vitest 5 change, corroborated as in-window against the beta release available at research time (v5.0.0-beta.7). This repo's own `vitest.config.ts` is pinned to `vitest@^3.0.0` and doesn't use `expect.poll()`, so this exact error wasn't independently reproducible against this repo's own test suite. Treat the error text above as quoted directly from Vitest's primary source, not a first-party reproduction. If you're also seeing tests fail on a forgotten `await`, see [Fix Vitest 5 Unawaited Async Assertion Error](/guides-fixes/fix-vitest-5-unawaited-async-assertion-error/) — the other Vitest 5 change to how async assertion timing is enforced. Browse more posts like this in the [Guides & Fixes](/guides-fixes) archive.

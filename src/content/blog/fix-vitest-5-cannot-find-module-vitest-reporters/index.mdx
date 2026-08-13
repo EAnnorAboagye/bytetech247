@@ -1,0 +1,106 @@
+---
+title: "Fix Vitest 5 Cannot Find Module vitest/reporters"
+description: "Fix Vitest 5's module resolution failure on vitest/reporters and vitest/coverage. Vitest 5 removes eight subpath imports; use vitest/node instead."
+date: 2026-08-13
+category: guides-fixes
+tags: ["vitest", "testing", "module-resolution", "bug-fix"]
+series: "Vitest 5.0 Beta: Breaking Changes and Migration Fixes"
+seriesOrder: 9
+coverImage: "./cover.png"
+coverImageAlt: "A dark code editor style panel titled Vitest 5 migration guide - removed entrypoints, listing vitest/reporters, vitest/coverage, vitest/environments, and vitest/snapshot each mapped to their documented replacement"
+faq:
+  - question: "Does switching to vitest/node fix every removed import automatically?"
+    answer: "Only for vitest/coverage, vitest/reporters, vitest/environments, and vitest/snapshot, and even then the first two route to vitest/node while the last two route to vitest/runtime. vitest/runners and vitest/suite point to static methods on TestRunner instead, and vitest/mocker points to the separate @vitest/mocker package. Check each removed path against the migration guide's own mapping rather than assuming one replacement covers all of them."
+  - question: "Is this only a problem for people writing custom reporters?"
+    answer: "Custom reporters and custom coverage providers are the most common trigger, since they're the code most likely to import directly from an internal subpath. But any dependency, plugin, or internal tooling script that imports from one of the eight removed paths hits the same resolution failure, not just first-party reporter code."
+---
+
+## Quick Answer
+
+Vitest 5 removes eight subpath entry points outright, including `vitest/reporters` and `vitest/coverage`. Vitest's own migration guide states plainly: use `vitest/node` instead for both. A custom reporter or coverage config still importing the old path fails to resolve on upgrade. Update the import path to `vitest/node`; there's no compatibility shim to fall back on.
+
+## Why the import breaks: eight entry points are gone
+
+Vitest 4 exposed a wide set of subpath imports, letting a custom reporter, coverage provider, or internal tooling script reach directly into Vitest's own internals. [Vitest's migration guide](https://main.vitest.dev/guide/migration) documents that Vitest 5 removes several of those paths outright, under a section titled `Removed Deprecated Entrypoints`. There's no deprecation warning period for these specific paths and no runtime shim; the import simply stops resolving the moment a project upgrades to Vitest 5.
+
+That's a structural cleanup, not a one-off removal. The guide maps every removed path to a specific, named replacement:
+
+| Removed import | Documented replacement |
+| --- | --- |
+| `vitest/coverage` | `vitest/node` |
+| `vitest/reporters` | `vitest/node` |
+| `vitest/environments` | `vitest/runtime` |
+| `vitest/snapshot` | `vitest/runtime` |
+| `vitest/runners` | `TestRunner`, imported from `vitest` |
+| `vitest/suite` | static methods on `TestRunner`, e.g. `TestRunner.getCurrentTest()` |
+| `vitest/mocker` | the standalone `@vitest/mocker` package |
+| `vitest/internal/module-runner` | none documented |
+
+Six of the eight collapse onto two consolidated entry points, `vitest/node` and `vitest/runtime`. The other two, `vitest/mocker` and `vitest/internal/module-runner`, don't map onto either: one moves to its own standalone package, the other is gone with nothing named in its place. A project can't safely assume "swap in vitest/node" is the universal fix; each removed path needs checking against its own row above.
+
+The exact wording of the resolution failure itself varies by bundler and by whether the import is a type-only import, a runtime `require`, or a dynamic `import()`, so this post doesn't quote one specific error string as if every toolchain produced it. What's consistent across all of them is the underlying cause: the module simply isn't there anymore at that path, so resolution fails.
+
+## Fix it: point custom reporters and coverage config at the new paths
+
+### A custom reporter importing from vitest/reporters
+
+```ts title="custom-reporter.ts - before"
+import type { Reporter } from "vitest/reporters"; // BROKEN: path removed in Vitest 5
+
+export default class CustomReporter implements Reporter {
+  onFinished(files) {
+    console.log(`Ran ${files.length} test files`);
+  }
+}
+```
+
+```ts title="custom-reporter.ts - after"
+import type { Reporter } from "vitest/node"; // FIXED: vitest/reporters -> vitest/node
+
+export default class CustomReporter implements Reporter {
+  onFinished(files) {
+    console.log(`Ran ${files.length} test files`);
+  }
+}
+```
+
+### A coverage provider importing from vitest/coverage
+
+```ts title="custom-coverage-provider.ts - before"
+import type { CoverageProvider } from "vitest/coverage"; // BROKEN: path removed in Vitest 5
+```
+
+```ts title="custom-coverage-provider.ts - after"
+import type { CoverageProvider } from "vitest/node"; // FIXED: vitest/coverage -> vitest/node
+```
+
+The change is mechanical once you know the target: swap the specifier, leave the rest of the file untouched. The type and value exports themselves didn't change shape in these two cases, only where they live.
+
+<Callout type="tip" title="Grep before you upgrade, not after">
+  Search the repository for every one of the eight paths in the table above
+  (`vitest/coverage`, `vitest/reporters`, `vitest/environments`,
+  `vitest/snapshot`, `vitest/runners`, `vitest/suite`, `vitest/mocker`,
+  `vitest/internal/module-runner`) before bumping the `vitest` dependency.
+  Finding all the hits ahead of time turns a broken CI run into a five-minute
+  find-and-replace instead of a build failure discovered mid-upgrade.
+</Callout>
+
+## Deprecated, not yet removed: three more packages to watch
+
+Not every change in this area is an outright removal. The migration guide separately flags `@vitest/runner` and `@vitest/ws-client` as deprecated, not removed:
+
+> "The `@vitest/runner` and `@vitest/ws-client` packages are deprecated as of this release." They "will no longer receive feature updates, but security fixes will continue to be backported."
+
+Deprecated still means installed and working today. Treat a dependency on either package as something to plan away from over time, not something that breaks on the next upgrade.
+
+`@vitest/browser-webdriverio` changes ownership rather than disappearing. The guide documents that this provider now lives under the community-maintained [vitest-community/vitest-webdriverio](https://github.com/vitest-community/vitest-webdriverio) organization instead of Vitest's own core packages. Anyone pinning the old package path should point at that fork going forward.
+
+`@vitest/expect` is the subtlest of the three. Vitest 5 stops depending on it internally:
+
+> "`vitest` also no longer depends on `@vitest/expect`: the assertion code is bundled into `vitest` itself."
+
+Code that previously relied on `@vitest/expect` sharing runtime state with the rest of Vitest, rather than just using its type exports, should switch to importing assertions through the `vitest` entry point directly instead.
+
+## Confirmed version range
+
+This site's own `vitest.config.ts` is pinned to `vitest@^3.0.0`, so this exact resolution failure wasn't reproducible against this repo's own build; Vitest 5 isn't installed here. Every claim above is attributed to [Vitest's own migration guide](https://main.vitest.dev/guide/migration), current as of Vitest 5.0.0-beta.7 (2026-07-24). If you're on an earlier 5.0 beta, re-check the guide directly, since a beta's own documented removals can still shift before a stable release. Browse more posts like this in the [Guides & Fixes](/guides-fixes) archive, or follow the rest of this Vitest 5 migration series under the [vitest tag](/tag/vitest).

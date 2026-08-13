@@ -1,0 +1,88 @@
+---
+title: "Fix Vitest 5 bench No Longer Top-Level Export"
+description: "Vitest 5 removes bench as a top-level export. Fix it by moving benchmarks into a test() context fixture instead."
+date: 2026-08-13
+category: guides-fixes
+tags: ["vitest", "testing", "benchmarking", "bug-fix"]
+relatedSlugs: []
+series: "Vitest 5.0 Beta: Breaking Changes and Migration Fixes"
+seriesOrder: 6
+coverImage: "./cover.png"
+coverImageAlt: "Terminal window comparing Vitest 4's top-level bench import against Vitest 5's bench fixture destructured from test(), with the four removed benchmark config options listed in red"
+faq:
+  - question: "Is there a flag or config option that keeps the old top-level bench import working?"
+    answer: "No. Vitest's migration guide lists this as a rewrite, not a deprecation with a compatibility flag. The top-level bench export, plus bench.skip, bench.only, and bench.todo, are gone in Vitest 5 with no opt-out. Every call site has to move into the test() fixture form."
+  - question: "What replaces benchmark.outputJson for feeding a CI dashboard?"
+    answer: "Vitest's migration guide says to use --reporter=json --outputFile=<path> instead. The old benchmark.outputJson config key and its matching --outputJson CLI flag are removed outright, not renamed, so a CI script that reads --outputJson needs to switch to the reporter flag form."
+---
+
+## Quick Answer
+
+Vitest 5 removes `bench` as a top-level export from `vitest`. Code still written as `import { bench } from 'vitest'` stops working, because `bench` now only exists as a fixture destructured from a regular `test()` context. Fix it by rewriting each benchmark as `test('name', async ({ bench }) => { await bench(fn).run() })`, and by replacing any removed `benchmark.*` config options with their documented equivalents.
+
+## Why the top-level bench import stops working
+
+Vitest's own migration guide states this plainly under "Benchmarking API Rewrite":
+
+> `bench` is no longer a top-level import from `vitest`; it is a test-context fixture accessed from inside a regular `test()`.
+
+That's a structural change, not a rename. The old form:
+
+```ts title="bench.bench.ts - Vitest 4"
+import { bench } from "vitest";
+
+bench("sort", () => {
+  [3, 1, 2].sort();
+});
+```
+
+no longer resolves to a working benchmark call in Vitest 5, because `vitest` stops exporting a `bench` symbol at the module level at all. Exactly how that surfaces depends on your bundler and TypeScript setup: some configs throw at import time, others fail type-checking first, and a few just silently run nothing because `bench` resolves to `undefined`. Vitest's guide doesn't publish one canonical error string for this case, so treat the exact wording you see as environment-specific rather than a fixed message to search for. The mechanical cause is the same either way: `bench` isn't there to import anymore.
+
+The guide also confirms `bench.skip`, `bench.only`, and `bench.todo` are removed in the same rewrite. Any suite using those modifiers needs the same migration as a plain `bench` call.
+
+## What happens to benchmark.reporters, outputFile, compare, and outputJson
+
+This is the part of the change that breaks a CI pipeline quietly instead of loudly. A benchmark suite that imports `bench` correctly can still fail to produce the output a workflow expects, because four `benchmark.*` config options are removed entirely in the same rewrite, not renamed:
+
+- `benchmark.reporters` and `benchmark.outputFile` are gone. The migration guide says that output now ships through the standard reporter pipeline instead of a dedicated benchmark reporter, so there's no separate config to point at a custom output stream anymore.
+- `benchmark.compare` and the matching `--compare` CLI flag are removed, with no direct 1:1 replacement documented.
+- `benchmark.outputJson` and the `--outputJson` CLI flag are removed. The guide's replacement is `--reporter=json --outputFile=<path>`, run through Vitest's general reporter system instead of a benchmark-specific option.
+
+None of these throw an import error the way the `bench` removal does. A `vitest.config.ts` that still sets `benchmark.compare` just has that setting silently ignored, so the first sign of trouble is usually a CI step that expects a comparison artifact or a JSON file and doesn't get one.
+
+## Fix it: move bench into the test context fixture
+
+Rewrite each benchmark to destructure `bench` from the `test()` callback's context object, call it, then call `.run()` on the result:
+
+```ts title="bench.bench.ts - before"
+import { bench } from "vitest"; // BROKEN: no longer exported at module scope
+
+bench("sort", () => {
+  [3, 1, 2].sort();
+});
+```
+
+```ts title="bench.bench.ts - after"
+import { test } from "vitest";
+
+test("sort", async ({ bench }) => {
+  // FIXED: bench is a fixture on the test context now, and .run() is required
+  await bench("sort", () => {
+    [3, 1, 2].sort();
+  }).run();
+});
+```
+
+The `.run()` call is not optional decoration. Without it, `bench(...)` just constructs the benchmark and returns without ever executing it, so a half-migrated call site can look correct while producing no timing data at all.
+
+<Callout type="warning" title="Update CI scripts alongside the code">
+  If a workflow file passes `--compare` or `--outputJson` to the `vitest bench`
+  command, update it in the same change as the source migration. A CI script
+  that still passes a removed flag either errors immediately or, depending on
+  how strict the CLI parsing is, gets silently ignored, and either way the
+  comparison or JSON artifact a later step depends on won't exist.
+</Callout>
+
+## Confirmed version range
+
+This is documented in [Vitest's own current migration guide](https://main.vitest.dev/guide/migration), under "Benchmarking API Rewrite," as an intentional Vitest 5 change, corroborated as in-window against the beta release available at research time (v5.0.0-beta.7). This repo's own `vitest.config.ts` is pinned to `vitest@^3.0.0` and doesn't use the benchmarking API, so this specific removal wasn't independently reproducible against this repo's own build. Treat the mechanics above as documented behavior from Vitest's primary source, not a first-party reproduction. Browse more posts like this in the [Guides & Fixes](/guides-fixes) archive.
