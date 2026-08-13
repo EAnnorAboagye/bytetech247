@@ -40,12 +40,15 @@ $ cd subdir && vitest --config ../vitest.config.ts
 
 The command that used to resolve config by walking upward now just doesn't find one, because that walk no longer happens. Whatever Vitest does when no config file is found (fall back to defaults, or fail outright) depends on the rest of your setup, but either way it isn't running with the config you meant it to use.
 
-<Callout type="warning" title="This is a workflow break, not a config-syntax error">
-  Nothing about your `vitest.config.ts` file changes here. The file is
-  correct and untouched. What breaks is the *working directory* a command
-  gets run from, which makes this the kind of failure that's easy to miss in
-  a code review, since the diff that breaks it is often in a CI YAML file or
-  a `package.json` script, not in the test config itself.
+<Callout
+  type="warning"
+  title="This is a workflow break, not a config-syntax error"
+>
+  Nothing about your `vitest.config.ts` file changes here. The file is correct
+  and untouched. What breaks is the *working directory* a command gets run from,
+  which makes this the kind of failure that's easy to miss in a code review,
+  since the diff that breaks it is often in a CI YAML file or a `package.json`
+  script, not in the test config itself.
 </Callout>
 
 ## Fix it: pass the config path (and scope) explicitly

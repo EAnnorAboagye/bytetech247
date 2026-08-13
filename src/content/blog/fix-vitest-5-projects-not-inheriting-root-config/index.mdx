@@ -83,10 +83,10 @@ export default defineConfig({
 The fix adds exactly one key. `extends: false` is the exact opt-out the migration guide names, and it applies per project, so a config with several inline projects can mix defaults: leave the ones that genuinely want the root's plugins and aliases alone, and set `extends: false` only on the one meant to stay isolated.
 
 <Callout type="tip" title="Read this as an opportunity, not just a fix">
-  For a project that always meant to share the root's Vite plugins and
-  aliases, the new default removes config that was arguably always
-  boilerplate. Only add `extends: false` to the projects where isolation was
-  the actual intent, not to every project reflexively.
+  For a project that always meant to share the root's Vite plugins and aliases,
+  the new default removes config that was arguably always boilerplate. Only add
+  `extends: false` to the projects where isolation was the actual intent, not to
+  every project reflexively.
 </Callout>
 
 ## A related change: one shared Vite server, not one per project

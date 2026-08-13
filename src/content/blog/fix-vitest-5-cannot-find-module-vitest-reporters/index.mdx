@@ -25,16 +25,16 @@ Vitest 4 exposed a wide set of subpath imports, letting a custom reporter, cover
 
 That's a structural cleanup, not a one-off removal. The guide maps every removed path to a specific, named replacement:
 
-| Removed import | Documented replacement |
-| --- | --- |
-| `vitest/coverage` | `vitest/node` |
-| `vitest/reporters` | `vitest/node` |
-| `vitest/environments` | `vitest/runtime` |
-| `vitest/snapshot` | `vitest/runtime` |
-| `vitest/runners` | `TestRunner`, imported from `vitest` |
-| `vitest/suite` | static methods on `TestRunner`, e.g. `TestRunner.getCurrentTest()` |
-| `vitest/mocker` | the standalone `@vitest/mocker` package |
-| `vitest/internal/module-runner` | none documented |
+| Removed import                  | Documented replacement                                             |
+| ------------------------------- | ------------------------------------------------------------------ |
+| `vitest/coverage`               | `vitest/node`                                                      |
+| `vitest/reporters`              | `vitest/node`                                                      |
+| `vitest/environments`           | `vitest/runtime`                                                   |
+| `vitest/snapshot`               | `vitest/runtime`                                                   |
+| `vitest/runners`                | `TestRunner`, imported from `vitest`                               |
+| `vitest/suite`                  | static methods on `TestRunner`, e.g. `TestRunner.getCurrentTest()` |
+| `vitest/mocker`                 | the standalone `@vitest/mocker` package                            |
+| `vitest/internal/module-runner` | none documented                                                    |
 
 Six of the eight collapse onto two consolidated entry points, `vitest/node` and `vitest/runtime`. The other two, `vitest/mocker` and `vitest/internal/module-runner`, don't map onto either: one moves to its own standalone package, the other is gone with nothing named in its place. A project can't safely assume "swap in vitest/node" is the universal fix; each removed path needs checking against its own row above.
 

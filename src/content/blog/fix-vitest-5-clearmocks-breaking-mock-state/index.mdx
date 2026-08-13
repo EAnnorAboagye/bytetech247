@@ -36,12 +36,15 @@ The guide also flags where this bites hardest:
 
 A call made once in `beforeAll` and asserted on later, or a suite that deliberately counts calls cumulatively across a `describe` block, gets wiped before the assertion that expects to see it.
 
-<Callout type="warning" title="This changes what 'passing' means for the same test">
-  The guide's own before/after example makes the shift concrete: a second
-  test that used to see `toHaveBeenCalledTimes(2)` (because the first test's
-  call was still counted) now sees `toHaveBeenCalledTimes(1)`. Nothing about
-  the mock or the test code changed. Only the default that decides whether
-  history survives between tests changed.
+<Callout
+  type="warning"
+  title="This changes what 'passing' means for the same test"
+>
+  The guide's own before/after example makes the shift concrete: a second test
+  that used to see `toHaveBeenCalledTimes(2)` (because the first test's call was
+  still counted) now sees `toHaveBeenCalledTimes(1)`. Nothing about the mock or
+  the test code changed. Only the default that decides whether history survives
+  between tests changed.
 </Callout>
 
 ## Fix it: restore the old default, or stop depending on it

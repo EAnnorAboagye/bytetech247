@@ -75,10 +75,10 @@ The second case is the more common one in practice. A lot of `toThrow('')` call 
 
 <Callout type="warning" title="Don't assume every hit is Case 2">
   Read each call site before changing it. A test that genuinely depends on
-  catching a blank-message error (validation code that deliberately throws
-  `new Error("")` as a sentinel, for instance) needs the explicit
-  `toThrow(/^$/)` form, not a bare `toThrow()` that would now also pass for a
-  completely different, unrelated failure.
+  catching a blank-message error (validation code that deliberately throws `new
+  Error("")` as a sentinel, for instance) needs the explicit `toThrow(/^$/)`
+  form, not a bare `toThrow()` that would now also pass for a completely
+  different, unrelated failure.
 </Callout>
 
 ## Confirmed version range

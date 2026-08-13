@@ -28,18 +28,18 @@ Vitest is the test runner behind this site's own `tests/unit` suite, currently p
 
 ## Structural Comparison Matrix
 
-| #   | Change                                | Throws or silent? | Applies to you if...                                              |
-| :-- | :------------------------------------ | :----------------- | :------------------------------------------------------------------ |
-| 1   | `vi.mock` top-level scope enforcement | Throws              | You call `vi.mock`/`vi.unmock`/`vi.hoisted` inside a describe/test block |
-| 2   | `clearMocks` defaults to `true`       | Silent              | Any suite that asserts on mock call counts across multiple tests    |
-| 3   | `test.sequential` / `describe.sequential` removed | Throws (removed API) | You use either option instead of `{ concurrent: false }`       |
-| 4   | Config not found in parent directory  | Silent (CLI fails)  | You run `vitest` from a subdirectory relying on a parent config      |
-| 5   | `bench` no longer a top-level export  | Throws (removed API) | You use Vitest's benchmarking API                                  |
-| 6   | Unawaited async assertions fail       | Throws              | Your suite has an `expect(promise).resolves...` without `await`      |
-| 7   | `expect.poll` rejects on timeout      | Throws              | You use `expect.poll()` to wait on an async condition                |
-| 8   | 8 subpath entry points removed        | Throws (import error) | You import from `vitest/reporters`, `vitest/coverage`, etc. directly |
-| 9   | `toThrow('')` matches any error       | Silent               | Any test asserting `toThrow('')` expecting an empty-message-only match |
-| 10  | Inline `projects` inherit root config | Silent                | You use `test.projects` and relied on isolation from root config     |
+| #   | Change                                            | Throws or silent?     | Applies to you if...                                                     |
+| :-- | :------------------------------------------------ | :-------------------- | :----------------------------------------------------------------------- |
+| 1   | `vi.mock` top-level scope enforcement             | Throws                | You call `vi.mock`/`vi.unmock`/`vi.hoisted` inside a describe/test block |
+| 2   | `clearMocks` defaults to `true`                   | Silent                | Any suite that asserts on mock call counts across multiple tests         |
+| 3   | `test.sequential` / `describe.sequential` removed | Throws (removed API)  | You use either option instead of `{ concurrent: false }`                 |
+| 4   | Config not found in parent directory              | Silent (CLI fails)    | You run `vitest` from a subdirectory relying on a parent config          |
+| 5   | `bench` no longer a top-level export              | Throws (removed API)  | You use Vitest's benchmarking API                                        |
+| 6   | Unawaited async assertions fail                   | Throws                | Your suite has an `expect(promise).resolves...` without `await`          |
+| 7   | `expect.poll` rejects on timeout                  | Throws                | You use `expect.poll()` to wait on an async condition                    |
+| 8   | 8 subpath entry points removed                    | Throws (import error) | You import from `vitest/reporters`, `vitest/coverage`, etc. directly     |
+| 9   | `toThrow('')` matches any error                   | Silent                | Any test asserting `toThrow('')` expecting an empty-message-only match   |
+| 10  | Inline `projects` inherit root config             | Silent                | You use `test.projects` and relied on isolation from root config         |
 
 Every row is confirmed against Vitest's own migration guide, not summarized from memory. Full mechanism, exact error text where one exists, and the fix live in each linked post below.
 

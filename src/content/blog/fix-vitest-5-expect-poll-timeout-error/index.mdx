@@ -61,9 +61,9 @@ That `signal` is a standard `AbortSignal` that aborts the moment the poll's time
 <Callout type="warning" title="A longer timeout can mask a real bug">
   Bumping `timeout` from 1000ms to 5000ms makes the error disappear if the
   condition eventually becomes true. It does nothing if the condition never
-  becomes true at all, which is the failure mode this change exists to
-  surface. Confirm the condition genuinely needs more time before treating a
-  longer timeout as the fix.
+  becomes true at all, which is the failure mode this change exists to surface.
+  Confirm the condition genuinely needs more time before treating a longer
+  timeout as the fix.
 </Callout>
 
 ```ts title="status.test.ts - before"

@@ -17,7 +17,7 @@ faq:
   - question: "Does test.concurrent still work in Vitest 5?"
     answer: "Yes. Only the sequential-flavored APIs are removed. concurrent stays as the single option controlling test parallelism; sequential was the redundant negation of it, which is exactly why Vitest removed it instead of keeping both."
   - question: "What error do I get if I still call test.sequential after upgrading?"
-    answer: "Not independently verified as an exact string. Since the property is removed rather than deprecated, expect either a TypeScript type error at compile time on a typed project, or a plain \"is not a function\" JavaScript error at runtime on an untyped one. Vitest's migration guide documents the removal itself, not a specific runtime message for this case, so check the exact error against the Vitest version you're running rather than trusting an assumed string."
+    answer: 'Not independently verified as an exact string. Since the property is removed rather than deprecated, expect either a TypeScript type error at compile time on a typed project, or a plain "is not a function" JavaScript error at runtime on an untyped one. Vitest''s migration guide documents the removal itself, not a specific runtime message for this case, so check the exact error against the Vitest version you''re running rather than trusting an assumed string.'
 ---
 
 ## Quick Answer
@@ -33,11 +33,11 @@ Vitest 5 removes `test.sequential`, `describe.sequential`, and the `sequential` 
 The redundancy is what made this a removal candidate rather than a permanent pair of options. [The GitHub issue that proposed this change](https://github.com/vitest-dev/vitest/issues/10180) lists out the full set of ways Vitest let you express test concurrency, including combinations like `{ sequential: false }`, and points out that having two independent flags that can contradict each other (is `{ concurrent: false, sequential: false }` concurrent or not?) creates internal churn and reader confusion for no real benefit. Collapsing to one flag, `concurrent`, removes the ambiguity entirely.
 
 <Callout type="warning" title="Not a warning, an outright removal">
-  This isn't the usual deprecate-then-remove cycle where a warning gives you
-  a release or two of runway. `test.sequential`, `describe.sequential`, and
-  the `sequential` option object key are gone in Vitest 5.0. If your suite
-  still calls any of them, the upgrade breaks that suite immediately, not on
-  some future major version.
+  This isn't the usual deprecate-then-remove cycle where a warning gives you a
+  release or two of runway. `test.sequential`, `describe.sequential`, and the
+  `sequential` option object key are gone in Vitest 5.0. If your suite still
+  calls any of them, the upgrade breaks that suite immediately, not on some
+  future major version.
 </Callout>
 
 ## Fix it: switch to concurrent: false

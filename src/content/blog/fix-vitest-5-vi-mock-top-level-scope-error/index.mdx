@@ -1,6 +1,6 @@
 ---
 title: "Fix Vitest 5 vi.mock Top-Level Scope Error"
-description: "Fix Vitest 5's \"defined outside of the module's top level scope\" error thrown by vi.mock, vi.unmock, and vi.hoisted."
+description: 'Fix Vitest 5''s "defined outside of the module''s top level scope" error thrown by vi.mock, vi.unmock, and vi.hoisted.'
 date: 2026-08-13
 category: guides-fixes
 tags: ["vitest", "testing", "mocking", "javascript"]
@@ -44,11 +44,11 @@ in this file. Move it to the top level to reflect its actual execution order.
 ```
 
 <Callout type="warning" title="This is a real behavior change, not a lint rule">
-  A test suite that ran clean under Vitest 4 with a `vi.mock()` nested inside
-  a `describe` block will fail outright after upgrading to Vitest 5, with no
-  code change on your side. The mock call itself was never broken. What
-  changed is that Vitest now refuses to let its written position disagree
-  with its real execution order.
+  A test suite that ran clean under Vitest 4 with a `vi.mock()` nested inside a
+  `describe` block will fail outright after upgrading to Vitest 5, with no code
+  change on your side. The mock call itself was never broken. What changed is
+  that Vitest now refuses to let its written position disagree with its real
+  execution order.
 </Callout>
 
 ## Fix it: move the call to module top level
