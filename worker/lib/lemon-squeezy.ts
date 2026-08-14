@@ -62,8 +62,12 @@ export async function createCheckout(
       }),
       signal: AbortSignal.timeout(10_000),
     });
-  } catch {
-    return { error: "Could not reach Lemon Squeezy." };
+  } catch (err) {
+    return {
+      error: `Could not reach Lemon Squeezy: ${
+        err instanceof Error ? `${err.name}: ${err.message}` : String(err)
+      }`,
+    };
   }
 
   // Read as text first, not response.json() directly — a non-JSON error
