@@ -9,6 +9,19 @@
 /llms.txt
   Content-Type: text/plain; charset=utf-8
 
+# ads.txt is a plain static file in public/ (not an Astro endpoint like
+# llms.txt above), but hits the exact same Workers Static Assets default —
+# confirmed live (2026-08-14): served as `Content-Type: text/plain` with no
+# charset, so the file's own real em-dash (UTF-8 bytes e2 80 94) rendered as
+# mojibake ("â€”") for a human opening the raw file, exactly the llms.txt bug
+# above on a file that wasn't in scope when that fix was made. ads.txt's own
+# spec (IAB Tech Lab) only requires plain ASCII for the actual authorized-
+# seller records — this only affects the human-readable comment lines above
+# them — but declaring the correct charset costs nothing and is more
+# correct than leaving it to guesswork either way.
+/ads.txt
+  Content-Type: text/plain; charset=utf-8
+
 # A bare "*" segment (e.g. /*/*.md) does NOT reliably match one path
 # component in Cloudflare's _headers engine — confirmed live: it silently
 # matched nothing, every .md route kept serving without a charset even on
