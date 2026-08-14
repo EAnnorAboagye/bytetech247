@@ -459,12 +459,7 @@ async function handleMcpCheckStart(
 
   const ip = request.headers.get("CF-Connecting-IP") ?? "unknown";
   if (
-    await isRateLimited(
-      env,
-      ip,
-      MCP_START_RATE_LIMIT_MAX,
-      "ratelimit-mcpstart",
-    )
+    await isRateLimited(env, ip, MCP_START_RATE_LIMIT_MAX, "ratelimit-mcpstart")
   ) {
     return new Response("Too Many Requests", { status: 429 });
   }
@@ -478,7 +473,7 @@ async function handleMcpCheckStart(
 
   const targetUrl = payload.url;
   if (!targetUrl || typeof targetUrl !== "string") {
-    return new Response('Expected JSON body: { url: string }', {
+    return new Response("Expected JSON body: { url: string }", {
       status: 400,
     });
   }
@@ -562,9 +557,8 @@ async function handleLemonSqueezyWebhook(
     return new Response("Invalid JSON body", { status: 400 });
   }
 
-  const token = (
-    payload as { meta?: { custom_data?: { token?: unknown } } }
-  )?.meta?.custom_data?.token;
+  const token = (payload as { meta?: { custom_data?: { token?: unknown } } })
+    ?.meta?.custom_data?.token;
   if (typeof token !== "string") {
     return new Response("Missing custom_data.token", { status: 400 });
   }
@@ -605,7 +599,9 @@ async function handleMcpCheckStatus(
   }
 
   const ip = request.headers.get("CF-Connecting-IP") ?? "unknown";
-  if (await isRateLimited(env, ip, RATE_LIMIT_MAX_REQUESTS, "ratelimit-mcpstatus")) {
+  if (
+    await isRateLimited(env, ip, RATE_LIMIT_MAX_REQUESTS, "ratelimit-mcpstatus")
+  ) {
     return new Response("Too Many Requests", { status: 429 });
   }
 
@@ -701,7 +697,7 @@ async function handleMcpCheckRecheck(
 
   const token = payload.token;
   if (!token) {
-    return new Response('Expected JSON body: { token: string }', {
+    return new Response("Expected JSON body: { token: string }", {
       status: 400,
     });
   }

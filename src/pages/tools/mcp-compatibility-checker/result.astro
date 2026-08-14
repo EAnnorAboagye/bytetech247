@@ -68,18 +68,13 @@ const breadcrumbItems = [
           <button type="button" data-mcp-result-copy>
             Copy report as Markdown
           </button>
-          <button type="button" data-mcp-result-download>
-            Download .md
-          </button>
+          <button type="button" data-mcp-result-download> Download .md </button>
           <button type="button" data-mcp-result-recheck hidden>
             Re-check this server
           </button>
         </div>
-        <p
-          class="mcp-result__recheck-note"
-          data-mcp-result-recheck-note
-          hidden
-        ></p>
+        <p class="mcp-result__recheck-note" data-mcp-result-recheck-note hidden>
+        </p>
         <p class="mcp-result__copy-confirm" data-mcp-result-copy-confirm hidden>
           Copied.
         </p>
@@ -234,7 +229,10 @@ const breadcrumbItems = [
   let currentReport: CompatibilityReport | null = null;
   let currentRecheckAvailableUntil: number | null = null;
 
-  function buildMarkdown(url: string | undefined, report: CompatibilityReport): string {
+  function buildMarkdown(
+    url: string | undefined,
+    report: CompatibilityReport,
+  ): string {
     const lines: string[] = [];
     lines.push(`# MCP Compatibility Report${url ? ` — ${url}` : ""}`);
     lines.push("");
@@ -269,8 +267,9 @@ const breadcrumbItems = [
       .setAttribute("hidden", "");
     const errorEl = root.querySelector<HTMLElement>("[data-mcp-result-error]")!;
     errorEl.removeAttribute("hidden");
-    root.querySelector<HTMLElement>("[data-mcp-result-error-text]")!.textContent =
-      message;
+    root.querySelector<HTMLElement>(
+      "[data-mcp-result-error-text]",
+    )!.textContent = message;
   }
 
   function renderRecheckControls(root: HTMLElement) {
@@ -335,8 +334,9 @@ const breadcrumbItems = [
     statusEl.textContent = statusLabel;
     statusEl.className = `mcp-result__status mcp-result__status--${result.status}`;
 
-    doneEl.querySelector<HTMLElement>("[data-mcp-result-headline]")!.textContent =
-      result.headline;
+    doneEl.querySelector<HTMLElement>(
+      "[data-mcp-result-headline]",
+    )!.textContent = result.headline;
     doneEl.querySelector<HTMLElement>("[data-mcp-result-detail]")!.textContent =
       result.detail;
 
@@ -391,7 +391,10 @@ const breadcrumbItems = [
         `/api/mcp-check/status?token=${encodeURIComponent(token)}`,
       );
     } catch {
-      showError(root, "Could not reach the server. Check your connection and reload.");
+      showError(
+        root,
+        "Could not reach the server. Check your connection and reload.",
+      );
       return;
     }
 
@@ -455,7 +458,12 @@ const breadcrumbItems = [
       }
 
       const data = (await response.json()) as DoneResponse;
-      showDone(root, data.url ?? currentUrl, data.result, data.recheckAvailableUntil);
+      showDone(
+        root,
+        data.url ?? currentUrl,
+        data.result,
+        data.recheckAvailableUntil,
+      );
     } catch {
       button.disabled = false;
       button.textContent = "Re-check this server";

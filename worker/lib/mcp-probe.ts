@@ -110,8 +110,7 @@ function validateTargetUrl(rawUrl: string): URL | { error: string } {
 }
 
 type JsonRpcPostResult =
-  | { json: unknown; headers: Headers }
-  | { error: string };
+  { json: unknown; headers: Headers } | { error: string };
 
 async function postJsonRpc(
   target: URL,
@@ -242,7 +241,10 @@ async function probeDiscover(target: URL): Promise<DiscoverProbe> {
       sessionIdPresent: headers.has("Mcp-Session-Id"),
     };
   }
-  if (isJsonRpcError(json) && RECOGNIZED_MODERN_ERROR_CODES.has(json.error.code)) {
+  if (
+    isJsonRpcError(json) &&
+    RECOGNIZED_MODERN_ERROR_CODES.has(json.error.code)
+  ) {
     return {
       reached: true,
       supported: false,
@@ -292,9 +294,7 @@ async function probeLegacyInitialize(target: URL): Promise<LegacyProbe> {
 // --- Check 3: header enforcement ---
 
 export type HeaderEnforcementStatus =
-  | "enforced"
-  | "not_enforced"
-  | "not_applicable";
+  "enforced" | "not_enforced" | "not_applicable";
 
 async function probeHeaderEnforcement(
   target: URL,
@@ -316,7 +316,8 @@ async function probeHeaderEnforcement(
 
   const { json } = response;
   if (isJsonRpcError(json)) {
-    if (json.error.code === -32020) return { reached: true, status: "enforced" };
+    if (json.error.code === -32020)
+      return { reached: true, status: "enforced" };
     // -32601 (or anything else) means the server isn't even attempting the
     // modern per-request contract in the first place — this check doesn't
     // meaningfully apply to it, so it's not a fail.
@@ -333,7 +334,11 @@ async function probeHeaderEnforcement(
 
 async function probePing(
   target: URL,
-): Promise<{ reached: boolean; applicable: boolean; stillSupported?: boolean }> {
+): Promise<{
+  reached: boolean;
+  applicable: boolean;
+  stillSupported?: boolean;
+}> {
   const response = await postJsonRpc(
     target,
     { jsonrpc: "2.0", id: 1, method: "ping", params: {} },
@@ -354,10 +359,7 @@ async function probePing(
 // --- Check 5: GET endpoint behavior ---
 
 export type GetEndpointBehavior =
-  | "modern_405"
-  | "legacy_sse"
-  | "other"
-  | "unreachable";
+  "modern_405" | "legacy_sse" | "other" | "unreachable";
 
 async function probeGetEndpoint(
   target: URL,
@@ -368,7 +370,8 @@ async function probeGetEndpoint(
       headers: { Accept: "text/event-stream" },
       signal: AbortSignal.timeout(PROBE_TIMEOUT_MS),
     });
-    if (response.status === 405) return { reached: true, behavior: "modern_405" };
+    if (response.status === 405)
+      return { reached: true, behavior: "modern_405" };
     const contentType = response.headers.get("Content-Type") ?? "";
     if (response.status === 200 && contentType.includes("text/event-stream")) {
       return { reached: true, behavior: "legacy_sse" };

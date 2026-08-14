@@ -44,15 +44,10 @@ const MCP_TRANSPORT_SOURCE =
 export type McpCompatibilityStatus = "compatible" | "legacy" | "unknown";
 
 export type HeaderEnforcementStatus =
-  | "enforced"
-  | "not_enforced"
-  | "not_applicable";
+  "enforced" | "not_enforced" | "not_applicable";
 
 export type GetEndpointBehavior =
-  | "modern_405"
-  | "legacy_sse"
-  | "other"
-  | "unreachable";
+  "modern_405" | "legacy_sse" | "other" | "unreachable";
 
 export interface McpProbeResult {
   /** false only when the target could not be reached at all. */
@@ -166,7 +161,8 @@ function buildChecks(probe: McpProbeResult): AuditCheckResult[] {
             id: "no-session-id",
             label: "No longer issues Mcp-Session-Id",
             status: "pass",
-            detail: "No Mcp-Session-Id header was present on the server/discover response.",
+            detail:
+              "No Mcp-Session-Id header was present on the server/discover response.",
           },
     );
   } else {
@@ -175,13 +171,15 @@ function buildChecks(probe: McpProbeResult): AuditCheckResult[] {
         id: "result-type",
         label: "Results carry the required resultType field",
         status: "not_applicable",
-        detail: "Could not be checked — server/discover did not return a usable result to inspect.",
+        detail:
+          "Could not be checked — server/discover did not return a usable result to inspect.",
       },
       {
         id: "no-session-id",
         label: "No longer issues Mcp-Session-Id",
         status: "not_applicable",
-        detail: "Could not be checked — server/discover did not return a usable result to inspect.",
+        detail:
+          "Could not be checked — server/discover did not return a usable result to inspect.",
       },
     );
   }
@@ -218,7 +216,7 @@ function buildChecks(probe: McpProbeResult): AuditCheckResult[] {
             id: "ping-removed",
             label: "Deprecated ping method removed",
             status: "pass",
-            detail: "ping correctly returns \"Method not found.\"",
+            detail: 'ping correctly returns "Method not found."',
           },
     );
   } else {
