@@ -10,6 +10,12 @@
 // never rendered per-request.
 
 import { CATEGORY_SLUGS, siteConfig } from "../src/config";
+import {
+  classifyCompatibility,
+  type CompatibilityReport,
+} from "../src/lib/mcp-compatibility-data";
+import { probeMcpServer } from "./lib/mcp-probe";
+import { createCheckout, verifyWebhookSignature } from "./lib/lemon-squeezy";
 
 export interface Env {
   ASSETS: Fetcher;
@@ -18,6 +24,14 @@ export interface Env {
   // Set once via `wrangler secret put CSP_NONCE_SECRET` — never committed.
   // See deriveNonce() below for what it's used for.
   CSP_NONCE_SECRET: string;
+  // MCP Compatibility Checker payment integration (worker/lib/lemon-squeezy.ts).
+  // API key + webhook secret are real secrets (`wrangler secret put`); store/
+  // variant IDs are plain [vars] in wrangler.toml — they identify which
+  // product to check out, not sensitive on their own.
+  LEMON_SQUEEZY_API_KEY: string;
+  LEMON_SQUEEZY_WEBHOOK_SECRET: string;
+  LEMON_SQUEEZY_STORE_ID: string;
+  LEMON_SQUEEZY_VARIANT_ID: string;
 }
 
 // A real per-request-unique CSP nonce would need every HTML response
@@ -189,6 +203,28 @@ export default {
       return handleCounter(request, env);
     }
 
+    if (url.pathname === "/api/mcp-check/start" && request.method === "POST") {
+      return handleMcpCheckStart(request, env);
+    }
+
+    if (
+      url.pathname === "/api/lemon-squeezy-webhook" &&
+      request.method === "POST"
+    ) {
+      return handleLemonSqueezyWebhook(request, env);
+    }
+
+    if (url.pathname === "/api/mcp-check/status" && request.method === "GET") {
+      return handleMcpCheckStatus(request, env);
+    }
+
+    if (
+      url.pathname === "/api/mcp-check/recheck" &&
+      request.method === "POST"
+    ) {
+      return handleMcpCheckRecheck(request, env);
+    }
+
     // Computed once per request, reused at every HTML return point below
     // so a single response never mixes two different nonce values.
     const nonce = await deriveNonce(env.CSP_NONCE_SECRET);
@@ -288,7 +324,7 @@ const RATE_LIMIT_MAX_REQUESTS = 20;
 
 /**
  * Fixed-window per-IP rate limit, bucketed by minute. Reuses COUNTERS_KV
- * (a dedicated `ratelimit:` key prefix) rather than provisioning a new KV
+ * (a dedicated key prefix per caller) rather than provisioning a new KV
  * namespace or a Durable Object just for this — reasonable for an
  * endpoint with no callers yet; revisit if real traffic ever needs
  * something stricter than "bounded", like Cloudflare's Rate Limiting
@@ -299,12 +335,23 @@ const RATE_LIMIT_MAX_REQUESTS = 20;
  * window — a rate limit only needs to be approximately right to do its
  * job (bound abuse), unlike the view count itself, so that's an accepted
  * tradeoff here, not an oversight.
+ *
+ * `maxRequests`/`keyPrefix` default to the original counter-endpoint
+ * values so the existing call site is unaffected; `/api/mcp-check/start`
+ * passes a much lower ceiling under its own key prefix, since that
+ * endpoint creates a real Lemon Squeezy checkout session per call — the
+ * one dynamic route on this site that costs real money to abuse.
  */
-export async function isRateLimited(env: Env, ip: string): Promise<boolean> {
+export async function isRateLimited(
+  env: Env,
+  ip: string,
+  maxRequests: number = RATE_LIMIT_MAX_REQUESTS,
+  keyPrefix: string = "ratelimit",
+): Promise<boolean> {
   const bucket = Math.floor(Date.now() / (RATE_LIMIT_WINDOW_SECONDS * 1000));
-  const key = `ratelimit:${ip}:${bucket}`;
+  const key = `${keyPrefix}:${ip}:${bucket}`;
   const current = Number((await env.COUNTERS_KV.get(key)) ?? "0");
-  if (current >= RATE_LIMIT_MAX_REQUESTS) return true;
+  if (current >= maxRequests) return true;
   await env.COUNTERS_KV.put(key, String(current + 1), {
     // Outlives the window itself so a bucket that's already at the limit
     // doesn't briefly disappear (and reset to 0) before the next bucket
@@ -362,4 +409,343 @@ async function handleCounter(request: Request, env: Env): Promise<Response> {
   await env.COUNTERS_KV.put(key, String(current + 1));
 
   return new Response(null, { status: 204 });
+}
+
+// MCP Compatibility Checker — payment-gated live probe. Three routes, one
+// SESSION_KV record per attempt keyed `mcpcheck:{token}`, moving through
+// exactly three states: "pending" (checkout created, webhook not yet
+// received) -> "paid" (webhook confirmed, probe not yet run) -> "done"
+// (probe ran once, result cached). See the plan file for the full flow
+// diagram and the accepted, documented low-severity race at the paid->done
+// transition (two near-simultaneous status requests for the same token
+// could both observe "paid" and run the probe twice — money has already
+// changed hands by that point either way, so this is a wasted duplicate
+// fetch, not a security or billing bug).
+
+const MCP_CHECK_KEY_PREFIX = "mcpcheck:";
+// A paid check isn't single-use anymore in the sense of "one probe ever" —
+// the reader gets a bounded re-check window (see RECHECK_WINDOW_MS) to
+// confirm a fix without paying twice. The KV TTL has to outlive that whole
+// window, not just the original checkout+poll cycle, so it's set from the
+// window itself with a small buffer rather than a separately-chosen number
+// that could quietly fall short of it.
+const RECHECK_WINDOW_HOURS = 60;
+const RECHECK_WINDOW_MS = RECHECK_WINDOW_HOURS * 60 * 60 * 1000;
+const MCP_CHECK_TTL_SECONDS = Math.ceil(RECHECK_WINDOW_MS / 1000) + 3600;
+// Far tighter than the counter endpoint's default 20/60s — this is the
+// only route on the site that creates a real, billable Lemon Squeezy
+// checkout session per call.
+const MCP_START_RATE_LIMIT_MAX = 5;
+
+interface McpCheckRecord {
+  url: string;
+  status: "pending" | "paid" | "done";
+  result?: CompatibilityReport;
+  /** Epoch ms — set once payment is confirmed; a re-check is allowed until this time. */
+  recheckAvailableUntil?: number;
+}
+
+interface McpCheckStartPayload {
+  url?: string;
+}
+
+async function handleMcpCheckStart(
+  request: Request,
+  env: Env,
+): Promise<Response> {
+  if (!isAllowedOrigin(request)) {
+    return new Response("Forbidden", { status: 403 });
+  }
+
+  const ip = request.headers.get("CF-Connecting-IP") ?? "unknown";
+  if (
+    await isRateLimited(
+      env,
+      ip,
+      MCP_START_RATE_LIMIT_MAX,
+      "ratelimit-mcpstart",
+    )
+  ) {
+    return new Response("Too Many Requests", { status: 429 });
+  }
+
+  let payload: McpCheckStartPayload;
+  try {
+    payload = await request.json();
+  } catch {
+    return new Response("Invalid JSON body", { status: 400 });
+  }
+
+  const targetUrl = payload.url;
+  if (!targetUrl || typeof targetUrl !== "string") {
+    return new Response('Expected JSON body: { url: string }', {
+      status: 400,
+    });
+  }
+
+  let parsed: URL;
+  try {
+    parsed = new URL(targetUrl);
+  } catch {
+    return new Response("Invalid URL", { status: 400 });
+  }
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+    return new Response("Only http:// and https:// URLs are supported", {
+      status: 400,
+    });
+  }
+
+  const token = crypto.randomUUID();
+  const record: McpCheckRecord = { url: targetUrl, status: "pending" };
+  await env.SESSION_KV.put(
+    `${MCP_CHECK_KEY_PREFIX}${token}`,
+    JSON.stringify(record),
+    { expirationTtl: MCP_CHECK_TTL_SECONDS },
+  );
+
+  const redirectUrl = `${siteConfig.url}/tools/mcp-compatibility-checker/result/?token=${token}`;
+  const checkoutResult = await createCheckout(
+    {
+      apiKey: env.LEMON_SQUEEZY_API_KEY,
+      storeId: env.LEMON_SQUEEZY_STORE_ID,
+      variantId: env.LEMON_SQUEEZY_VARIANT_ID,
+    },
+    { token, redirectUrl },
+  );
+
+  if ("error" in checkoutResult) {
+    return new Response(checkoutResult.error, { status: 502 });
+  }
+
+  return new Response(
+    JSON.stringify({ checkoutUrl: checkoutResult.checkoutUrl }),
+    { status: 200, headers: { "Content-Type": "application/json" } },
+  );
+}
+
+/**
+ * Lemon Squeezy webhook receiver. Deliberately does NOT go through
+ * isAllowedOrigin()/isRateLimited() — the caller is Lemon Squeezy's own
+ * servers, not a browser on this site, so an Origin check would either
+ * reject legitimate calls or (since no Origin header is sent) pass
+ * everything through anyway. The HMAC signature check below is the real
+ * authentication mechanism here, and it alone is sufficient: an attacker
+ * without the webhook secret cannot produce a valid signature no matter
+ * how many requests they send.
+ */
+async function handleLemonSqueezyWebhook(
+  request: Request,
+  env: Env,
+): Promise<Response> {
+  const rawBody = await request.text();
+  const signature = request.headers.get("X-Signature");
+  const valid = await verifyWebhookSignature(
+    rawBody,
+    signature,
+    env.LEMON_SQUEEZY_WEBHOOK_SECRET,
+  );
+  if (!valid) {
+    return new Response("Invalid signature", { status: 401 });
+  }
+
+  // Only order_created moves a record from "pending" to "paid" — this
+  // product is a one-time purchase, not a subscription, so no other Lemon
+  // Squeezy event type is relevant here.
+  if (request.headers.get("X-Event-Name") !== "order_created") {
+    return new Response(null, { status: 204 });
+  }
+
+  let payload: unknown;
+  try {
+    payload = JSON.parse(rawBody);
+  } catch {
+    return new Response("Invalid JSON body", { status: 400 });
+  }
+
+  const token = (
+    payload as { meta?: { custom_data?: { token?: unknown } } }
+  )?.meta?.custom_data?.token;
+  if (typeof token !== "string") {
+    return new Response("Missing custom_data.token", { status: 400 });
+  }
+
+  const key = `${MCP_CHECK_KEY_PREFIX}${token}`;
+  const existingRaw = await env.SESSION_KV.get(key);
+  if (!existingRaw) {
+    // Token already expired or never existed — not the webhook's fault;
+    // acknowledge rather than error so Lemon Squeezy doesn't retry
+    // indefinitely for a record that's simply gone.
+    return new Response(null, { status: 204 });
+  }
+
+  const existing = JSON.parse(existingRaw) as McpCheckRecord;
+  if (existing.status === "pending") {
+    // The re-check window starts from confirmed payment, not from whenever
+    // the reader happens to first view the result — those are usually
+    // seconds apart, but payment is the actual event being purchased.
+    const updated: McpCheckRecord = {
+      ...existing,
+      status: "paid",
+      recheckAvailableUntil: Date.now() + RECHECK_WINDOW_MS,
+    };
+    await env.SESSION_KV.put(key, JSON.stringify(updated), {
+      expirationTtl: MCP_CHECK_TTL_SECONDS,
+    });
+  }
+
+  return new Response(null, { status: 204 });
+}
+
+async function handleMcpCheckStatus(
+  request: Request,
+  env: Env,
+): Promise<Response> {
+  if (!isAllowedOrigin(request)) {
+    return new Response("Forbidden", { status: 403 });
+  }
+
+  const ip = request.headers.get("CF-Connecting-IP") ?? "unknown";
+  if (await isRateLimited(env, ip, RATE_LIMIT_MAX_REQUESTS, "ratelimit-mcpstatus")) {
+    return new Response("Too Many Requests", { status: 429 });
+  }
+
+  const token = new URL(request.url).searchParams.get("token");
+  if (!token) {
+    return new Response("Missing token", { status: 400 });
+  }
+
+  const key = `${MCP_CHECK_KEY_PREFIX}${token}`;
+  const raw = await env.SESSION_KV.get(key);
+  if (!raw) {
+    return new Response(JSON.stringify({ status: "not_found" }), {
+      status: 404,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  const record = JSON.parse(raw) as McpCheckRecord;
+
+  if (record.status === "pending") {
+    return new Response(JSON.stringify({ status: "pending" }), {
+      status: 202,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  if (record.status === "done" && record.result) {
+    return new Response(
+      JSON.stringify({
+        status: "done",
+        url: record.url,
+        result: record.result,
+        recheckAvailableUntil: record.recheckAvailableUntil ?? null,
+      }),
+      { status: 200, headers: { "Content-Type": "application/json" } },
+    );
+  }
+
+  // record.status === "paid" — claim it (flip to "done") by writing the
+  // computed result back immediately after probing, so a same-token
+  // double-request only ever risks a duplicate outbound probe, never a
+  // duplicate charge or a free extra check (see the module comment above).
+  const probe = await probeMcpServer(record.url);
+  const result = classifyCompatibility(probe);
+  const updated: McpCheckRecord = { ...record, status: "done", result };
+  await env.SESSION_KV.put(key, JSON.stringify(updated), {
+    expirationTtl: MCP_CHECK_TTL_SECONDS,
+  });
+
+  return new Response(
+    JSON.stringify({
+      status: "done",
+      url: updated.url,
+      result,
+      recheckAvailableUntil: updated.recheckAvailableUntil ?? null,
+    }),
+    { status: 200, headers: { "Content-Type": "application/json" } },
+  );
+}
+
+interface McpCheckRecheckPayload {
+  token?: string;
+}
+
+/**
+ * Re-runs the live probe for an already-paid token, within the bounded
+ * re-check window set at payment confirmation (RECHECK_WINDOW_HOURS) — the
+ * fix for the original design's "pay again just to confirm your fix
+ * worked" friction. Gated on an existing "done" record with a valid token
+ * (unguessable, crypto.randomUUID()), so — unlike /api/mcp-check/start —
+ * this can't be used to get a free first check; it can only re-run a probe
+ * someone already paid for.
+ */
+async function handleMcpCheckRecheck(
+  request: Request,
+  env: Env,
+): Promise<Response> {
+  if (!isAllowedOrigin(request)) {
+    return new Response("Forbidden", { status: 403 });
+  }
+
+  const ip = request.headers.get("CF-Connecting-IP") ?? "unknown";
+  if (await isRateLimited(env, ip, 10, "ratelimit-mcprecheck")) {
+    return new Response("Too Many Requests", { status: 429 });
+  }
+
+  let payload: McpCheckRecheckPayload;
+  try {
+    payload = await request.json();
+  } catch {
+    return new Response("Invalid JSON body", { status: 400 });
+  }
+
+  const token = payload.token;
+  if (!token) {
+    return new Response('Expected JSON body: { token: string }', {
+      status: 400,
+    });
+  }
+
+  const key = `${MCP_CHECK_KEY_PREFIX}${token}`;
+  const raw = await env.SESSION_KV.get(key);
+  if (!raw) {
+    return new Response(JSON.stringify({ status: "not_found" }), {
+      status: 404,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  const record = JSON.parse(raw) as McpCheckRecord;
+  if (record.status !== "done") {
+    return new Response(JSON.stringify({ status: "not_ready" }), {
+      status: 409,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+  if (
+    !record.recheckAvailableUntil ||
+    Date.now() > record.recheckAvailableUntil
+  ) {
+    return new Response(JSON.stringify({ status: "recheck_expired" }), {
+      status: 403,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  const probe = await probeMcpServer(record.url);
+  const result = classifyCompatibility(probe);
+  const updated: McpCheckRecord = { ...record, result };
+  await env.SESSION_KV.put(key, JSON.stringify(updated), {
+    expirationTtl: MCP_CHECK_TTL_SECONDS,
+  });
+
+  return new Response(
+    JSON.stringify({
+      status: "done",
+      url: updated.url,
+      result,
+      recheckAvailableUntil: updated.recheckAvailableUntil ?? null,
+    }),
+    { status: 200, headers: { "Content-Type": "application/json" } },
+  );
 }

@@ -1,0 +1,532 @@
+---
+// The MCP Compatibility Checker's result page — a thin static shell, not a
+// server-rendered page (this site stays output: 'static', see astro.config.mjs
+// and worker/index.ts's own comment on why). All the real logic lives
+// client-side: read ?token= from the URL, poll GET /api/mcp-check/status
+// (worker/index.ts) every ~2s, and render whichever state comes back. This
+// is the first result page on the site driven entirely by polling a Worker
+// JSON API rather than being either fully static or client-side-only —
+// a natural extension of the same "static shell + Worker API" split
+// /api/counter already uses, not a new architectural pattern.
+//
+// Also renders the itemized audit (CompatibilityReport.checks), a re-check
+// button (POST /api/mcp-check/recheck, valid for a bounded window after
+// payment — see worker/index.ts's RECHECK_WINDOW_HOURS), and copy/download
+// buttons that build a Markdown summary client-side, entirely from data
+// already on the page — no new endpoint needed for either.
+import BaseLayout from "../../../layouts/BaseLayout.astro";
+import { siteConfig, getToolName } from "../../../config";
+import { absoluteUrl, breadcrumbJsonLd } from "../../../lib/json-ld";
+
+const toolName = getToolName("mcp-compatibility-checker");
+const pageUrl = absoluteUrl("/tools/mcp-compatibility-checker/result/");
+
+const breadcrumbItems = [
+  { name: "Home", url: siteConfig.url },
+  { name: "Tools", url: absoluteUrl("/tools/") },
+  { name: toolName, url: absoluteUrl("/tools/mcp-compatibility-checker/") },
+  { name: "Result", url: pageUrl },
+];
+---
+
+<BaseLayout
+  title={`Result — ${toolName} — ${siteConfig.name}`}
+  description="Your MCP Compatibility Checker result."
+  jsonLd={[breadcrumbJsonLd(breadcrumbItems)]}
+  noindex
+>
+  <article class="legal tool-page">
+    <h1>{toolName} — Result</h1>
+
+    <div data-mcp-result>
+      <div data-mcp-result-pending>
+        <p>Confirming your payment… this usually takes a few seconds.</p>
+      </div>
+
+      <div data-mcp-result-error hidden>
+        <p data-mcp-result-error-text></p>
+        <p>
+          <a href="/tools/mcp-compatibility-checker/">Start a new check</a>
+        </p>
+      </div>
+
+      <div data-mcp-result-done hidden>
+        <p class="mcp-result__status" data-mcp-result-status></p>
+        <h2 data-mcp-result-headline></h2>
+        <p data-mcp-result-detail></p>
+
+        <h3>Full check list</h3>
+        <ul class="mcp-result__checks" data-mcp-result-checks></ul>
+
+        <h3>Recommendations</h3>
+        <ul data-mcp-result-recommendations></ul>
+        <p class="mcp-result__source">
+          Source: <a data-mcp-result-source rel="noopener"></a>
+        </p>
+
+        <div class="mcp-result__actions">
+          <button type="button" data-mcp-result-copy>
+            Copy report as Markdown
+          </button>
+          <button type="button" data-mcp-result-download>
+            Download .md
+          </button>
+          <button type="button" data-mcp-result-recheck hidden>
+            Re-check this server
+          </button>
+        </div>
+        <p
+          class="mcp-result__recheck-note"
+          data-mcp-result-recheck-note
+          hidden
+        ></p>
+        <p class="mcp-result__copy-confirm" data-mcp-result-copy-confirm hidden>
+          Copied.
+        </p>
+
+        <p>
+          <a href="/tools/mcp-compatibility-checker/">Check another server</a>
+        </p>
+      </div>
+    </div>
+  </article>
+</BaseLayout>
+
+<style>
+  .mcp-result__status {
+    display: inline-block;
+    padding: calc(var(--spacing) * 0.5) calc(var(--spacing) * 2);
+    border-radius: 999px;
+    font-size: var(--text-sm);
+    font-weight: 600;
+  }
+
+  .mcp-result__status--compatible {
+    background-color: var(--color-accent);
+    color: var(--color-accent-fg);
+  }
+
+  .mcp-result__status--legacy,
+  .mcp-result__status--unknown {
+    background-color: var(--color-bg-subtle);
+    color: var(--color-fg);
+    border: 1px solid var(--color-border);
+  }
+
+  .mcp-result__source {
+    font-size: var(--text-xs);
+    color: var(--color-fg-muted);
+  }
+
+  .mcp-result__checks {
+    list-style: none;
+    margin: calc(var(--spacing) * 2) 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--spacing) * 1.5);
+  }
+
+  .mcp-result__check {
+    display: grid;
+    grid-template-columns: 1.5rem 1fr;
+    gap: 0 calc(var(--spacing) * 1.5);
+    padding: calc(var(--spacing) * 1.5);
+    border: 1px solid var(--color-border);
+    border-radius: 0.5rem;
+    background-color: var(--color-bg-subtle);
+  }
+
+  .mcp-result__check-icon {
+    font-size: var(--text-base);
+    line-height: 1.4;
+  }
+
+  .mcp-result__check-label {
+    font-weight: 600;
+    margin: 0 0 calc(var(--spacing) * 0.5);
+  }
+
+  .mcp-result__check-detail {
+    margin: 0;
+    font-size: var(--text-sm);
+    color: var(--color-fg-muted);
+  }
+
+  .mcp-result__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: calc(var(--spacing) * 1.5);
+    margin-top: calc(var(--spacing) * 3);
+  }
+
+  .mcp-result__actions button {
+    padding: calc(var(--spacing) * 1.25) calc(var(--spacing) * 2.5);
+    border: 1px solid var(--color-border);
+    border-radius: 0.5rem;
+    background-color: var(--color-bg);
+    color: var(--color-fg);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .mcp-result__actions button:hover:not(:disabled) {
+    border-color: var(--color-accent);
+    color: var(--color-accent);
+  }
+
+  .mcp-result__actions button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .mcp-result__recheck-note,
+  .mcp-result__copy-confirm {
+    margin-top: calc(var(--spacing) * 1);
+    font-size: var(--text-xs);
+    color: var(--color-fg-muted);
+  }
+</style>
+
+<script>
+  interface AuditCheckResult {
+    id: string;
+    label: string;
+    status: "pass" | "fail" | "info" | "not_applicable";
+    detail: string;
+  }
+
+  interface CompatibilityReport {
+    status: "compatible" | "legacy" | "unknown";
+    headline: string;
+    detail: string;
+    detectedVersion?: string;
+    recommendations: string[];
+    source: string;
+    checks: AuditCheckResult[];
+  }
+
+  interface DoneResponse {
+    status: "done";
+    url?: string;
+    result: CompatibilityReport;
+    recheckAvailableUntil: number | null;
+  }
+
+  const POLL_INTERVAL_MS = 2000;
+  const CHECK_ICON: Record<AuditCheckResult["status"], string> = {
+    pass: "✅",
+    fail: "❌",
+    info: "ℹ️",
+    not_applicable: "—",
+  };
+
+  // Module-scope so a soft-nav away mid-poll can clear the previous page's
+  // timer before this one re-arms — otherwise two overlapping polling loops
+  // could end up running after a couple of client-side navigations back and
+  // forth to this same page.
+  let pollTimer: ReturnType<typeof setTimeout> | null = null;
+  // Holds the last rendered report + the checked URL, so the copy/download/
+  // re-check actions have something to act on without re-fetching.
+  let currentToken: string | null = null;
+  let currentUrl: string | undefined;
+  let currentReport: CompatibilityReport | null = null;
+  let currentRecheckAvailableUntil: number | null = null;
+
+  function buildMarkdown(url: string | undefined, report: CompatibilityReport): string {
+    const lines: string[] = [];
+    lines.push(`# MCP Compatibility Report${url ? ` — ${url}` : ""}`);
+    lines.push("");
+    lines.push(`**Verdict:** ${report.headline}`);
+    lines.push("");
+    lines.push(report.detail);
+    lines.push("");
+    lines.push("## Checks");
+    lines.push("");
+    for (const check of report.checks) {
+      const icon = CHECK_ICON[check.status] ?? "—";
+      lines.push(`- ${icon} **${check.label}** — ${check.detail}`);
+    }
+    lines.push("");
+    lines.push("## Recommendations");
+    lines.push("");
+    for (const rec of report.recommendations) {
+      lines.push(`- ${rec}`);
+    }
+    lines.push("");
+    lines.push(`Source: ${report.source}`);
+    lines.push(`Checked: ${new Date().toISOString()}`);
+    return lines.join("\n");
+  }
+
+  function showError(root: HTMLElement, message: string) {
+    root
+      .querySelector<HTMLElement>("[data-mcp-result-pending]")!
+      .setAttribute("hidden", "");
+    root
+      .querySelector<HTMLElement>("[data-mcp-result-done]")!
+      .setAttribute("hidden", "");
+    const errorEl = root.querySelector<HTMLElement>("[data-mcp-result-error]")!;
+    errorEl.removeAttribute("hidden");
+    root.querySelector<HTMLElement>("[data-mcp-result-error-text]")!.textContent =
+      message;
+  }
+
+  function renderRecheckControls(root: HTMLElement) {
+    const recheckButton = root.querySelector<HTMLButtonElement>(
+      "[data-mcp-result-recheck]",
+    )!;
+    const note = root.querySelector<HTMLElement>(
+      "[data-mcp-result-recheck-note]",
+    )!;
+
+    if (!currentRecheckAvailableUntil) {
+      recheckButton.hidden = true;
+      note.hidden = true;
+      return;
+    }
+
+    const msRemaining = currentRecheckAvailableUntil - Date.now();
+    if (msRemaining <= 0) {
+      recheckButton.hidden = true;
+      note.hidden = false;
+      note.textContent =
+        "The re-check window for this payment has expired. Start a new check to run it again.";
+      return;
+    }
+
+    const hoursRemaining = Math.max(1, Math.round(msRemaining / 3_600_000));
+    recheckButton.hidden = false;
+    recheckButton.disabled = false;
+    recheckButton.textContent = "Re-check this server";
+    note.hidden = false;
+    note.textContent = `Free re-checks available for about ${hoursRemaining} more hour${hoursRemaining === 1 ? "" : "s"} on this payment.`;
+  }
+
+  function showDone(
+    root: HTMLElement,
+    url: string | undefined,
+    result: CompatibilityReport,
+    recheckAvailableUntil: number | null,
+  ) {
+    currentUrl = url;
+    currentReport = result;
+    currentRecheckAvailableUntil = recheckAvailableUntil;
+
+    root
+      .querySelector<HTMLElement>("[data-mcp-result-pending]")!
+      .setAttribute("hidden", "");
+    root
+      .querySelector<HTMLElement>("[data-mcp-result-error]")!
+      .setAttribute("hidden", "");
+    const doneEl = root.querySelector<HTMLElement>("[data-mcp-result-done]")!;
+    doneEl.removeAttribute("hidden");
+
+    const statusLabel =
+      result.status === "compatible"
+        ? "Compatible"
+        : result.status === "legacy"
+          ? "Legacy"
+          : "Unknown";
+    const statusEl = doneEl.querySelector<HTMLElement>(
+      "[data-mcp-result-status]",
+    )!;
+    statusEl.textContent = statusLabel;
+    statusEl.className = `mcp-result__status mcp-result__status--${result.status}`;
+
+    doneEl.querySelector<HTMLElement>("[data-mcp-result-headline]")!.textContent =
+      result.headline;
+    doneEl.querySelector<HTMLElement>("[data-mcp-result-detail]")!.textContent =
+      result.detail;
+
+    const checksList = doneEl.querySelector<HTMLElement>(
+      "[data-mcp-result-checks]",
+    )!;
+    checksList.replaceChildren(
+      ...result.checks.map((check) => {
+        const li = document.createElement("li");
+        li.className = "mcp-result__check";
+        const icon = document.createElement("span");
+        icon.className = "mcp-result__check-icon";
+        icon.setAttribute("aria-hidden", "true");
+        icon.textContent = CHECK_ICON[check.status] ?? "—";
+        const body = document.createElement("div");
+        const label = document.createElement("p");
+        label.className = "mcp-result__check-label";
+        label.textContent = check.label;
+        const detail = document.createElement("p");
+        detail.className = "mcp-result__check-detail";
+        detail.textContent = check.detail;
+        body.append(label, detail);
+        li.append(icon, body);
+        return li;
+      }),
+    );
+
+    const recList = doneEl.querySelector<HTMLElement>(
+      "[data-mcp-result-recommendations]",
+    )!;
+    recList.replaceChildren(
+      ...result.recommendations.map((rec) => {
+        const li = document.createElement("li");
+        li.textContent = rec;
+        return li;
+      }),
+    );
+
+    const sourceLink = doneEl.querySelector<HTMLAnchorElement>(
+      "[data-mcp-result-source]",
+    )!;
+    sourceLink.href = result.source;
+    sourceLink.textContent = result.source;
+
+    renderRecheckControls(root);
+  }
+
+  async function poll(root: HTMLElement, token: string) {
+    let response: Response;
+    try {
+      response = await fetch(
+        `/api/mcp-check/status?token=${encodeURIComponent(token)}`,
+      );
+    } catch {
+      showError(root, "Could not reach the server. Check your connection and reload.");
+      return;
+    }
+
+    if (response.status === 202) {
+      pollTimer = setTimeout(() => poll(root, token), POLL_INTERVAL_MS);
+      return;
+    }
+
+    if (response.status === 404) {
+      showError(
+        root,
+        "This link is invalid or has expired. Start a new check below.",
+      );
+      return;
+    }
+
+    if (!response.ok) {
+      showError(root, "Something went wrong while checking your result.");
+      return;
+    }
+
+    const data = (await response.json()) as Partial<DoneResponse> & {
+      status: string;
+    };
+    if (data.status === "done" && data.result) {
+      showDone(root, data.url, data.result, data.recheckAvailableUntil ?? null);
+      return;
+    }
+
+    // Any other shape (including a "pending" JSON body on a 200, which
+    // shouldn't happen given the status codes above, but a client should
+    // never crash on a response shape it didn't expect) — keep polling
+    // rather than treat it as fatal.
+    pollTimer = setTimeout(() => poll(root, token), POLL_INTERVAL_MS);
+  }
+
+  async function handleRecheckClick(root: HTMLElement) {
+    if (!currentToken) return;
+    const button = root.querySelector<HTMLButtonElement>(
+      "[data-mcp-result-recheck]",
+    )!;
+    button.disabled = true;
+    button.textContent = "Re-checking…";
+
+    try {
+      const response = await fetch("/api/mcp-check/recheck", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: currentToken }),
+      });
+
+      if (response.status === 403) {
+        currentRecheckAvailableUntil = null;
+        renderRecheckControls(root);
+        return;
+      }
+      if (!response.ok) {
+        button.disabled = false;
+        button.textContent = "Re-check this server";
+        return;
+      }
+
+      const data = (await response.json()) as DoneResponse;
+      showDone(root, data.url ?? currentUrl, data.result, data.recheckAvailableUntil);
+    } catch {
+      button.disabled = false;
+      button.textContent = "Re-check this server";
+    }
+  }
+
+  async function handleCopyClick(root: HTMLElement) {
+    if (!currentReport) return;
+    const markdown = buildMarkdown(currentUrl, currentReport);
+    try {
+      await navigator.clipboard.writeText(markdown);
+      const confirmEl = root.querySelector<HTMLElement>(
+        "[data-mcp-result-copy-confirm]",
+      )!;
+      confirmEl.hidden = false;
+      setTimeout(() => {
+        confirmEl.hidden = true;
+      }, 3000);
+    } catch {
+      // Clipboard permission denied or unavailable — the download button
+      // remains a working fallback, so this fails silently rather than
+      // showing an alarming error for a non-critical convenience feature.
+    }
+  }
+
+  function handleDownloadClick() {
+    if (!currentReport) return;
+    const markdown = buildMarkdown(currentUrl, currentReport);
+    const blob = new Blob([markdown], { type: "text/markdown;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "mcp-compatibility-report.md";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  function setupMcpResult() {
+    if (pollTimer) {
+      clearTimeout(pollTimer);
+      pollTimer = null;
+    }
+    currentToken = null;
+    currentUrl = undefined;
+    currentReport = null;
+    currentRecheckAvailableUntil = null;
+
+    const root = document.querySelector<HTMLElement>("[data-mcp-result]");
+    if (!root) return;
+
+    const token = new URLSearchParams(window.location.search).get("token");
+    if (!token) {
+      showError(root, "No check token was found in this link.");
+      return;
+    }
+    currentToken = token;
+
+    root
+      .querySelector<HTMLButtonElement>("[data-mcp-result-recheck]")!
+      .addEventListener("click", () => handleRecheckClick(root));
+    root
+      .querySelector<HTMLButtonElement>("[data-mcp-result-copy]")!
+      .addEventListener("click", () => handleCopyClick(root));
+    root
+      .querySelector<HTMLButtonElement>("[data-mcp-result-download]")!
+      .addEventListener("click", handleDownloadClick);
+
+    poll(root, token);
+  }
+
+  document.addEventListener("astro:page-load", setupMcpResult);
+</script>

@@ -29,15 +29,19 @@ export function getCategoryName(slug: string): string {
 }
 
 // /tools/ section, added 2026-08-11 — same static-list shape as
-// CATEGORY_SLUGS/CATEGORIES above, one entry per tool. Client-side-only
-// interactive utilities, each targeting a specific researched SEO
-// opportunity; see the AI Token Counter plan for the research behind
-// tool #1. Deliberately a plain array here, not a content collection —
-// 5 items total, no per-item MDX body, exactly what CATEGORIES already
-// covers for the 4 content categories.
+// CATEGORY_SLUGS/CATEGORIES above, one entry per tool, each targeting a
+// specific researched SEO opportunity; see the AI Token Counter plan for
+// the research behind tool #1. The first two tools are client-side-only;
+// mcp-compatibility-checker (added 2026-08-14) is this site's first paid
+// tool and the first with real server-side logic (payment gating + a live
+// probe in worker/index.ts) — the list itself stays the same shape either
+// way. Deliberately a plain array here, not a content collection — no
+// per-item MDX body, exactly what CATEGORIES already covers for the 4
+// content categories.
 export const TOOL_SLUGS = [
   "ai-token-counter",
   "llm-pricing-calculator",
+  "mcp-compatibility-checker",
 ] as const;
 
 export type ToolSlug = (typeof TOOL_SLUGS)[number];
@@ -45,6 +49,7 @@ export type ToolSlug = (typeof TOOL_SLUGS)[number];
 const TOOL_NAMES: Record<ToolSlug, string> = {
   "ai-token-counter": "AI Token Counter",
   "llm-pricing-calculator": "LLM Pricing Calculator",
+  "mcp-compatibility-checker": "MCP Compatibility Checker",
 };
 
 const TOOL_DESCRIPTIONS: Record<ToolSlug, string> = {
@@ -52,7 +57,18 @@ const TOOL_DESCRIPTIONS: Record<ToolSlug, string> = {
     "Count tokens for GPT, Claude, and Gemini prompts — exact for GPT, clearly-labeled estimates for Claude and Gemini. Runs entirely in your browser.",
   "llm-pricing-calculator":
     "Compare real dollar costs across GPT-5.6, Claude Opus 4.7/4.8, and Gemini 3.6 Flash, including each provider's prompt-caching math. Runs entirely in your browser.",
+  "mcp-compatibility-checker":
+    "A 7-point live audit of your remote MCP server against the July 2026 spec rewrite, with upgrade guidance for anything that's out of date. Free re-checks for 60 hours.",
 };
+
+// One-time price for the MCP Compatibility Checker — this site's first
+// paid tool (see the two free ones above). Set at $19.99, a deliberate
+// choice over a cheaper impulse-buy price: the goal is a genuinely useful
+// diagnostic worth paying for, not the lowest number that clears checkout
+// friction. Keep this in sync by hand with the actual Lemon Squeezy variant
+// price (worker/lib/lemon-squeezy.ts creates the checkout against that
+// variant directly; there is no live price sync).
+export const MCP_CHECK_PRICE_USD = 19.99;
 
 export const TOOLS: { slug: ToolSlug; name: string; description: string }[] =
   TOOL_SLUGS.map((slug) => ({

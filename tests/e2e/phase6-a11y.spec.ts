@@ -13,6 +13,8 @@ const routes = [
   "/tools/",
   "/tools/ai-token-counter/",
   "/tools/llm-pricing-calculator/",
+  "/tools/mcp-compatibility-checker/",
+  "/tools/mcp-compatibility-checker/result/",
   "/about/",
   "/contact/",
   "/privacy/",

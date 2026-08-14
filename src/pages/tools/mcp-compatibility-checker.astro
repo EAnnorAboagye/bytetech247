@@ -1,0 +1,226 @@
+---
+// Third tool in the /tools/ section, and this site's first paid one — a
+// live compatibility check against the July 2026 MCP spec rewrite (see the
+// "MCP's July 2026 spec rewrite" content pillar this links back to). Unlike
+// the two free tools, this one has no client-side computation: the widget
+// (McpCompatibilityCheckerWidget.astro) only starts a Lemon Squeezy
+// checkout, and the actual live probe runs server-side after payment is
+// confirmed, on /tools/mcp-compatibility-checker/result/ (result.astro).
+// See src/lib/mcp-compatibility-data.ts for the detection rules and
+// worker/index.ts for the payment-gated route handlers.
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import LastVerified from "../../components/LastVerified.astro";
+import FaqSection from "../../components/FaqSection.astro";
+import AdSlot from "../../components/AdSlot.astro";
+import McpCompatibilityCheckerWidget from "../../components/McpCompatibilityCheckerWidget.astro";
+import { siteConfig, getToolName, MCP_CHECK_PRICE_USD } from "../../config";
+import { getLastVerifiedDate } from "../../lib/last-verified";
+import { MCP_SPEC_VERIFIED_DATE, MCP_SPEC_SOURCE } from "../../lib/mcp-compatibility-data";
+import {
+  webApplicationJsonLd,
+  breadcrumbJsonLd,
+  faqJsonLd,
+  absoluteUrl,
+} from "../../lib/json-ld";
+
+const toolName = getToolName("mcp-compatibility-checker");
+const description =
+  "A 7-point live audit of your remote MCP server against the July 2026 spec rewrite — server/discover, header enforcement, deprecated methods, and more. One-time payment, free re-checks for 60 hours.";
+const pageUrl = absoluteUrl("/tools/mcp-compatibility-checker/");
+const lastVerifiedDate = getLastVerifiedDate(
+  "src/pages/tools/mcp-compatibility-checker.astro",
+);
+const specVerifiedDate = new Date(`${MCP_SPEC_VERIFIED_DATE}T00:00:00Z`);
+const priceLabel = `$${MCP_CHECK_PRICE_USD.toFixed(2)}`;
+
+const faq = [
+  {
+    question: "What exactly does this check?",
+    answer:
+      "Seven independent checks against your server, run live: whether it implements server/discover (the RPC every 2026-07-28-compliant server must expose), whether its results carry the required resultType field, whether it's stopped issuing Mcp-Session-Id, whether it actually enforces the required MCP-Protocol-Version/Mcp-Method headers, whether the deprecated ping method has been removed, how it responds to a GET on the MCP endpoint, and whether it still accepts the legacy initialize handshake. Each shows up as its own pass/fail/informational line in your report, not just one overall verdict.",
+  },
+  {
+    question: "Why is this a paid tool when your other two are free?",
+    answer:
+      "This one does real work per request — five live outbound network calls to your server, not a calculation that runs entirely in your browser like the AI Token Counter or LLM Pricing Calculator. The one-time payment covers that, plus the depth of running a real multi-point audit instead of a single check.",
+  },
+  {
+    question: "Do I pay before or after the check runs?",
+    answer:
+      "Before. You pay first through Lemon Squeezy's secure checkout, then the live audit runs immediately after payment is confirmed. There's no free preview and no partial result shown before payment.",
+  },
+  {
+    question: "Can I re-check the same server after fixing an issue?",
+    answer:
+      "Yes — free re-checks for 60 hours after your payment is confirmed. Fix what the report flagged and click \"Re-check this server\" on your result page as many times as you need within that window; no second payment required. After 60 hours, a fresh check requires a new payment.",
+  },
+  {
+    question: "Can I keep a copy of my report?",
+    answer:
+      "Yes — your result page has \"Copy report as Markdown\" and \"Download .md\" buttons, so you can paste it into a pull request or hand it to a teammate instead of it only existing as a webpage.",
+  },
+  {
+    question: "Does this work for local (stdio) MCP servers?",
+    answer:
+      "Not in this first version — only remote servers reachable over HTTP (the Streamable HTTP transport). A local, stdio-only server has no URL for this tool to probe.",
+  },
+  {
+    question: "Where do these compatibility rules come from?",
+    answer: `Directly from the official MCP specification changelog and Streamable HTTP transport page (checked ${specVerifiedDate.toLocaleDateString(
+      "en-US",
+      { year: "numeric", month: "long", day: "numeric", timeZone: "UTC" },
+    )}), not from secondary commentary. See the source link in your result for the exact page.`,
+  },
+];
+
+const breadcrumbItems = [
+  { name: "Home", url: siteConfig.url },
+  { name: "Tools", url: absoluteUrl("/tools/") },
+  { name: toolName, url: pageUrl },
+];
+
+const pageJsonLd = [
+  webApplicationJsonLd({
+    name: toolName,
+    description,
+    url: pageUrl,
+    offer: { price: MCP_CHECK_PRICE_USD.toFixed(2) },
+  }),
+  breadcrumbJsonLd(breadcrumbItems),
+  ...(faq.length > 0 ? [faqJsonLd(faq)] : []),
+];
+---
+
+<BaseLayout
+  title={`${toolName} — ${siteConfig.name}`}
+  description={description}
+  jsonLd={pageJsonLd}
+>
+  <article class="legal tool-page">
+    <nav aria-label="Breadcrumb" class="breadcrumb">
+      <ol class="breadcrumb__list">
+        <li><a href="/">Home</a></li>
+        <li><a href="/tools/">Tools</a></li>
+        <li aria-current="page">{toolName}</li>
+      </ol>
+    </nav>
+
+    <h1>{toolName}</h1>
+    <p class="tool-page__intro">
+      Enter your remote MCP server's URL and get a live 7-point audit against
+      the <a href="/ai-productivity/mcp-2026-07-28-spec-rewrite/"
+        >July 2026 spec rewrite</a
+      > — a full pass/fail breakdown, not just a single verdict, plus concrete
+      upgrade guidance for anything that's out of date. One-time payment of
+      {priceLabel}, free re-checks for 60 hours, no subscription.
+    </p>
+    <LastVerified date={lastVerifiedDate} />
+    <p class="tool-page__pricing-verified">
+      MCP spec rules checked against:{" "}
+      <a href={MCP_SPEC_SOURCE} rel="noopener">the official changelog</a>,{" "}
+      <time datetime={specVerifiedDate.toISOString()}>
+        {
+          specVerifiedDate.toLocaleDateString("en-US", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+            timeZone: "UTC",
+          })
+        }
+      </time>
+    </p>
+
+    <McpCompatibilityCheckerWidget />
+
+    <AdSlot
+      adSlot={siteConfig.adSlots.toolsAfterWidget}
+      minHeight="250px"
+      label="Advertisement"
+    />
+
+    <h2>How this works</h2>
+    <p>
+      This isn't a single yes/no check — it's seven independent probes run
+      live against your server, each testing a distinct, verifiable signal
+      from the 2026-07-28 specification: whether <code>server/discover</code> (the
+      RPC every compliant server must expose) is implemented; whether results
+      carry the required <code>resultType</code> field; whether the server has
+      stopped issuing <code>Mcp-Session-Id</code>; whether it actually enforces
+      the required <code>MCP-Protocol-Version</code>/<code>Mcp-Method</code> headers
+      by rejecting a request that's missing one; whether the deprecated{" "}
+      <code>ping</code> method has been removed; how a GET request to the MCP
+      endpoint behaves; and whether the legacy <code>initialize</code> handshake
+      is still accepted. Every result page shows a pass/fail/informational
+      line for each — a real audit, not a headline you have to take on faith.
+    </p>
+    <p>
+      Payment happens first, through Lemon Squeezy's hosted checkout. The live
+      audit itself only runs after that payment is confirmed — nothing about
+      your server is probed before you pay, and no partial result is shown.
+      Once you have a result, free re-checks are available for 60 hours so
+      you can confirm a fix without paying again.
+    </p>
+
+    <AdSlot
+      adSlot={siteConfig.adSlots.toolsBeforeFaq}
+      minHeight="250px"
+      label="Advertisement"
+    />
+
+    <FaqSection faq={faq} />
+  </article>
+</BaseLayout>
+
+<style>
+  .breadcrumb {
+    margin: calc(var(--spacing) * 2) 0;
+  }
+
+  .breadcrumb__list {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: calc(var(--spacing) * 0.5);
+    margin: 0;
+    padding: 0;
+    font-size: var(--text-xs);
+    color: var(--color-fg-muted);
+  }
+
+  .breadcrumb__list li:not(:last-child)::after {
+    content: "/";
+    margin-left: calc(var(--spacing) * 0.5);
+    color: var(--color-border);
+  }
+
+  .breadcrumb__list a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+    color: var(--color-fg-muted);
+    text-decoration: none;
+  }
+
+  .breadcrumb__list a:hover {
+    color: var(--color-accent);
+  }
+
+  .breadcrumb__list li[aria-current="page"] {
+    color: var(--color-fg);
+  }
+
+  .tool-page__intro {
+    color: var(--color-fg-muted);
+  }
+
+  .tool-page__pricing-verified {
+    font-size: var(--text-xs);
+    color: var(--color-fg-muted);
+    margin: calc(var(--spacing) * 0.5) 0 0;
+  }
+
+  :global(.tool-page :is(h1, .tool-page__intro, .mcp-check)) {
+    margin-top: calc(var(--spacing) * 3);
+  }
+</style>

@@ -1,0 +1,165 @@
+---
+// The MCP Compatibility Checker's interactive core — this site's first
+// paid tool, so unlike TokenCounterWidget.astro / LlmPricingCalculatorWidget
+// .astro this component does no computation itself. It only collects the
+// target server URL and starts a Lemon Squeezy checkout
+// (POST /api/mcp-check/start, worker/index.ts) — the actual live probe only
+// runs after payment is confirmed, on the result page
+// (McpCompatibilityCheckerResult.astro / result.astro), per the plan's
+// "pay first, then the check runs" decision.
+import { MCP_CHECK_PRICE_USD } from "../config";
+
+const priceLabel = `$${MCP_CHECK_PRICE_USD.toFixed(2)}`;
+---
+
+<div class="mcp-check" data-mcp-check>
+  <form data-mcp-check-form>
+    <label class="mcp-check__field" for="mcp-check-url">
+      <span>Your MCP server's URL (Streamable HTTP transport)</span>
+      <input
+        id="mcp-check-url"
+        type="url"
+        inputmode="url"
+        placeholder="https://your-server.example.com/mcp"
+        required
+        data-mcp-check-url
+      />
+    </label>
+    <button type="submit" class="mcp-check__submit" data-mcp-check-submit>
+      Check compatibility — {priceLabel}
+    </button>
+    <p class="mcp-check__note">
+      A 7-point live audit, not just one check. Remote/HTTP servers only in
+      this first version — not stdio-only local servers. You'll be redirected
+      to Lemon Squeezy's secure checkout; the audit runs immediately after
+      payment is confirmed, with free re-checks for 60 hours after.
+    </p>
+    <p class="mcp-check__error" data-mcp-check-error role="alert" hidden></p>
+  </form>
+</div>
+
+<style>
+  .mcp-check {
+    border: 1px solid var(--color-border);
+    border-radius: 0.75rem;
+    padding: calc(var(--spacing) * 4);
+    background-color: var(--color-bg-subtle);
+  }
+
+  .mcp-check__field {
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--spacing) * 1);
+    font-size: var(--text-sm);
+    color: var(--color-fg);
+  }
+
+  .mcp-check__field input {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 100%;
+    padding: calc(var(--spacing) * 1.5) calc(var(--spacing) * 2);
+    border: 1px solid var(--color-border);
+    border-radius: 0.5rem;
+    background-color: var(--color-bg);
+    color: var(--color-fg);
+    font-size: var(--text-base);
+  }
+
+  .mcp-check__field input:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 1px;
+  }
+
+  .mcp-check__submit {
+    margin-top: calc(var(--spacing) * 3);
+    width: 100%;
+    padding: calc(var(--spacing) * 2) calc(var(--spacing) * 3);
+    border: none;
+    border-radius: 0.5rem;
+    background-color: var(--color-accent);
+    color: var(--color-accent-fg);
+    font-size: var(--text-base);
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .mcp-check__submit:disabled {
+    opacity: 0.6;
+    cursor: wait;
+  }
+
+  .mcp-check__submit:hover:not(:disabled) {
+    filter: brightness(1.08);
+  }
+
+  .mcp-check__note {
+    margin-top: calc(var(--spacing) * 2);
+    font-size: var(--text-xs);
+    color: var(--color-fg-muted);
+  }
+
+  .mcp-check__error {
+    margin-top: calc(var(--spacing) * 2);
+    font-size: var(--text-sm);
+    color: var(--color-danger, #c0392b);
+  }
+</style>
+
+<script>
+  // Module-scope so it isn't redeclared on every soft nav, matching every
+  // other widget on this site — though this component has no expensive
+  // lazy-loaded state to preserve, the astro:page-load re-arm requirement
+  // itself still applies: the form element is replaced on client-side
+  // navigation, so listeners must be re-attached every time, not once.
+  function setupMcpCheckWidget() {
+    const root = document.querySelector<HTMLElement>("[data-mcp-check]");
+    if (!root) return;
+
+    const form = root.querySelector<HTMLFormElement>("[data-mcp-check-form]");
+    const urlInput = root.querySelector<HTMLInputElement>(
+      "[data-mcp-check-url]",
+    );
+    const submitButton = root.querySelector<HTMLButtonElement>(
+      "[data-mcp-check-submit]",
+    );
+    const errorEl = root.querySelector<HTMLElement>("[data-mcp-check-error]");
+    if (!form || !urlInput || !submitButton || !errorEl) return;
+
+    const originalLabel = submitButton.textContent ?? "";
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      errorEl.hidden = true;
+      submitButton.disabled = true;
+      submitButton.textContent = "Redirecting to checkout…";
+
+      try {
+        const response = await fetch("/api/mcp-check/start", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url: urlInput.value }),
+        });
+
+        if (!response.ok) {
+          const message = await response.text();
+          throw new Error(message || "Could not start checkout.");
+        }
+
+        const data = (await response.json()) as { checkoutUrl?: string };
+        if (!data.checkoutUrl) {
+          throw new Error("No checkout URL was returned.");
+        }
+        window.location.href = data.checkoutUrl;
+      } catch (err) {
+        errorEl.textContent =
+          err instanceof Error ? err.message : "Something went wrong.";
+        errorEl.hidden = false;
+        submitButton.disabled = false;
+        submitButton.textContent = originalLabel;
+      }
+    });
+  }
+
+  document.addEventListener("astro:page-load", setupMcpCheckWidget);
+</script>

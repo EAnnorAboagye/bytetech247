@@ -173,14 +173,18 @@ export function itemListJsonLd(urls: string[]): JsonLdObject {
 
 /**
  * WebApplication block for a /tools/ page — added for the AI Token
- * Counter but shared by design across every future tool, since all of
- * them are the same schema.org shape: a free, client-side utility. `url`
- * should already be absolute.
+ * Counter but shared by design across every future tool, since most of
+ * them are the same schema.org shape: a client-side utility. `url` should
+ * already be absolute. `offer` defaults to the free $0 offer every tool on
+ * this site used until the MCP Compatibility Checker (the first paid
+ * one) — the two existing free-tool call sites pass no `offer` and are
+ * unaffected by this param existing.
  */
 export function webApplicationJsonLd(opts: {
   name: string;
   description: string;
   url: string;
+  offer?: { price: string; priceCurrency?: string };
 }): JsonLdObject {
   return {
     "@context": "https://schema.org",
@@ -192,8 +196,8 @@ export function webApplicationJsonLd(opts: {
     operatingSystem: "Any (web-based)",
     offers: {
       "@type": "Offer",
-      price: "0",
-      priceCurrency: "USD",
+      price: opts.offer?.price ?? "0",
+      priceCurrency: opts.offer?.priceCurrency ?? "USD",
     },
   };
 }

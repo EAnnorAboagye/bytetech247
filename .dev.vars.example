@@ -21,3 +21,14 @@ PEXELS_API_KEY=your-pexels-api-key-here
 # Cloudflare dashboard.
 CLOUDFLARE_API_TOKEN=your-cloudflare-api-token-here
 CLOUDFLARE_ACCOUNT_ID=your-cloudflare-account-id-here
+
+# MCP Compatibility Checker payment integration (worker/lib/lemon-squeezy.ts).
+# Unlike every entry above, these ARE read by the deployed Worker at request
+# time — they're the first secrets in this file that aren't build/authoring-
+# time-only. Get both from the Lemon Squeezy dashboard: the API key under
+# Settings > API, the webhook secret when creating the webhook endpoint
+# under Settings > Webhooks (point it at
+# https://bytetech247.com/api/lemon-squeezy-webhook, subscribed to
+# order_created).
+LEMON_SQUEEZY_API_KEY=your-lemon-squeezy-api-key-here
+LEMON_SQUEEZY_WEBHOOK_SECRET=your-lemon-squeezy-webhook-secret-here

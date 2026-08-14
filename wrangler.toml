@@ -46,3 +46,13 @@ id = "c7eee15b1c3845f5b5da81c8ac614320"
 [[kv_namespaces]]
 binding = "SESSION_KV"
 id = "e0a5e383f6b14dee8b8c5c14045e614c"
+
+# MCP Compatibility Checker (worker/lib/lemon-squeezy.ts) — the store and
+# variant IDs identify which product a checkout is created against, not
+# sensitive on their own (visible in every hosted checkout URL Lemon
+# Squeezy generates), so they live here as plain vars rather than secrets.
+# LEMON_SQUEEZY_API_KEY and LEMON_SQUEEZY_WEBHOOK_SECRET are real secrets —
+# set via `wrangler secret put`, never here.
+[vars]
+LEMON_SQUEEZY_STORE_ID = "452265"
+LEMON_SQUEEZY_VARIANT_ID = "2019621"
