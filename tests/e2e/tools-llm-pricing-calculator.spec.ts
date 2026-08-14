@@ -113,7 +113,16 @@ test.describe("LLM Pricing Calculator", () => {
       .nth(5)
       .locator("summary")
       .click();
-    await page.getByRole("link", { name: "LLM Pricing Calculator" }).click();
+    // Second tool in TOOL_SLUGS order (ai-token-counter is first) — the
+    // token counter's own test uses .first() for the same reason, scoped
+    // to this nav item rather than a page-wide role query, since the same
+    // link text also appears in the mobile nav's Tools menu.
+    await page
+      .locator(".primary-nav--horizontal > li")
+      .nth(5)
+      .locator(".primary-nav__tag")
+      .nth(1)
+      .click();
     await expect(page).toHaveURL("/tools/llm-pricing-calculator/");
 
     await page.locator("[data-manual-input]").fill("1000000");
