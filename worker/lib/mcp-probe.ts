@@ -332,9 +332,7 @@ async function probeHeaderEnforcement(
 
 // --- Check 4: deprecated ping removal ---
 
-async function probePing(
-  target: URL,
-): Promise<{
+async function probePing(target: URL): Promise<{
   reached: boolean;
   applicable: boolean;
   stillSupported?: boolean;
