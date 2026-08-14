@@ -66,14 +66,20 @@ export async function createCheckout(
     return { error: "Could not reach Lemon Squeezy." };
   }
 
+  // Read as text first, not response.json() directly — a non-JSON error
+  // body (an HTML error page from a proxy/WAF in front of Lemon Squeezy's
+  // API, for example) would otherwise throw before this function ever gets
+  // to see what was actually returned, leaving nothing to debug from.
+  const rawText = await response.text();
   let body: unknown;
   try {
-    body = await response.json();
+    body = JSON.parse(rawText);
   } catch {
+    const snippet = rawText.slice(0, 300).replace(/\s+/g, " ").trim();
     return {
       error: response.ok
         ? "Lemon Squeezy returned an unparseable response."
-        : `Lemon Squeezy checkout creation failed (${response.status}), and the error body wasn't parseable JSON.`,
+        : `Lemon Squeezy checkout creation failed (${response.status}), non-JSON body: ${snippet || "(empty)"}`,
     };
   }
 
