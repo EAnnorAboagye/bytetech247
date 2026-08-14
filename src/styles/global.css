@@ -438,19 +438,30 @@
 @layer overrides {
   /*
    * Shared prose treatment for the six standalone content pages (About,
-   * Contact, Privacy, Terms, Affiliate Disclosure, Editorial Policy) —
-   * every one of them wraps its content in <article class="legal">. This
-   * is the same "give plain text room to breathe" fix already applied to
-   * .article-content in the article template (fluid sizing, serif
-   * headings, real paragraph/list rhythm instead of Tailwind's reset
-   * zeroing every margin) — kept here once instead of copy-pasted into
-   * six separate <style> blocks, which is how it silently never happened
-   * on these pages the first time. A .legal h1 is read the same way an
-   * article headline is, not a UI label, so it gets the same Serif swap
-   * PostCard/homepage headings deliberately don't.
+   * Contact, Privacy, Terms, Affiliate Disclosure, Editorial Policy) plus
+   * both /tools/ pages — every one of them wraps its content in
+   * <article class="legal">. This is the same "give plain text room to
+   * breathe" fix already applied to .article-content in the article
+   * template (fluid sizing, serif headings, real paragraph/list rhythm
+   * instead of Tailwind's reset zeroing every margin) — kept here once
+   * instead of copy-pasted into eight separate <style> blocks, which is
+   * how it silently never happened on these pages the first time. A
+   * .legal h1 is read the same way an article headline is, not a UI
+   * label, so it gets the same Serif swap PostCard/homepage headings
+   * deliberately don't.
+   *
+   * margin-inline: auto is load-bearing, not decorative — confirmed live
+   * (2026-08-14): the parent <main> already centers itself
+   * (max-width: 72rem; margin-inline: auto below), but .legal's own
+   * narrower max-width (42rem) had no auto margins of its own, so it sat
+   * flush left inside that already-centered <main> instead of centering
+   * within it — a real, user-reported bug on every page this class
+   * touches (all six legal pages, not just the two tool pages), not
+   * unique to the pricing calculator.
    */
   .legal {
     max-width: 42rem;
+    margin-inline: auto;
     font-size: clamp(1rem, 0.96rem + 0.2vw, 1.125rem);
     line-height: 1.7;
   }
