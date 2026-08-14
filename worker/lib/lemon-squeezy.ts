@@ -66,17 +66,30 @@ export async function createCheckout(
     return { error: "Could not reach Lemon Squeezy." };
   }
 
-  if (!response.ok) {
-    return {
-      error: `Lemon Squeezy checkout creation failed (${response.status}).`,
-    };
-  }
-
   let body: unknown;
   try {
     body = await response.json();
   } catch {
-    return { error: "Lemon Squeezy returned an unparseable response." };
+    return {
+      error: response.ok
+        ? "Lemon Squeezy returned an unparseable response."
+        : `Lemon Squeezy checkout creation failed (${response.status}), and the error body wasn't parseable JSON.`,
+    };
+  }
+
+  if (!response.ok) {
+    // Surface the real reason instead of just the status code — Lemon
+    // Squeezy's JSON:API error responses carry a real `errors[].detail`
+    // explaining exactly what was rejected (bad store/variant ID, a
+    // malformed attribute, etc.), which is what actually gets debugged
+    // from, not a bare "400".
+    const detail = (body as { errors?: { detail?: string; title?: string }[] })
+      ?.errors?.[0];
+    return {
+      error: `Lemon Squeezy checkout creation failed (${response.status}): ${
+        detail?.detail ?? detail?.title ?? JSON.stringify(body)
+      }`,
+    };
   }
 
   const checkoutUrl = (body as { data?: { attributes?: { url?: unknown } } })
