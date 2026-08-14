@@ -35,17 +35,23 @@ export function getCategoryName(slug: string): string {
 // tool #1. Deliberately a plain array here, not a content collection —
 // 5 items total, no per-item MDX body, exactly what CATEGORIES already
 // covers for the 4 content categories.
-export const TOOL_SLUGS = ["ai-token-counter"] as const;
+export const TOOL_SLUGS = [
+  "ai-token-counter",
+  "llm-pricing-calculator",
+] as const;
 
 export type ToolSlug = (typeof TOOL_SLUGS)[number];
 
 const TOOL_NAMES: Record<ToolSlug, string> = {
   "ai-token-counter": "AI Token Counter",
+  "llm-pricing-calculator": "LLM Pricing Calculator",
 };
 
 const TOOL_DESCRIPTIONS: Record<ToolSlug, string> = {
   "ai-token-counter":
     "Count tokens for GPT, Claude, and Gemini prompts — exact for GPT, clearly-labeled estimates for Claude and Gemini. Runs entirely in your browser.",
+  "llm-pricing-calculator":
+    "Compare real dollar costs across GPT-5.6, Claude Opus 4.7/4.8, and Gemini 3.6 Flash, including each provider's prompt-caching math. Runs entirely in your browser.",
 };
 
 export const TOOLS: { slug: ToolSlug; name: string; description: string }[] =

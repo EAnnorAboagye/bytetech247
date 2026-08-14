@@ -45,6 +45,8 @@ Any integration that never configured caching, because it previously happened fo
 
 Budget for the write side too. The first call that populates a cache breakpoint now costs 1.25x the standard input rate for that portion of the prompt, a real cost that did not exist before. For a workload that reuses a cached prefix many times before it expires, that write cost is easily recovered by the read discount. For a prefix cached once and rarely reused, the write premium may cost more than it saves, especially with a 30-minute minimum lifetime to work around.
 
+The [LLM Pricing Calculator](/tools/llm-pricing-calculator/) has a write-vs-read toggle for exactly this scenario, so you can compare the write-premium cost against the accumulated read savings for your own reuse pattern instead of doing the arithmetic by hand.
+
 <Callout type="info" title="Retention moved too">
   OpenAI separately extended cache retention further, up to 24 hours by default
   in some configurations. See [OpenAI Extends Prompt Cache Retention to 24

@@ -45,6 +45,15 @@ Picking a provider based on caching-friendliness used to be a simple read-discou
 
 Anthropic's two-tier structure adds one more variable: the 1-hour tier's steeper 2x premium can still win over the 5-minute tier's 1.25x if it means paying the write premium once instead of paying the 1.25x premium repeatedly across an hour of reuse. Do that comparison explicitly rather than assuming the cheaper-looking multiplier is actually cheaper for your access pattern.
 
+<Callout type="tip" title="Run this exact comparison on your own numbers">
+  This post's whole argument, that the write premium and cache duration have to
+  be modeled together, not just the read discount, is exactly what the{" "}
+  <a href="/tools/llm-pricing-calculator/">LLM Pricing Calculator</a> computes.
+  Enter your own token counts and reuse pattern and see both providers' real
+  cache-write and cache-read costs side by side, instead of doing this
+  arithmetic by hand.
+</Callout>
+
 <Callout type="info" title="Two related pieces of this reset">
   See [GPT-5.6 Ends Free Prompt-Cache
   Writes](/ai-productivity/gpt-5-6-prompt-cache-write-premium/) and [OpenAI

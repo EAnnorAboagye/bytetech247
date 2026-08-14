@@ -12,6 +12,7 @@ const routes = [
   "/dev-tools/git-worktrees-parallel-feature-development/",
   "/tools/",
   "/tools/ai-token-counter/",
+  "/tools/llm-pricing-calculator/",
   "/about/",
   "/contact/",
   "/privacy/",

@@ -44,6 +44,8 @@ If a request that worked before an Opus 4.7 upgrade now returns HTTP 400, the fa
 
 Once identified, the fix is usually straightforward: drop the redundant parameter rather than fight the error. Sending both `temperature` and `top_p` on the same request was already redundant in most sampling setups, since both control the same underlying randomness in different ways; picking one instead of both often resolves the error without changing the model's actual output behavior much.
 
+If you're also re-checking cost impact while you're in here, the [LLM Pricing Calculator](/tools/llm-pricing-calculator/) covers Claude Opus 4.7's current pricing and caching math separately from this parameter issue.
+
 ## Confirmed version
 
 Sourced from the same third-party technical coverage of Opus 4.7 that reports the tokenizer change, not Anthropic's own materials directly. GA date 2026-04-16 confirmed via GitHub's official changelog, which does not itself confirm this specific claim. Browse more coverage in the [AI Productivity](/ai-productivity) archive, or start from [The 2026 LLM Token & Pricing Reset](/ai-productivity/2026-llm-token-pricing-reset/) hub.

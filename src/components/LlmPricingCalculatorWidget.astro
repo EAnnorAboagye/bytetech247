@@ -1,0 +1,823 @@
+---
+// The LLM Pricing Calculator's interactive core — same self-contained shape
+// as TokenCounterWidget.astro (own markup/style/script). Two input modes:
+// manual token counts (default, no estimation involved) and paste-prompt-
+// text (reuses estimateClaudeTokens/estimateGeminiTokens and the same lazy
+// js-tiktoken loading pattern from TokenCounterWidget.astro — this widget
+// does not fork or duplicate that tokenizer logic).
+//
+// Pricing data lives in src/lib/llm-pricing-data.ts; the cost math lives in
+// src/lib/llm-pricing-math.ts (pure, unit-tested). This component is DOM
+// wiring only — it never hardcodes a dollar figure itself.
+import Badge from "./Badge.astro";
+import { MODEL_VARIANTS } from "../lib/llm-pricing-data";
+
+const gptVariants = MODEL_VARIANTS.filter((v) => v.provider === "openai");
+const claudeVariants = MODEL_VARIANTS.filter((v) => v.provider === "anthropic");
+const geminiCurrent = MODEL_VARIANTS.find(
+  (v) => v.id === "gemini-3.6-flash-2026",
+)!;
+const geminiFuture = MODEL_VARIANTS.find(
+  (v) => v.id === "gemini-3.6-flash-2027",
+)!;
+---
+
+<div class="pricing-calc" data-pricing-calc>
+  <div class="pricing-calc__mode-tabs" role="tablist" aria-label="Input mode">
+    <button
+      type="button"
+      class="pricing-calc__mode-tab"
+      role="tab"
+      aria-selected="true"
+      data-mode-tab
+      data-mode="manual">Enter token counts</button
+    >
+    <button
+      type="button"
+      class="pricing-calc__mode-tab"
+      role="tab"
+      aria-selected="false"
+      data-mode-tab
+      data-mode="paste">Paste prompt text</button
+    >
+  </div>
+
+  <div class="pricing-calc__panel" data-mode-panel data-mode="manual">
+    <div class="pricing-calc__field-row">
+      <label class="pricing-calc__field">
+        <span>Input tokens</span>
+        <input type="number" min="0" step="1" value="1000" data-manual-input />
+      </label>
+      <label class="pricing-calc__field">
+        <span>Output tokens</span>
+        <input type="number" min="0" step="1" value="500" data-manual-output />
+      </label>
+    </div>
+  </div>
+
+  <div class="pricing-calc__panel" data-mode-panel data-mode="paste" hidden>
+    <label for="pricing-calc-paste-input" class="pricing-calc__label">
+      Paste your prompt
+    </label>
+    <textarea
+      id="pricing-calc-paste-input"
+      class="pricing-calc__textarea"
+      rows="6"
+      placeholder="Paste your prompt here…"
+      spellcheck="false"
+      data-paste-input></textarea>
+    <div class="pricing-calc__paste-counts">
+      <p>
+        GPT: <span data-paste-count="gpt">0</span> tokens
+        <Badge intent="accent" size="sm">Exact</Badge>
+        <button
+          type="button"
+          class="pricing-calc__count-anyway"
+          data-count-anyway
+          hidden
+        >
+          Text is long — count anyway
+        </button>
+      </p>
+      <p>
+        Claude: <span data-paste-count="claude">0</span> tokens
+        <Badge intent="neutral" size="sm">Estimated</Badge>
+      </p>
+      <p>
+        Gemini: <span data-paste-count="gemini">0</span> tokens
+        <Badge intent="neutral" size="sm">Estimated</Badge>
+      </p>
+    </div>
+    <label class="pricing-calc__field">
+      <span
+        >Expected output length (tokens) — a response doesn't exist yet to
+        count, so this is a manual estimate</span
+      >
+      <input type="number" min="0" step="1" value="500" data-paste-output />
+    </label>
+    <label class="pricing-calc__checkbox-field">
+      <input type="checkbox" data-claude-adjust-toggle />
+      <span
+        >Adjust Claude's count for its larger tokenizer (pre-4.7 estimates
+        undercount by roughly 30-35%)</span
+      >
+    </label>
+    <label
+      class="pricing-calc__field pricing-calc__field--inline"
+      data-claude-adjust-factor-row
+      hidden
+    >
+      <span>Adjustment factor</span>
+      <input
+        type="number"
+        min="1"
+        max="2"
+        step="0.01"
+        value="1.325"
+        data-claude-adjust-factor
+      />
+    </label>
+  </div>
+
+  <div class="pricing-calc__cache-controls">
+    <label class="pricing-calc__field">
+      <span>Cached tokens (subset of input tokens)</span>
+      <input type="number" min="0" step="1" value="0" data-cached-tokens />
+    </label>
+    <fieldset class="pricing-calc__radio-group">
+      <legend>This call is</legend>
+      <label>
+        <input
+          type="radio"
+          name="pricing-calc-cache-mode"
+          value="read"
+          checked
+          data-cache-mode="read"
+        />
+        Reading from cache
+      </label>
+      <label>
+        <input
+          type="radio"
+          name="pricing-calc-cache-mode"
+          value="write"
+          data-cache-mode="write"
+        />
+        Writing to cache
+      </label>
+    </fieldset>
+  </div>
+
+  <div class="pricing-calc__results">
+    <div class="pricing-calc__card" data-result-card data-provider="gpt">
+      <div class="pricing-calc__card-head">
+        <span class="pricing-calc__provider">OpenAI</span>
+        <select data-gpt-model-select aria-label="GPT-5.6 tier">
+          {
+            gptVariants.map((variant) => (
+              <option
+                value={variant.id}
+                selected={variant.id === "gpt-5.6-sol"}
+              >
+                {variant.label}
+              </option>
+            ))
+          }
+        </select>
+      </div>
+      <dl class="pricing-calc__breakdown">
+        <div>
+          <dt>Input</dt>
+          <dd data-cost="input">$0.00</dd>
+        </div>
+        <div>
+          <dt>Cached</dt>
+          <dd data-cost="cached">$0.00</dd>
+        </div>
+        <div>
+          <dt>Output</dt>
+          <dd data-cost="output">$0.00</dd>
+        </div>
+      </dl>
+      <p class="pricing-calc__total">
+        <span data-cost="total">$0.00</span>
+      </p>
+    </div>
+
+    <div class="pricing-calc__card" data-result-card data-provider="claude">
+      <div class="pricing-calc__card-head">
+        <span class="pricing-calc__provider">Anthropic</span>
+        <select data-claude-model-select aria-label="Claude model">
+          {
+            claudeVariants.map((variant) => (
+              <option
+                value={variant.id}
+                selected={variant.id === "claude-opus-4.8"}
+              >
+                {variant.label}
+              </option>
+            ))
+          }
+        </select>
+      </div>
+      <label class="pricing-calc__tier-select">
+        <span>Cache tier</span>
+        <select data-claude-tier-select aria-label="Claude cache tier">
+          <option value="0">5-minute</option>
+          <option value="1">1-hour</option>
+        </select>
+      </label>
+      <dl class="pricing-calc__breakdown">
+        <div>
+          <dt>Input</dt>
+          <dd data-cost="input">$0.00</dd>
+        </div>
+        <div>
+          <dt>Cached</dt>
+          <dd data-cost="cached">$0.00</dd>
+        </div>
+        <div>
+          <dt>Output</dt>
+          <dd data-cost="output">$0.00</dd>
+        </div>
+      </dl>
+      <p class="pricing-calc__total">
+        <span data-cost="total">$0.00</span>
+      </p>
+    </div>
+
+    <div class="pricing-calc__card" data-result-card data-provider="gemini">
+      <div class="pricing-calc__card-head">
+        <span class="pricing-calc__provider">Google</span>
+      </div>
+      <p class="pricing-calc__caching-note">{geminiCurrent.cachingNote}</p>
+      <dl class="pricing-calc__breakdown">
+        <div>
+          <dt>Input</dt>
+          <dd data-cost="input">$0.00</dd>
+        </div>
+        <div>
+          <dt>Output</dt>
+          <dd data-cost="output">$0.00</dd>
+        </div>
+      </dl>
+      <p class="pricing-calc__total">
+        <span data-cost="total">$0.00</span>
+        <span class="pricing-calc__total-label"
+          >now, through {geminiCurrent.effectiveUntil}</span
+        >
+      </p>
+      <p class="pricing-calc__future-total">
+        <span data-cost="future-total">$0.00</span> from {
+          geminiFuture.effectiveFrom
+        }
+      </p>
+    </div>
+  </div>
+
+  <p class="pricing-calc__summary" data-cheapest-summary aria-live="polite"></p>
+</div>
+
+<style>
+  .pricing-calc {
+    border: 1px solid var(--color-border);
+    border-radius: 0.75rem;
+    padding: calc(var(--spacing) * 4);
+    background-color: var(--color-bg-subtle);
+  }
+
+  .pricing-calc__mode-tabs {
+    display: flex;
+    gap: calc(var(--spacing) * 1);
+    margin-bottom: calc(var(--spacing) * 3);
+  }
+
+  .pricing-calc__mode-tab {
+    padding: calc(var(--spacing) * 1.5) calc(var(--spacing) * 3);
+    border: 1px solid var(--color-border);
+    border-radius: 0.375rem;
+    background-color: var(--color-bg);
+    color: var(--color-fg-muted);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .pricing-calc__mode-tab[aria-selected="true"] {
+    background-color: var(--color-accent);
+    color: var(--color-accent-fg);
+    border-color: var(--color-accent);
+  }
+
+  .pricing-calc__panel {
+    margin-bottom: calc(var(--spacing) * 3);
+  }
+
+  .pricing-calc__field {
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--spacing) * 0.5);
+    font-size: var(--text-sm);
+    color: var(--color-fg);
+    font-weight: 600;
+  }
+
+  .pricing-calc__field input,
+  .pricing-calc__field select {
+    font-weight: 400;
+    padding: calc(var(--spacing) * 1) calc(var(--spacing) * 1.5);
+    border: 1px solid var(--color-border);
+    border-radius: 0.375rem;
+    background-color: var(--color-bg);
+    color: var(--color-fg);
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+  }
+
+  .pricing-calc__field--inline {
+    margin-top: calc(var(--spacing) * 2);
+  }
+
+  .pricing-calc__field-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+    gap: calc(var(--spacing) * 3);
+  }
+
+  .pricing-calc__label {
+    display: block;
+    font-weight: 600;
+    font-size: var(--text-sm);
+    color: var(--color-fg);
+    margin-bottom: calc(var(--spacing) * 1.5);
+  }
+
+  .pricing-calc__textarea {
+    width: 100%;
+    min-height: 8rem;
+    padding: calc(var(--spacing) * 2);
+    border: 1px solid var(--color-border);
+    border-radius: 0.5rem;
+    background-color: var(--color-bg);
+    color: var(--color-fg);
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    line-height: 1.6;
+    resize: vertical;
+  }
+
+  .pricing-calc__paste-counts {
+    margin-top: calc(var(--spacing) * 2);
+    font-size: var(--text-sm);
+    color: var(--color-fg-muted);
+  }
+
+  .pricing-calc__paste-counts p {
+    display: flex;
+    align-items: center;
+    gap: calc(var(--spacing) * 1);
+    margin: calc(var(--spacing) * 0.5) 0;
+  }
+
+  .pricing-calc__count-anyway {
+    padding: calc(var(--spacing) * 0.5) calc(var(--spacing) * 1.5);
+    border: 1px solid var(--color-accent);
+    border-radius: 0.375rem;
+    background: none;
+    color: var(--color-accent);
+    font-size: var(--text-xs);
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .pricing-calc__checkbox-field {
+    display: flex;
+    align-items: flex-start;
+    gap: calc(var(--spacing) * 1.5);
+    margin-top: calc(var(--spacing) * 3);
+    font-size: var(--text-sm);
+    color: var(--color-fg-muted);
+  }
+
+  .pricing-calc__checkbox-field input {
+    margin-top: 0.2em;
+  }
+
+  .pricing-calc__cache-controls {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+    gap: calc(var(--spacing) * 3);
+    padding: calc(var(--spacing) * 3);
+    border: 1px solid var(--color-border);
+    border-radius: 0.5rem;
+    background-color: var(--color-bg);
+    margin-bottom: calc(var(--spacing) * 4);
+  }
+
+  .pricing-calc__radio-group {
+    border: none;
+    padding: 0;
+    margin: 0;
+    font-size: var(--text-sm);
+  }
+
+  .pricing-calc__radio-group legend {
+    font-weight: 600;
+    color: var(--color-fg);
+    margin-bottom: calc(var(--spacing) * 1);
+    padding: 0;
+  }
+
+  .pricing-calc__radio-group label {
+    display: flex;
+    align-items: center;
+    gap: calc(var(--spacing) * 1);
+    color: var(--color-fg-muted);
+  }
+
+  .pricing-calc__results {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+    gap: calc(var(--spacing) * 3);
+  }
+
+  .pricing-calc__card {
+    border: 1px solid var(--color-border);
+    border-radius: 0.5rem;
+    padding: calc(var(--spacing) * 3);
+    background-color: var(--color-bg);
+  }
+
+  .pricing-calc__card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: calc(var(--spacing) * 1);
+    margin-bottom: calc(var(--spacing) * 2);
+  }
+
+  .pricing-calc__provider {
+    font-weight: 600;
+    color: var(--color-fg);
+  }
+
+  .pricing-calc__tier-select {
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--spacing) * 0.5);
+    font-size: var(--text-xs);
+    color: var(--color-fg-muted);
+    margin-bottom: calc(var(--spacing) * 2);
+  }
+
+  .pricing-calc__caching-note {
+    font-size: var(--text-xs);
+    color: var(--color-fg-muted);
+    margin: 0 0 calc(var(--spacing) * 2);
+  }
+
+  .pricing-calc__breakdown {
+    margin: 0;
+    font-size: var(--text-xs);
+    color: var(--color-fg-muted);
+  }
+
+  .pricing-calc__breakdown div {
+    display: flex;
+    justify-content: space-between;
+    padding: calc(var(--spacing) * 0.5) 0;
+  }
+
+  .pricing-calc__total {
+    margin: calc(var(--spacing) * 2) 0 0;
+    font-family: var(--font-mono);
+    font-size: var(--text-2xl);
+    font-weight: 700;
+    color: var(--color-fg);
+  }
+
+  .pricing-calc__total-label {
+    display: block;
+    font-family: var(--font-body);
+    font-size: var(--text-xs);
+    font-weight: 400;
+    color: var(--color-fg-muted);
+  }
+
+  .pricing-calc__future-total {
+    margin: calc(var(--spacing) * 1) 0 0;
+    font-size: var(--text-xs);
+    color: var(--color-fg-muted);
+  }
+
+  .pricing-calc__summary {
+    margin: calc(var(--spacing) * 4) 0 0;
+    font-weight: 600;
+    color: var(--color-fg);
+    text-align: center;
+  }
+</style>
+
+<script>
+  import type { Tiktoken } from "js-tiktoken/lite";
+  import {
+    estimateClaudeTokens,
+    estimateGeminiTokens,
+  } from "../lib/token-estimate";
+  import { calculateCost } from "../lib/llm-pricing-math";
+  import { getModelVariant } from "../lib/llm-pricing-data";
+
+  // Same constraint as TokenCounterWidget.astro: no Web Worker available
+  // (this site's CSP has no worker-src/blob:), so a huge paste pauses live
+  // GPT encoding behind a manual "count anyway" button instead.
+  const INPUT_LENGTH_CAP = 20_000;
+  const DEBOUNCE_MS = 200;
+
+  // Memoized across soft navigations, same shape as TokenCounterWidget's
+  // own tiktokenPromise — this is a separate promise/download from that
+  // widget's, not shared (see the implementation plan's note on this as a
+  // deliberately deferred optimization, not a correctness issue).
+  let tiktokenPromise: Promise<Tiktoken> | null = null;
+  function loadTiktoken(): Promise<Tiktoken> {
+    if (!tiktokenPromise) {
+      tiktokenPromise = Promise.all([
+        import("js-tiktoken/lite"),
+        import("js-tiktoken/ranks/cl100k_base"),
+      ]).then(([{ Tiktoken }, { default: rank }]) => new Tiktoken(rank));
+    }
+    return tiktokenPromise;
+  }
+
+  function formatCost(value: number): string {
+    return `$${value.toFixed(value < 1 ? 4 : 2)}`;
+  }
+
+  function setupPricingCalculator() {
+    const root = document.querySelector<HTMLElement>("[data-pricing-calc]");
+    if (!root) return;
+
+    const modeTabs =
+      root.querySelectorAll<HTMLButtonElement>("[data-mode-tab]");
+    const modePanels = root.querySelectorAll<HTMLElement>("[data-mode-panel]");
+    const manualInput = root.querySelector<HTMLInputElement>(
+      "[data-manual-input]",
+    );
+    const manualOutput = root.querySelector<HTMLInputElement>(
+      "[data-manual-output]",
+    );
+    const pasteInput =
+      root.querySelector<HTMLTextAreaElement>("[data-paste-input]");
+    const pasteOutput = root.querySelector<HTMLInputElement>(
+      "[data-paste-output]",
+    );
+    const pasteCounts = {
+      gpt: root.querySelector<HTMLElement>('[data-paste-count="gpt"]'),
+      claude: root.querySelector<HTMLElement>('[data-paste-count="claude"]'),
+      gemini: root.querySelector<HTMLElement>('[data-paste-count="gemini"]'),
+    };
+    const countAnyway = root.querySelector<HTMLButtonElement>(
+      "[data-count-anyway]",
+    );
+    const claudeAdjustToggle = root.querySelector<HTMLInputElement>(
+      "[data-claude-adjust-toggle]",
+    );
+    const claudeAdjustFactorRow = root.querySelector<HTMLElement>(
+      "[data-claude-adjust-factor-row]",
+    );
+    const claudeAdjustFactor = root.querySelector<HTMLInputElement>(
+      "[data-claude-adjust-factor]",
+    );
+    const cachedTokensInput = root.querySelector<HTMLInputElement>(
+      "[data-cached-tokens]",
+    );
+    const cacheModeRadios =
+      root.querySelectorAll<HTMLInputElement>("[data-cache-mode]");
+    const gptModelSelect = root.querySelector<HTMLSelectElement>(
+      "[data-gpt-model-select]",
+    );
+    const claudeModelSelect = root.querySelector<HTMLSelectElement>(
+      "[data-claude-model-select]",
+    );
+    const claudeTierSelect = root.querySelector<HTMLSelectElement>(
+      "[data-claude-tier-select]",
+    );
+    const summaryEl = root.querySelector<HTMLElement>(
+      "[data-cheapest-summary]",
+    );
+
+    if (
+      !manualInput ||
+      !manualOutput ||
+      !pasteInput ||
+      !pasteOutput ||
+      !cachedTokensInput ||
+      !gptModelSelect ||
+      !claudeModelSelect ||
+      !claudeTierSelect ||
+      !summaryEl
+    )
+      return;
+
+    let mode: "manual" | "paste" = "manual";
+    let pasteGptCount = 0;
+    let pasteClaudeCount = 0;
+    let pasteGeminiCount = 0;
+
+    function isCacheWrite(): boolean {
+      return (
+        [...cacheModeRadios].find((radio) => radio.checked)?.dataset
+          .cacheMode === "write"
+      );
+    }
+
+    function getInputTokens(): number {
+      if (mode === "paste") return pasteGptCount;
+      return Number(manualInput!.value);
+    }
+
+    function getOutputTokens(): number {
+      if (mode === "paste") return Number(pasteOutput!.value);
+      return Number(manualOutput!.value);
+    }
+
+    function getClaudeInputTokens(): number {
+      if (mode !== "paste") return Number(manualInput!.value);
+      const adjust = claudeAdjustToggle?.checked;
+      const factor = adjust ? Number(claudeAdjustFactor?.value ?? 1.325) : 1;
+      return Math.round(pasteClaudeCount * factor);
+    }
+
+    function getGeminiInputTokens(): number {
+      if (mode === "paste") return pasteGeminiCount;
+      return Number(manualInput!.value);
+    }
+
+    function renderCard(
+      card: Element,
+      variant: ReturnType<typeof getModelVariant>,
+      inputTokens: number,
+      outputTokens: number,
+      cachedTokens: number,
+      cacheTierIndex: number | null,
+    ) {
+      if (!variant) return 0;
+      const result = calculateCost(variant, {
+        inputTokens,
+        outputTokens,
+        cachedTokens,
+        cacheTierIndex,
+        isCacheWrite: isCacheWrite(),
+      });
+      const inputEl = card.querySelector('[data-cost="input"]');
+      const cachedEl = card.querySelector('[data-cost="cached"]');
+      const outputEl = card.querySelector('[data-cost="output"]');
+      const totalEl = card.querySelector('[data-cost="total"]');
+      if (inputEl) inputEl.textContent = formatCost(result.inputCost);
+      if (cachedEl) cachedEl.textContent = formatCost(result.cachedCost);
+      if (outputEl) outputEl.textContent = formatCost(result.outputCost);
+      if (totalEl) totalEl.textContent = formatCost(result.totalCost);
+      return result.totalCost;
+    }
+
+    function recalculate() {
+      const cachedTokens = Number(cachedTokensInput!.value);
+      const outputTokens = getOutputTokens();
+
+      const gptCard = root!.querySelector('[data-provider="gpt"]')!;
+      const gptTotal = renderCard(
+        gptCard,
+        getModelVariant(gptModelSelect!.value),
+        getInputTokens(),
+        outputTokens,
+        cachedTokens,
+        0,
+      );
+
+      const claudeCard = root!.querySelector('[data-provider="claude"]')!;
+      const claudeTotal = renderCard(
+        claudeCard,
+        getModelVariant(claudeModelSelect!.value),
+        getClaudeInputTokens(),
+        outputTokens,
+        cachedTokens,
+        Number(claudeTierSelect!.value),
+      );
+
+      const geminiCard = root!.querySelector('[data-provider="gemini"]')!;
+      const geminiInputTokens = getGeminiInputTokens();
+      const geminiTotal = renderCard(
+        geminiCard,
+        getModelVariant("gemini-3.6-flash-2026"),
+        geminiInputTokens,
+        outputTokens,
+        0,
+        null,
+      );
+      const futureResult = calculateCost(
+        getModelVariant("gemini-3.6-flash-2027")!,
+        {
+          inputTokens: geminiInputTokens,
+          outputTokens,
+          cachedTokens: 0,
+          cacheTierIndex: null,
+          isCacheWrite: isCacheWrite(),
+        },
+      );
+      const futureTotalEl = geminiCard.querySelector(
+        '[data-cost="future-total"]',
+      );
+      if (futureTotalEl)
+        futureTotalEl.textContent = formatCost(futureResult.totalCost);
+
+      const totals: { label: string; total: number }[] = [
+        { label: "GPT-5.6", total: gptTotal },
+        { label: "Claude", total: claudeTotal },
+        { label: "Gemini 3.6 Flash", total: geminiTotal },
+      ];
+      const cheapest = totals.reduce((min, cur) =>
+        cur.total < min.total ? cur : min,
+      );
+      const mostExpensive = totals.reduce((max, cur) =>
+        cur.total > max.total ? cur : max,
+      );
+      if (cheapest.total === mostExpensive.total) {
+        summaryEl!.textContent = "";
+      } else {
+        const diff = mostExpensive.total - cheapest.total;
+        summaryEl!.textContent = `${cheapest.label} is cheapest here — ${formatCost(diff)} less than ${mostExpensive.label} for these numbers.`;
+      }
+    }
+
+    function switchMode(newMode: "manual" | "paste") {
+      mode = newMode;
+      modeTabs.forEach((tab) => {
+        tab.setAttribute("aria-selected", String(tab.dataset.mode === newMode));
+      });
+      modePanels.forEach((panel) => {
+        panel.hidden = panel.dataset.mode !== newMode;
+      });
+      recalculate();
+    }
+
+    modeTabs.forEach((tab) => {
+      tab.addEventListener("click", () => {
+        switchMode(tab.dataset.mode as "manual" | "paste");
+      });
+    });
+
+    async function updatePasteGptCount(text: string, force = false) {
+      if (text.length === 0) {
+        pasteGptCount = 0;
+        if (pasteCounts.gpt) pasteCounts.gpt.textContent = "0";
+        if (countAnyway) countAnyway.hidden = true;
+        recalculate();
+        return;
+      }
+      if (text.length > INPUT_LENGTH_CAP && !force) {
+        if (pasteCounts.gpt) pasteCounts.gpt.textContent = "—";
+        if (countAnyway) countAnyway.hidden = false;
+        return;
+      }
+      if (countAnyway) countAnyway.hidden = true;
+      try {
+        const tokenizer = await loadTiktoken();
+        if (pasteInput!.value !== text) return;
+        pasteGptCount = tokenizer.encode(text).length;
+        if (pasteCounts.gpt)
+          pasteCounts.gpt.textContent = pasteGptCount.toLocaleString();
+        recalculate();
+      } catch {
+        tiktokenPromise = null;
+      }
+    }
+
+    let debounceHandle: ReturnType<typeof setTimeout> | undefined;
+    function handlePasteInput() {
+      const text = pasteInput!.value;
+      pasteClaudeCount = estimateClaudeTokens(text);
+      pasteGeminiCount = estimateGeminiTokens(text);
+      if (pasteCounts.claude)
+        pasteCounts.claude.textContent = pasteClaudeCount.toLocaleString();
+      if (pasteCounts.gemini)
+        pasteCounts.gemini.textContent = pasteGeminiCount.toLocaleString();
+      recalculate();
+      clearTimeout(debounceHandle);
+      debounceHandle = setTimeout(
+        () => void updatePasteGptCount(text),
+        DEBOUNCE_MS,
+      );
+    }
+
+    pasteInput.addEventListener("input", handlePasteInput);
+    countAnyway?.addEventListener("click", () => {
+      void updatePasteGptCount(pasteInput!.value, true);
+    });
+
+    claudeAdjustToggle?.addEventListener("change", () => {
+      if (claudeAdjustFactorRow) {
+        claudeAdjustFactorRow.hidden = !claudeAdjustToggle.checked;
+      }
+      recalculate();
+    });
+    claudeAdjustFactor?.addEventListener("input", recalculate);
+
+    [manualInput, manualOutput, pasteOutput, cachedTokensInput].forEach(
+      (el) => {
+        el.addEventListener("input", recalculate);
+      },
+    );
+    [gptModelSelect, claudeModelSelect, claudeTierSelect].forEach((el) => {
+      el.addEventListener("change", recalculate);
+    });
+    cacheModeRadios.forEach((radio) => {
+      radio.addEventListener("change", recalculate);
+    });
+
+    recalculate();
+  }
+
+  // Widget DOM gets replaced on client-side (astro:page-load) navigation —
+  // same re-arm requirement as TokenCounterWidget.astro. tiktokenPromise
+  // stays module-scope so it isn't re-fetched on a soft nav back to this page.
+  document.addEventListener("astro:page-load", setupPricingCalculator);
+</script>

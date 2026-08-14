@@ -27,7 +27,9 @@ Third-party technical coverage reports that Opus 4.7's tokenizer counts up to ro
 
 ## What's actually changing
 
-Third-party technical coverage (byteiota.com, developersdigest.tech) reports that Claude Opus 4.7 shipped an updated tokenizer counting roughly 1.0 to 1.35 times as many tokens, up to about 35% more, for the same input text compared to the tokenizer pre-4.7 models used, a range [Anthropic's own pricing documentation](https://docs.claude.com/en/docs/about-claude/pricing) corroborates in part, describing the newer tokenizer as producing approximately 30% more tokens for the same text.
+Third-party technical coverage (byteiota.com, developersdigest.tech) reports that Claude Opus 4.7 shipped an updated tokenizer counting roughly 1.0 to 1.35 times as many tokens, up to about 35% more, for the same input text compared to the tokenizer pre-4.7 models used. [Anthropic's own pricing documentation](https://docs.claude.com/en/docs/about-claude/pricing) corroborates a smaller figure for the same underlying change:
+
+> The newer tokenizer produces approximately 30% more tokens for the same text.
 
 That claim is explicitly not confirmed by Anthropic's own materials. A direct fetch of Anthropic's official GitHub changelog announcing Opus 4.7's general availability (github.blog/changelog/2026-04-16-claude-opus-4-7-is-generally-available, dated 2026-04-16) contains no mention of a tokenizer or token-count change anywhere, only general performance claims. Stating that gap plainly matters more here than almost anywhere else in this series: a wrong number repeated with confidence does more damage than an honest "unconfirmed."
 
@@ -49,7 +51,10 @@ That claim is explicitly not confirmed by Anthropic's own materials. A direct fe
   doesn't publish a client-side tokenizer. If the 35% claim matters to your
   budget, compare the <code>input_tokens</code> field in a real Messages API
   response against your own prior numbers rather than relying on any estimate,
-  including this site's.
+  including this site's. The{" "}
+  <a href="/tools/llm-pricing-calculator/">LLM Pricing Calculator</a> has a
+  toggle for this exact adjustment, so you can see the dollar impact of the 35%
+  claim directly instead of just the token-count difference.
 </Callout>
 
 ## Confirmed version

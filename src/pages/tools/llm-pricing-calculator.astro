@@ -1,0 +1,292 @@
+---
+// Second tool in the /tools/ section, companion to the AI Token Counter —
+// turns a token count into an actual dollar-cost comparison across
+// GPT-5.6, Claude Opus 4.7/4.8, and Gemini 3.6 Flash, including each
+// provider's own (structurally different) prompt-caching discount/premium
+// math. See LlmPricingCalculatorWidget.astro for the interactive part,
+// src/lib/llm-pricing-data.ts for the pricing figures themselves, and
+// src/lib/llm-pricing-math.ts for the pure cost calculation.
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import LastVerified from "../../components/LastVerified.astro";
+import FaqSection from "../../components/FaqSection.astro";
+import AdSlot from "../../components/AdSlot.astro";
+import LlmPricingCalculatorWidget from "../../components/LlmPricingCalculatorWidget.astro";
+import { siteConfig, getToolName } from "../../config";
+import { getLastVerifiedDate } from "../../lib/last-verified";
+import {
+  MODEL_VARIANTS,
+  PRICING_DATA_VERIFIED_DATE,
+} from "../../lib/llm-pricing-data";
+import {
+  webApplicationJsonLd,
+  breadcrumbJsonLd,
+  faqJsonLd,
+  absoluteUrl,
+} from "../../lib/json-ld";
+
+const toolName = getToolName("llm-pricing-calculator");
+const description =
+  "Compare real dollar costs across GPT-5.6, Claude Opus 4.7/4.8, and Gemini 3.6 Flash for your own token counts, including each provider's prompt-caching math.";
+const pageUrl = absoluteUrl("/tools/llm-pricing-calculator/");
+const lastVerifiedDate = getLastVerifiedDate(
+  "src/pages/tools/llm-pricing-calculator.astro",
+);
+// Distinct from lastVerifiedDate above on purpose — that's when this page
+// file was last edited, not when the dollar figures themselves were last
+// checked against each provider's live pricing page. Those two dates
+// already drifted apart once on this site (see gemini-3-6-flash-output-
+// tokens-price-cut, which cited a 2027 price as current) — kept as two
+// separate, explicit dates here rather than one that can silently go stale.
+const pricingVerifiedDate = new Date(`${PRICING_DATA_VERIFIED_DATE}T00:00:00Z`);
+
+const faq = [
+  {
+    question: "Is this pulling live prices from OpenAI, Anthropic, or Google?",
+    answer:
+      "No. None of the three providers publish a public, unauthenticated pricing API, and this tool runs entirely in your browser with no backend — so the figures are a bundled snapshot, checked against each provider's own pricing page as of the date shown above, not a live feed. Re-check against the source links below before a real budgeting decision.",
+  },
+  {
+    question: "Why does Gemini show two different prices?",
+    answer:
+      "Gemini 3.6 Flash's price is scheduled to change on 2027-01-01 (confirmed directly on Google's own pricing page). Showing both the current and future figure side by side, rather than picking one, is deliberate — this exact site previously published the future price as if it were current in an earlier post, and got it wrong. Both numbers are shown so that mistake can't repeat here.",
+  },
+  {
+    question: "Why is Claude's caching structured differently from GPT-5.6's?",
+    answer:
+      "Because the providers actually built it differently, not because this tool is simplifying anything. OpenAI uses one flat cache-write premium and read discount. Anthropic offers two distinct cache tiers (5-minute and 1-hour) with different write premiums. Google confirms caching exists on Gemini but does not publish an exact discount rate anywhere in its documentation, so this tool uses standard pricing for Gemini until one is confirmed rather than guessing at a number.",
+  },
+  {
+    question: "What does the Claude tokenizer adjustment do?",
+    answer:
+      "It only applies in paste-text mode. Claude's tokenizer (since Opus 4.7) counts roughly 30-35% more tokens than older models for the same text, but this tool's Claude estimate is a generic character-based approximation, not Claude's real tokenizer. The adjustment toggle multiplies that estimate by an editable factor (1.325 by default, the midpoint of the reported range) to correct for the gap. It's not applied in manual-number mode, since that mode assumes you already typed in a real, Claude-accurate count.",
+  },
+  {
+    question: "Does my prompt text get sent anywhere?",
+    answer:
+      "No. All calculation happens locally in your browser, the same as the AI Token Counter. Nothing you type or paste is uploaded, logged, or stored.",
+  },
+];
+
+const breadcrumbItems = [
+  { name: "Home", url: siteConfig.url },
+  { name: "Tools", url: absoluteUrl("/tools/") },
+  { name: toolName, url: pageUrl },
+];
+
+const pageJsonLd = [
+  webApplicationJsonLd({ name: toolName, description, url: pageUrl }),
+  breadcrumbJsonLd(breadcrumbItems),
+  ...(faq.length > 0 ? [faqJsonLd(faq)] : []),
+];
+---
+
+<BaseLayout
+  title={`${toolName} — ${siteConfig.name}`}
+  description={description}
+  jsonLd={pageJsonLd}
+>
+  <article class="legal tool-page">
+    <nav aria-label="Breadcrumb" class="breadcrumb">
+      <ol class="breadcrumb__list">
+        <li><a href="/">Home</a></li>
+        <li><a href="/tools/">Tools</a></li>
+        <li aria-current="page">{toolName}</li>
+      </ol>
+    </nav>
+
+    <h1>{toolName}</h1>
+    <p class="tool-page__intro">
+      Enter token counts, or paste a prompt and let this tool estimate them, and
+      see a real side-by-side dollar comparison across GPT-5.6, Claude Opus
+      4.7/4.8, and Gemini 3.6 Flash — including each provider's own
+      prompt-caching discount and premium math, which is structured differently
+      across all three.
+    </p>
+    <LastVerified date={lastVerifiedDate} />
+    <p class="tool-page__pricing-verified">
+      Pricing data checked:{" "}
+      <time datetime={pricingVerifiedDate.toISOString()}>
+        {
+          pricingVerifiedDate.toLocaleDateString("en-US", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+            timeZone: "UTC",
+          })
+        }
+      </time>
+    </p>
+
+    <LlmPricingCalculatorWidget />
+
+    <AdSlot
+      adSlot={siteConfig.adSlots.toolsAfterWidget}
+      minHeight="250px"
+      label="Advertisement"
+    />
+
+    <h2>How this works</h2>
+    <p>
+      Enter your input and output token counts directly, or switch to paste mode
+      and let this tool estimate them from real prompt text — the GPT estimate
+      uses the same <a href="https://github.com/openai/tiktoken" rel="noopener"
+        >tiktoken</a
+      > client-side tokenizer as the <a href="/tools/ai-token-counter/"
+        >AI Token Counter</a
+      >, and Claude/Gemini use the same character-based estimates. Since a
+      response doesn't exist yet at prompt-composition time, output length in
+      paste mode is always a manual number, not something this tool can count
+      for you.
+    </p>
+    <p>
+      Each provider's caching controls match how that provider actually built
+      caching, not a forced-common shape: OpenAI's single tier applies one write
+      premium and one read discount; Anthropic's two tiers (5- minute, 1-hour)
+      price writes differently depending which one you pick; Gemini's card shows
+      a note instead of a toggle, because Google confirms caching exists but
+      hasn't published an exact discount rate to calculate against.
+    </p>
+
+    <h2>Pricing reference</h2>
+    <div
+      class="tool-page__table-wrap"
+      role="region"
+      aria-label="Model pricing comparison"
+      tabindex="0"
+    >
+      <table class="tool-page__table">
+        <thead>
+          <tr>
+            <th scope="col">Model</th>
+            <th scope="col">Provider</th>
+            <th scope="col">Input / 1M tokens</th>
+            <th scope="col">Output / 1M tokens</th>
+            <th scope="col">Caching</th>
+          </tr>
+        </thead>
+        <tbody>
+          {
+            MODEL_VARIANTS.map((variant) => (
+              <tr>
+                <td>{variant.label}</td>
+                <td>
+                  {variant.provider === "openai"
+                    ? "OpenAI"
+                    : variant.provider === "anthropic"
+                      ? "Anthropic"
+                      : "Google"}
+                </td>
+                <td>${variant.inputPerMillion.toFixed(2)}</td>
+                <td>${variant.outputPerMillion.toFixed(2)}</td>
+                <td>
+                  {variant.cacheTiers.length > 0
+                    ? `${variant.cacheTiers.length} tier${variant.cacheTiers.length > 1 ? "s" : ""}`
+                    : variant.cachingNote
+                      ? "Confirmed, rate unpublished"
+                      : "None confirmed"}
+                </td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </div>
+    <p class="tool-page__table-note">
+      Sourced directly from each provider's own pricing page as of the "Pricing
+      data checked" date above — see the individual posts in the{" "}
+      <a href="/ai-productivity/2026-llm-token-pricing-reset/"
+        >2026 LLM Token &amp; Pricing Reset</a
+      > series for the full research and sourcing behind these figures.
+    </p>
+
+    <AdSlot
+      adSlot={siteConfig.adSlots.toolsBeforeFaq}
+      minHeight="250px"
+      label="Advertisement"
+    />
+
+    <FaqSection faq={faq} />
+  </article>
+</BaseLayout>
+
+<style>
+  .breadcrumb {
+    margin: calc(var(--spacing) * 2) 0;
+  }
+
+  .breadcrumb__list {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: calc(var(--spacing) * 0.5);
+    margin: 0;
+    padding: 0;
+    font-size: var(--text-xs);
+    color: var(--color-fg-muted);
+  }
+
+  .breadcrumb__list li:not(:last-child)::after {
+    content: "/";
+    margin-left: calc(var(--spacing) * 0.5);
+    color: var(--color-border);
+  }
+
+  .breadcrumb__list a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+    color: var(--color-fg-muted);
+    text-decoration: none;
+  }
+
+  .breadcrumb__list a:hover {
+    color: var(--color-accent);
+  }
+
+  .breadcrumb__list li[aria-current="page"] {
+    color: var(--color-fg);
+  }
+
+  .tool-page__intro {
+    color: var(--color-fg-muted);
+  }
+
+  .tool-page__pricing-verified {
+    font-size: var(--text-xs);
+    color: var(--color-fg-muted);
+    margin: calc(var(--spacing) * 0.5) 0 0;
+  }
+
+  :global(.tool-page :is(h1, .tool-page__intro, .pricing-calc)) {
+    margin-top: calc(var(--spacing) * 3);
+  }
+
+  .tool-page__table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin: calc(var(--spacing) * 4) 0 calc(var(--spacing) * 1);
+  }
+
+  .tool-page__table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--text-sm);
+  }
+
+  .tool-page__table th,
+  .tool-page__table td {
+    border: 1px solid var(--color-border);
+    padding: var(--spacing) calc(var(--spacing) * 2);
+    text-align: left;
+  }
+
+  .tool-page__table tbody tr:nth-child(even) {
+    background-color: var(--color-bg-subtle);
+  }
+
+  .tool-page__table-note {
+    font-size: var(--text-xs);
+    color: var(--color-fg-muted);
+  }
+</style>
