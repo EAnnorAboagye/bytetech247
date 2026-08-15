@@ -8,7 +8,7 @@ export const GET: APIRoute = async () => {
     (a, b) => b.data.date.valueOf() - a.data.date.valueOf(),
   );
 
-  const body = buildRssFeed({
+  const body = await buildRssFeed({
     title: siteConfig.name,
     description: siteConfig.description,
     feedUrl: `${siteConfig.url}/rss.xml`,

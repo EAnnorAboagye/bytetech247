@@ -17,7 +17,7 @@ export const GET: APIRoute = async ({ params }) => {
     await getCollection("blog", (post) => post.data.category === category)
   ).sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
 
-  const body = buildRssFeed({
+  const body = await buildRssFeed({
     title: `${siteConfig.name} — ${categoryName}`,
     description: `${categoryName} posts on ${siteConfig.name}.`,
     feedUrl: `${siteConfig.url}/${category}/rss.xml`,

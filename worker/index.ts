@@ -145,6 +145,18 @@ const CONTENT_SIGNAL = "search=yes, ai-input=yes, ai-train=yes";
 
 const ARTICLE_PATH = /^\/([a-z-]+)\/([a-z0-9-]+)\/?$/;
 
+// Every real static-asset extension this site actually serves (public/,
+// generated /_astro/ build output, and the dynamic .xml/.txt/.md routes) —
+// an explicit allowlist, not a generic "ends in a dot plus alphanumerics"
+// heuristic. That generic version matched a real, publishable slug shape
+// on this exact site: a post about a specific version, e.g.
+// /dev-tools/upgrade-to-python-3.12, has ".12" as its last dot-suffix and
+// would have silently skipped the trailing-slash redirect below —
+// un-fixing the exact duplicate-content problem the redirect exists for,
+// for any slug that happens to end in a version number.
+const STATIC_ASSET_EXTENSION =
+  /\.(xml|txt|md|png|jpe?g|webp|avif|svg|ico|css|js|json|woff2?|ttf)$/i;
+
 // Every HTML page that has a real, already-published markdown counterpart
 // — the homepage's is the sitewide llms.txt index (src/pages/llms.txt.ts),
 // every article's is its own [category]/[slug].md route (src/pages/
@@ -268,6 +280,38 @@ export default {
           headers,
         });
       }
+    }
+
+    // Every internal link/canonical/sitemap URL this site generates carries
+    // a trailing slash, but nothing previously enforced that at the edge —
+    // a request that arrives without one (an old backlink, a manually typed
+    // URL) still resolved fine via Astro's default trailingSlash "ignore"
+    // mode, serving the same content at two different URLs with no
+    // canonicalizing redirect between either, a latent duplicate-content
+    // risk. Excludes /api/* (dynamic routes, never content pages), any
+    // path whose last segment has a file extension (static assets —
+    // .xml/.txt/.md/.png/... should never gain a trailing slash), and
+    // non-GET/HEAD requests (a redirect response body isn't meaningful for
+    // a state-changing request, and every /api/* route is POST/GET on an
+    // exact path anyway).
+    //
+    // Deliberately placed *after* the markdown-negotiation branch above,
+    // not before it: ARTICLE_PATH's own `\/?$` makes the trailing slash
+    // optional specifically so an Accept: text/markdown request to an
+    // article URL without one still gets a real markdown response.
+    // Redirecting first — confirmed live in review — would intercept that
+    // exact request shape with a bare 301 before content negotiation ever
+    // ran, silently breaking it for any client that doesn't auto-follow
+    // redirects (redirect: "manual" is common for scrapers/HEAD probes).
+    if (
+      (request.method === "GET" || request.method === "HEAD") &&
+      !url.pathname.startsWith("/api/") &&
+      !url.pathname.endsWith("/") &&
+      !STATIC_ASSET_EXTENSION.test(url.pathname)
+    ) {
+      const target = new URL(url);
+      target.pathname = `${url.pathname}/`;
+      return Response.redirect(target.toString(), 301);
     }
 
     const response = await env.ASSETS.fetch(request);
