@@ -37,16 +37,18 @@ const href = `/${post.data.category}/${post.id}/`;
 <div class="post-card-wrapper" data-category={post.data.category}>
   <Card as="article" padding="none" class="post-card">
     <a href={href} class="post-card__link">
-      <Picture
-        src={post.data.coverImage}
-        alt={post.data.coverImageAlt}
-        widths={[640]}
-        formats={["avif", "webp"]}
-        loading={eager ? "eager" : "lazy"}
-        class="post-card__cover"
-      />
+      <div class="post-card__cover-wrap">
+        <Picture
+          src={post.data.coverImage}
+          alt={post.data.coverImageAlt}
+          widths={[640]}
+          formats={["avif", "webp"]}
+          loading={eager ? "eager" : "lazy"}
+          class="post-card__cover"
+        />
+        <span class="post-card__badge">{categoryName}</span>
+      </div>
       <div class="post-card__body">
-        <p class="post-card__category">{categoryName}</p>
         <h3 class="post-card__title">{post.data.title}</h3>
         <p class="post-card__description">{post.data.description}</p>
         <p class="post-card__meta">
@@ -107,10 +109,36 @@ const href = `/${post.data.category}/${post.id}/`;
     text-decoration: none;
   }
 
+  .post-card__cover-wrap {
+    position: relative;
+  }
+
   .post-card__cover {
     width: 100%;
     aspect-ratio: 16 / 9;
     object-fit: cover;
+  }
+
+  /* A solid category-colored badge directly on the thumbnail — every cover
+     image on this site shares the same dark terminal-screenshot template,
+     so nothing in the image itself tells two cards apart at a glance. This
+     puts the one piece of real per-card color (the category accent,
+     already used for the thin top edge) where the eye actually lands
+     first, instead of only in a small text label below the fold of the
+     image. */
+  .post-card__badge {
+    position: absolute;
+    top: calc(var(--spacing) * 1.5);
+    left: calc(var(--spacing) * 1.5);
+    padding: calc(var(--spacing) * 0.5) calc(var(--spacing) * 1.25);
+    border-radius: 999px;
+    background-color: var(--card-accent, var(--color-accent));
+    color: var(--color-accent-fg);
+    font-size: var(--text-xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.25);
   }
 
   .post-card__body {
@@ -119,14 +147,6 @@ const href = `/${post.data.category}/${post.id}/`;
     flex-direction: column;
     gap: calc(var(--spacing) * 1.5);
     padding: calc(var(--spacing) * 3);
-  }
-
-  .post-card__category {
-    font-size: var(--text-xs);
-    font-weight: 600;
-    color: var(--card-accent, var(--color-accent));
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
   }
 
   .post-card__title {

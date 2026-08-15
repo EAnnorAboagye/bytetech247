@@ -17,8 +17,17 @@ const allPosts = (await getCollection("blog")).sort(
   (a, b) => b.data.date.valueOf() - a.data.date.valueOf(),
 );
 
-const [heroPost, ...secondaryPosts] = allPosts;
-const recentPosts = allPosts.slice(0, 6);
+// Popular and Recent used to be overlapping windows into the same handful
+// of latest posts (Popular = allPosts[1..4], Recent = allPosts[0..5], so
+// every "Popular" post was also shown in "Recent" a few inches below it —
+// wasted homepage real estate on posts a visitor already scrolled past).
+// Treating the homepage as one continuous chronological stream instead —
+// hero, then Popular, then Recent picks up exactly where Popular left off
+// — means every post shown below the hero is genuinely different from the
+// last section.
+const [heroPost, ...rest] = allPosts;
+const popularPosts = rest.slice(0, 4);
+const recentPosts = rest.slice(4, 10);
 
 // Same reasoning as [category]/[slug].astro's preloadCover: point the
 // preload hint at the exact asset HeroTile's own <Picture> requests
@@ -34,17 +43,19 @@ const heroPreload = heroPost
     })
   : undefined;
 
-// Recent already covers heroPost (recentPosts[0] === heroPost) and is the
-// one section on this page that's genuinely "a list of these N posts" in
-// the ItemList sense — the per-category sections below repeat many of the
-// same posts, so listing those too would just duplicate entries rather
-// than describe anything new.
-const recentItemListJsonLd = itemListJsonLd(
-  recentPosts.map((post) => absoluteUrl(`/${post.data.category}/${post.id}/`)),
+// Describes the hero + Popular + Recent stream together — the one
+// genuinely non-overlapping "these N posts, in order" list on this page.
+// The per-category sections below repeat many of the same posts under a
+// different lens (by category, not by recency), so listing those too would
+// just duplicate entries rather than describe anything new.
+const streamItemListJsonLd = itemListJsonLd(
+  [heroPost, ...popularPosts, ...recentPosts]
+    .filter((post): post is NonNullable<typeof post> => Boolean(post))
+    .map((post) => absoluteUrl(`/${post.data.category}/${post.id}/`)),
 );
 ---
 
-<BaseLayout jsonLd={recentItemListJsonLd} preloadImage={heroPreload?.src}>
+<BaseLayout jsonLd={streamItemListJsonLd} preloadImage={heroPreload?.src}>
   {
     /* gutter="0" — <main> (BaseLayout) already applies its own
        padding-inline as a safety net for pages that don't wrap in
@@ -57,7 +68,7 @@ const recentItemListJsonLd = itemListJsonLd(
     <Stack space="12" class="homepage-sections">
       <AdSlot
         adSlot={siteConfig.adSlots.homepageHeader}
-        minHeight="100px"
+        size="banner"
         label="Advertisement"
       />
 
@@ -80,12 +91,12 @@ const recentItemListJsonLd = itemListJsonLd(
 
       <AdSlot
         adSlot={siteConfig.adSlots.homepageAfterHero}
-        minHeight="250px"
+        size="rectangle"
         label="Advertisement"
       />
 
       {
-        heroPost && secondaryPosts.length > 0 && (
+        heroPost && popularPosts.length > 0 && (
           <section aria-label="Popular posts">
             <h2 class="section-heading">Popular</h2>
             <Grid
@@ -93,7 +104,7 @@ const recentItemListJsonLd = itemListJsonLd(
               space="4"
               class="homepage-secondary-grid"
             >
-              {secondaryPosts.slice(0, 4).map((post) => (
+              {popularPosts.map((post) => (
                 <PostCard post={post} eager />
               ))}
             </Grid>
@@ -103,7 +114,7 @@ const recentItemListJsonLd = itemListJsonLd(
 
       <AdSlot
         adSlot={siteConfig.adSlots.homepageAfterFeatured}
-        minHeight="250px"
+        size="rectangle"
         label="Advertisement"
       />
 
@@ -124,7 +135,7 @@ const recentItemListJsonLd = itemListJsonLd(
 
       <AdSlot
         adSlot={siteConfig.adSlots.homepageAfterRecent}
-        minHeight="250px"
+        size="rectangle"
         label="Advertisement"
       />
 
@@ -169,7 +180,7 @@ const recentItemListJsonLd = itemListJsonLd(
                 adSlot={
                   siteConfig.adSlots[CATEGORY_HOMEPAGE_AD_SLOT[category.slug]]
                 }
-                minHeight="250px"
+                size="rectangle"
                 label="Advertisement"
                 class={isLast ? "homepage-last-ad" : undefined}
               />
@@ -196,6 +207,24 @@ const recentItemListJsonLd = itemListJsonLd(
 
   .homepage-secondary-grid {
     margin-top: calc(var(--spacing) * 4);
+  }
+
+  /* Six stacked, identically-shaped 3-column grids in a row (Popular,
+     Recent, then one per category) reads as one long repeating pattern
+     rather than distinct sections. Giving Popular's own first card a
+     larger, wider treatment breaks that rhythm right after the hero,
+     without touching Recent or the category grids below — those stay
+     uniform on purpose, since "here are N more, evenly weighted" is the
+     correct shape for a plain list. */
+  @media (min-width: 64rem) {
+    .homepage-secondary-grid > :global(.post-card-wrapper:first-child) {
+      grid-column: span 2;
+    }
+
+    .homepage-secondary-grid
+      > :global(.post-card-wrapper:first-child .post-card__title) {
+      font-size: var(--text-xl);
+    }
   }
 
   .section-heading {
