@@ -5,11 +5,32 @@
 // configured in src/config.ts (siteConfig.adSlots) — a missing slot ID
 // is a safe no-op, not a broken <ins> tag with an empty data-ad-slot.
 //
-// The reserved minHeight is load-bearing, not decorative: it's set
-// before the AdSense script has run, so the layout never shifts once the
+// The reserved space is load-bearing, not decorative: it's set before
+// the AdSense script has run, so the layout never shifts once the
 // creative (or nothing, if unfilled) loads in — the one part of "premium
 // ad placement" that's also a real Core Web Vitals (CLS) fix.
 //
+// `size`, not a raw `minHeight` string — every call site previously
+// passed a fixed pixel value as an inline `--ad-slot-min-height` custom
+// property, which (being an inline style) always outranks anything a
+// later stylesheet media query tries to set on the same property, so
+// there was structurally no way to reserve a shorter box on a narrow
+// viewport than on desktop. `size` instead selects a `data-ad-size`
+// bucket (see the `.ad-slot[data-ad-size=...]` rules in global.css),
+// letting the actual min-height live entirely in CSS, where a `@media`
+// override can win normally. Google's own auto/full-width-responsive
+// format renders a shorter unit on a narrow container than a wide one,
+// so a single fixed reservation across every breakpoint either wastes
+// space on mobile or risks looking oversized once real ads are live.
+//
+// Three buckets, matching every size actually used sitewide:
+// - "banner": slim top-of-page (homepageHeader, articleHeader)
+// - "rectangle": the default, most in-content/in-article placements
+// - "tower": the desktop-only sidebar — its parent is display:none below
+//   the tablet breakpoint (.post-sidebar in [slug].astro), so this one
+//   never actually needs its own mobile/tablet value
+type AdSize = "banner" | "rectangle" | "tower";
+
 // .ad-slot/.ad-slot__label styling and the adsbygoogle activation script
 // both live globally now (global.css's `components` layer, and
 // BaseLayout.astro respectively) instead of in this component's own
@@ -33,14 +54,14 @@ import { siteConfig } from "../config";
 
 interface Props {
   adSlot: string;
-  minHeight: string;
+  size: AdSize;
   label?: string;
   class?: string;
 }
 
 const {
   adSlot,
-  minHeight,
+  size,
   label = "Advertisement",
   class: className,
 } = Astro.props;
@@ -49,10 +70,7 @@ const adClient = siteConfig.adsensePublisherId;
 
 {
   adSlot && (
-    <div
-      class:list={["ad-slot", className]}
-      style={`--ad-slot-min-height: ${minHeight}`}
-    >
+    <div class:list={["ad-slot", className]} data-ad-size={size}>
       <p class="ad-slot__label">{label}</p>
       <ins
         class="adsbygoogle"

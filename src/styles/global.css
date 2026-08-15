@@ -408,9 +408,14 @@
    * match against on that markup. One definition here covers both the
    * Astro-rendered instances (homepage, sidebar) and the rehype-
    * inserted ones (in-article) identically.
+   *
+   * shadow-card + the same border-radius Card.astro uses (rounded-lg,
+   * 0.5rem) — every other box on this site with this footprint (post
+   * cards, the hero tile, tool cards) carries that same soft elevation;
+   * a flat, shadowless box here was the one surface that visibly didn't
+   * match the rest of the design system once a real ad renders into it.
    */
   .ad-slot {
-    min-height: var(--ad-slot-min-height);
     display: flex;
     flex-direction: column;
     gap: calc(var(--spacing) * 1);
@@ -418,6 +423,7 @@
     border: 1px solid var(--color-border);
     border-radius: 0.5rem;
     background-color: var(--color-bg-subtle);
+    box-shadow: var(--shadow-card);
   }
 
   .ad-slot__label {
@@ -432,6 +438,38 @@
 
   .ad-slot ins {
     flex: 1;
+  }
+
+  /*
+   * Reserved height per size bucket, not a per-instance inline value —
+   * see AdSlot.astro's own comment for why that structural change is
+   * what actually makes a breakpoint override possible. Mobile gets a
+   * shorter "rectangle" reservation than tablet/desktop: Google's
+   * auto/full-width-responsive format renders a shorter unit in a
+   * narrower container, so reserving the same 250px on a 360px-wide
+   * phone as on a 1200px-wide desktop either wastes vertical space
+   * around a smaller ad or undersizes it once real creative is live.
+   * "banner" and "tower" don't vary by breakpoint: banner is already
+   * slim at every width, and tower's parent is hidden below the tablet
+   * breakpoint (.post-sidebar in [slug].astro) so it never renders on a
+   * narrow viewport regardless.
+   */
+  .ad-slot[data-ad-size="banner"] {
+    min-height: 100px;
+  }
+
+  .ad-slot[data-ad-size="rectangle"] {
+    min-height: 120px;
+  }
+
+  .ad-slot[data-ad-size="tower"] {
+    min-height: 600px;
+  }
+
+  @media (min-width: 40rem) {
+    .ad-slot[data-ad-size="rectangle"] {
+      min-height: 250px;
+    }
   }
 }
 

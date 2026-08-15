@@ -17,13 +17,13 @@
 // AdSense's own ad-density policy and directly fights the premium,
 // distraction-free reading experience this same redesign is for.
 
-function buildAdSlotNode(slot, minHeight, label, adClient) {
+function buildAdSlotNode(slot, size, label, adClient) {
   return {
     type: "element",
     tagName: "div",
     properties: {
       className: ["ad-slot"],
-      style: `--ad-slot-min-height: ${minHeight}`,
+      "data-ad-size": size,
     },
     children: [
       {
@@ -53,7 +53,7 @@ export function rehypeInArticleAds({
   adClient,
   afterQuickAnswerSlot,
   h2Slot,
-  minHeight = "250px",
+  size = "rectangle",
   label = "Advertisement",
 } = {}) {
   return (tree) => {
@@ -69,7 +69,7 @@ export function rehypeInArticleAds({
         tree.children.splice(
           quickAnswerIndex + 1,
           0,
-          buildAdSlotNode(afterQuickAnswerSlot, minHeight, label, adClient),
+          buildAdSlotNode(afterQuickAnswerSlot, size, label, adClient),
         );
       }
     }
@@ -97,7 +97,7 @@ export function rehypeInArticleAds({
         tree.children.splice(
           insertBeforeIndices[k],
           0,
-          buildAdSlotNode(h2Slot, minHeight, label, adClient),
+          buildAdSlotNode(h2Slot, size, label, adClient),
         );
       }
     }

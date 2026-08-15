@@ -1,0 +1,73 @@
+---
+// Shared by every page that renders a breadcrumb trail (articles, tool
+// pages) — previously hand-rolled independently in three different .astro
+// files with byte-identical markup and CSS, a maintenance trap where the
+// next change had three places to update in lockstep instead of one.
+//
+// Takes the exact same { name, url }[] array each call site already builds
+// for breadcrumbJsonLd() (build-spec.md §10: visible and structured data
+// must agree) — the last item's url is only used by the JSON-LD caller;
+// this component always renders the last item as the current page
+// (aria-current, not a link), regardless of whether it has a url.
+interface Props {
+  items: { name: string; url: string }[];
+}
+
+const { items } = Astro.props;
+---
+
+<nav aria-label="Breadcrumb" class="breadcrumb">
+  <ol class="breadcrumb__list">
+    {
+      items.map((item, index) =>
+        index === items.length - 1 ? (
+          <li aria-current="page">{item.name}</li>
+        ) : (
+          <li>
+            <a href={item.url}>{item.name}</a>
+          </li>
+        ),
+      )
+    }
+  </ol>
+</nav>
+
+<style>
+  .breadcrumb {
+    margin: calc(var(--spacing) * 2) 0;
+  }
+
+  .breadcrumb__list {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: calc(var(--spacing) * 0.5);
+    margin: 0;
+    padding: 0;
+    font-size: var(--text-xs);
+    color: var(--color-fg-muted);
+  }
+
+  .breadcrumb__list li:not(:last-child)::after {
+    content: "/";
+    margin-left: calc(var(--spacing) * 0.5);
+    color: var(--color-border);
+  }
+
+  .breadcrumb__list a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+    color: var(--color-fg-muted);
+    text-decoration: none;
+  }
+
+  .breadcrumb__list a:hover {
+    color: var(--color-accent);
+  }
+
+  .breadcrumb__list li[aria-current="page"] {
+    color: var(--color-fg);
+  }
+</style>

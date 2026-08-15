@@ -11,6 +11,7 @@ import LastVerified from "../../components/LastVerified.astro";
 import FaqSection from "../../components/FaqSection.astro";
 import AdSlot from "../../components/AdSlot.astro";
 import LlmPricingCalculatorWidget from "../../components/LlmPricingCalculatorWidget.astro";
+import Breadcrumbs from "../../components/Breadcrumbs.astro";
 import { siteConfig, getToolName } from "../../config";
 import { getLastVerifiedDate } from "../../lib/last-verified";
 import {
@@ -86,13 +87,7 @@ const pageJsonLd = [
   jsonLd={pageJsonLd}
 >
   <article class="legal tool-page">
-    <nav aria-label="Breadcrumb" class="breadcrumb">
-      <ol class="breadcrumb__list">
-        <li><a href="/">Home</a></li>
-        <li><a href="/tools/">Tools</a></li>
-        <li aria-current="page">{toolName}</li>
-      </ol>
-    </nav>
+    <Breadcrumbs items={breadcrumbItems} />
 
     <h1>{toolName}</h1>
     <p class="tool-page__intro">
@@ -121,7 +116,7 @@ const pageJsonLd = [
 
     <AdSlot
       adSlot={siteConfig.adSlots.toolsAfterWidget}
-      minHeight="250px"
+      size="rectangle"
       label="Advertisement"
     />
 
@@ -201,7 +196,7 @@ const pageJsonLd = [
 
     <AdSlot
       adSlot={siteConfig.adSlots.toolsBeforeFaq}
-      minHeight="250px"
+      size="rectangle"
       label="Advertisement"
     />
 
@@ -210,44 +205,6 @@ const pageJsonLd = [
 </BaseLayout>
 
 <style>
-  .breadcrumb {
-    margin: calc(var(--spacing) * 2) 0;
-  }
-
-  .breadcrumb__list {
-    list-style: none;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: calc(var(--spacing) * 0.5);
-    margin: 0;
-    padding: 0;
-    font-size: var(--text-xs);
-    color: var(--color-fg-muted);
-  }
-
-  .breadcrumb__list li:not(:last-child)::after {
-    content: "/";
-    margin-left: calc(var(--spacing) * 0.5);
-    color: var(--color-border);
-  }
-
-  .breadcrumb__list a {
-    display: inline-flex;
-    align-items: center;
-    min-height: 24px;
-    color: var(--color-fg-muted);
-    text-decoration: none;
-  }
-
-  .breadcrumb__list a:hover {
-    color: var(--color-accent);
-  }
-
-  .breadcrumb__list li[aria-current="page"] {
-    color: var(--color-fg);
-  }
-
   .tool-page__intro {
     color: var(--color-fg-muted);
   }

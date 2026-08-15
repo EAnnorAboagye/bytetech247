@@ -4,6 +4,7 @@ import type { InferGetStaticPropsType } from "astro";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import Grid from "../../components/layout/Grid.astro";
 import TOCSidebar from "../../components/TOCSidebar.astro";
+import Breadcrumbs from "../../components/Breadcrumbs.astro";
 import PostCard from "../../components/PostCard.astro";
 import TagPill from "../../components/TagPill.astro";
 import Figure from "../../components/Figure.astro";
@@ -147,19 +148,13 @@ const nextInSeries =
   <div class="post-layout">
     <AdSlot
       adSlot={siteConfig.adSlots.articleHeader}
-      minHeight="100px"
+      size="banner"
       label="Advertisement"
       class="post-header-ad"
     />
 
     <article class="post-article">
-      <nav aria-label="Breadcrumb" class="breadcrumb">
-        <ol class="breadcrumb__list">
-          <li><a href="/">Home</a></li>
-          <li><a href={`/${post.data.category}/`}>{categoryName}</a></li>
-          <li aria-current="page">{post.data.title}</li>
-        </ol>
-      </nav>
+      <Breadcrumbs items={breadcrumbItems} />
 
       <h1>{post.data.title}</h1>
       <p class="post-meta">
@@ -207,7 +202,7 @@ const nextInSeries =
 
       <AdSlot
         adSlot={siteConfig.adSlots.articleAfterImage}
-        minHeight="250px"
+        size="rectangle"
         label="Advertisement"
         class="post-ad"
       />
@@ -244,7 +239,7 @@ const nextInSeries =
                  slot, not a hidden empty box. */}
             <AdSlot
               adSlot={siteConfig.adSlots.articleAfterPillarCluster}
-              minHeight="250px"
+              size="rectangle"
               label="Advertisement"
               class="post-ad"
             />
@@ -268,7 +263,7 @@ const nextInSeries =
 
       <AdSlot
         adSlot={siteConfig.adSlots.articleBeforeAuthorBio}
-        minHeight="250px"
+        size="rectangle"
         label="Advertisement"
         class="post-ad"
       />
@@ -313,7 +308,7 @@ const nextInSeries =
           <>
             <AdSlot
               adSlot={siteConfig.adSlots.articleAfterTags}
-              minHeight="250px"
+              size="rectangle"
               label="Advertisement"
               class="post-ad"
             />
@@ -334,7 +329,7 @@ const nextInSeries =
           <>
             <AdSlot
               adSlot={siteConfig.adSlots.articleBeforeRecent}
-              minHeight="250px"
+              size="rectangle"
               label="Advertisement"
               class="post-ad"
             />
@@ -355,7 +350,7 @@ const nextInSeries =
       <TOCSidebar headings={headings} />
       <AdSlot
         adSlot={siteConfig.adSlots.articleSidebar}
-        minHeight="600px"
+        size="tower"
         label="Advertisement"
         class="post-sidebar__ad"
       />
@@ -434,7 +429,7 @@ const nextInSeries =
    * reading measure for the parts a reader actually reads, full width
    * for the parts a reader scans.
    */
-  .breadcrumb,
+  :global(.breadcrumb),
   h1,
   .post-meta,
   :global(.post-share),
@@ -472,9 +467,19 @@ const nextInSeries =
 
   /* Every AdSlot instance in the article flow (after image, after
      pillar/cluster, before author bio, after tags, before recent) shares
-     this one spacing rule — same margin whichever position it's in. */
+     this one spacing rule — same margin whichever position it's in. A
+     4rem gap around each one is fine on desktop, but a long article can
+     carry five of these down the page, and 4rem apiece adds up to real
+     scroll distance on a phone screen — same reasoning as
+     .homepage-sections' own mobile tightening in index.astro. */
   :global(.post-ad) {
     margin: calc(var(--spacing) * 8) 0;
+  }
+
+  @media (max-width: 48rem) {
+    :global(.post-ad) {
+      margin: calc(var(--spacing) * 5) 0;
+    }
   }
 
   /* The header ad spans the full .post-layout grid width (article column
@@ -502,44 +507,6 @@ const nextInSeries =
     :global(.toc-inline) {
       display: none;
     }
-  }
-
-  .breadcrumb {
-    margin: calc(var(--spacing) * 2) 0;
-  }
-
-  .breadcrumb__list {
-    list-style: none;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: calc(var(--spacing) * 0.5);
-    margin: 0;
-    padding: 0;
-    font-size: var(--text-xs);
-    color: var(--color-fg-muted);
-  }
-
-  .breadcrumb__list li:not(:last-child)::after {
-    content: "/";
-    margin-left: calc(var(--spacing) * 0.5);
-    color: var(--color-border);
-  }
-
-  .breadcrumb__list a {
-    display: inline-flex;
-    align-items: center;
-    min-height: 24px;
-    color: var(--color-fg-muted);
-    text-decoration: none;
-  }
-
-  .breadcrumb__list a:hover {
-    color: var(--color-accent);
-  }
-
-  .breadcrumb__list li[aria-current="page"] {
-    color: var(--color-fg);
   }
 
   .post-meta {
