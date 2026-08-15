@@ -8,11 +8,22 @@ coverImage: "./cover.jpg"
 coverImageAlt: "A developer working across multiple monitors and a laptop, each showing a different piece of code"
 coverImageCredit:
   { name: "Christina Morillo", url: "https://www.pexels.com/@divinetechygirl" }
+faq:
+  - question: "What's the difference between git worktree and git stash for switching branches?"
+    answer: "git stash saves uncommitted changes so you can switch your one working directory to another branch, then restores them after switching back — a manual save-and-restore cycle every time. git worktree checks out a second branch into its own separate folder, sharing the same .git history, so both branches stay checked out and untouched at once with nothing to stash or pop."
+  - question: "Do git worktrees share node_modules or build output?"
+    answer: "No. Commit history, branches, tags, and remotes are shared instantly across every worktree, but anything outside Git's own tracking (node_modules, build output, .env files) is not. Each worktree needs its own npm install and its own build before it's actually runnable."
+  - question: "Why does a worktree command fail with a 'File exists' error on a .lock file?"
+    answer: "Every worktree still writes to the one shared .git directory, so a sync client (OneDrive, Dropbox, iCloud Drive) racing a git command mid-write can leave a stale index.lock or HEAD.lock file behind. Confirm nothing is actually mid-operation before removing the lock file by hand."
 ---
 
 Every developer knows the interruption: you're mid-feature, half your files are edited, and a teammate needs an urgent fix on `main`. The usual move is `git stash`, switch branches, fix the bug, switch back, `git stash pop`, and hope nothing conflicts. It works, but it's friction you pay every single time context-switching happens, and on a bad day it happens five times before lunch.
 
 `git worktree` removes the friction entirely. Instead of one working directory that can only ever point at one branch, a worktree lets you check out several branches into separate folders at the same time, all sharing the same underlying repository.
+
+## Quick Answer
+
+`git worktree add ../myproject-hotfix main` checks out another branch into its own folder while your current one stays exactly as you left it, sharing one `.git` history across both. Reach for it when an interruption is long enough that losing your place would cost real time; a plain `git stash` is still less typing for a thirty-second fix.
 
 ## What a worktree actually is
 

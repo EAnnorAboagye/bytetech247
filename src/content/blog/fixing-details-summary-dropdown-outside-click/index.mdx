@@ -18,6 +18,10 @@ A native `<details>` element only toggles when you click its own `<summary>`. Cl
 
 This isn't a bug in the browser. It's a real gap between what `<details>` was built for (a simple content disclosure, like a spoiler) and what people actually reach for it to do (a dropdown menu), and the second use case needs code the first one never required.
 
+## Quick Answer
+
+`<details>` only wires up one interaction: toggling via its own `<summary>`. Fix outside-click-to-close by adding a document-wide `click` listener that closes any open `.site-header details[open]` unless the click happened inside that element, plus a `keydown` listener that closes every open one on Escape. No dependency, about ten lines total.
+
 ## Why `<details>` doesn't close on its own
 
 The HTML spec gives `<details>` exactly one interaction: clicking (or pressing Enter/Space on) its `<summary>` toggles the `open` attribute. That's it. There's no concept of "outside" built in, because for a plain collapsible section (an FAQ answer, a spoiler tag), staying open regardless of where else the reader clicks is the _correct_ behavior. A dropdown menu wants the opposite, and the browser has no way to know which one you're building.

@@ -22,6 +22,10 @@ Astro collapses the whitespace between two expressions when they sit on separate
 
 It's easy to miss because the source looks completely normal. The bug only shows up in the rendered output, and by the time a word runs together on the live page, the actual cause is several files and a formatting pass away from where you're looking.
 
+## Quick Answer
+
+Astro 7's `compressHTML: 'jsx'` default trims a line break between two expressions like `{count}` and `{label}` down to nothing, merging the rendered output into `5posts` instead of `5 posts`. Fix it by adding an explicit `{" "}` expression between them, or set `compressHTML: true` in `astro.config.mjs` to restore Astro 6's spacing behavior sitewide.
+
 ## Why Astro does this
 
 Astro's template syntax is JSX-derived, and JSX has a long-standing whitespace rule: text made up of nothing but spaces, tabs, and newlines between two elements or expressions gets trimmed away entirely, not condensed into a single space. That rule exists because indentation whitespace is assumed to be there for readability, not as meaningful content.

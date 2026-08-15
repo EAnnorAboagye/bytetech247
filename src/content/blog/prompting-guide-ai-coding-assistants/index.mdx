@@ -8,9 +8,20 @@ coverImage: "./cover.jpg"
 coverImageAlt: "A person typing on a laptop showing a glowing data readout, in a moody blue-lit setting"
 coverImageCredit:
   { name: "AI25.Studio Studio", url: "https://www.pexels.com/@ai25studioai" }
+faq:
+  - question: "What makes a prompt to an AI coding assistant more effective?"
+    answer: "Specificity. Naming the exact field, file, and existing pattern to follow (\"add a required check to the email field in SignupForm.tsx, following the same Error component the password field already uses\") leaves nothing to guess, where a vague goal like \"add validation to the signup form\" is compatible with a dozen different implementations, some of which will conflict with decisions already made elsewhere in the codebase."
+  - question: "Should I ask an AI coding assistant for a plan before it makes changes?"
+    answer: "For anything touching multiple files or with more than one reasonable approach, yes. Asking it to describe how it would implement the change and which files it would touch first takes about ten seconds to read and catches a wrong assumption before it's baked into fifty lines of code, which is much cheaper than catching it in review."
+  - question: "Do I still need to review code an AI coding assistant writes?"
+    answer: "Yes, every line, the same as you would a pull request from a new teammate. A confident-sounding explanation isn't proof the change is correct: the assistant doesn't know your production incident history or your team's unwritten conventions, so running the tests and checking the diff against the actual requirement is what makes a specific prompt's first draft safe to ship."
 ---
 
 The gap between a frustrating session with an AI coding assistant and a genuinely productive one is rarely the model. It's almost always the prompt. The same assistant that produces a confused, half-working patch from a vague request can produce a clean, correct one from a well-specified request. The technique matters more than most people expect.
+
+## Quick Answer
+
+Name the exact file, field, and existing pattern to follow instead of a vague goal, state constraints up front (no new dependencies, match the existing error-handling style), and ask for a short plan before any change that touches multiple files. Specific prompts produce a better first draft; review is what makes that draft safe to ship.
 
 ## Be specific about the shape of the change
 

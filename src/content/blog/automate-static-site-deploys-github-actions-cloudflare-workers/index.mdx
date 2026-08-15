@@ -9,9 +9,20 @@ coverImage: "./cover.jpg"
 coverImageAlt: "Close-up of a data center server rack, representing automated cloud infrastructure"
 coverImageCredit:
   { name: "panumas nikhomkhai", url: "https://www.pexels.com/@cookiecutter" }
+faq:
+  - question: "What's the difference between Cloudflare Workers Builds and a GitHub Actions deploy workflow?"
+    answer: "Workers Builds connects to your GitHub repo from the Cloudflare dashboard and deploys on every push with no YAML file to write, but it only runs your build command, nothing else. A GitHub Actions workflow needs a file you author yourself, but lets you run any number of steps (tests, lint, an accessibility check) and only deploy if every one of them passes."
+  - question: "How do I scope the Cloudflare API token for a GitHub Actions deploy?"
+    answer: "Generate a token scoped to exactly Workers Scripts:Edit for the account/zone in question, not a broad, all-permissions token, then set it as the CLOUDFLARE_API_TOKEN secret under the repo's Settings -> Secrets and variables -> Actions. A workflow only needs enough access to deploy the one Worker; narrow scope limits the blast radius if the token ever leaks."
+  - question: "Does Cloudflare Workers Builds run tests or lint before deploying?"
+    answer: "No. It runs your configured build command and deploys, full stop. If you want a broken test or a failing lint check to block the deploy rather than just show up in a log afterward, that requires a GitHub Actions workflow you write yourself."
 ---
 
 Running `wrangler deploy` from your own machine works fine for the first week of a project. It stops working the moment you want deploys to happen consistently: from a clean environment, without depending on whoever happens to be at their keyboard, and ideally gated on the build actually passing first. That's what automated deploys solve, and for a static site on Cloudflare Workers there are two reasonable ways to set it up.
+
+## Quick Answer
+
+Cloudflare Workers Builds deploys straight from a dashboard Git connection with zero YAML, on every push, but with no pre-deploy checks beyond the build itself. GitHub Actions needs a workflow file but lets you gate the deploy on tests, lint, or an accessibility check passing first. Start with Workers Builds; move to Actions once a bad deploy reaching production would actually cost you something.
 
 ## Option A: Cloudflare Workers Builds
 

@@ -17,6 +17,10 @@ faq:
 
 You run a post through Google's [Rich Results Test](https://search.google.com/test/rich-results) and the `Article` and `BreadcrumbList` blocks both come back valid, but there's a note sitting under Article: **"Missing field 'author' (optional but recommended)."** The page visibly shows a byline. So why is Google saying the field is missing?
 
+## Quick Answer
+
+Google reads `author` from the page's JSON-LD, not the rendered byline text — a visible "By Jane Doe" and a real `author` property in structured data are unrelated. Fix it by adding an `author` (`Person`, with a `name` and a URL to a real About page) and a `publisher` (`Organization`, with a `name` and a resolvable `logo`) to the `Article` JSON-LD block.
+
 ## Why this happens
 
 A byline you can see on the page and an `author` field in the page's structured data are two unrelated things. Rich results are read from a `<script type="application/ld+json">` block, not from the rendered HTML, so a page can display "By Jane Doe" in plain text while emitting no `author` property in its JSON-LD at all, and the two will never be reconciled automatically. This is exactly what happens on a lot of Astro blogs: the visual layout was built first, structured data was never added, and everything looks correct until you check what Google actually parses.
