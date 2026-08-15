@@ -59,12 +59,7 @@ interface Props {
   class?: string;
 }
 
-const {
-  adSlot,
-  size,
-  label = "Advertisement",
-  class: className,
-} = Astro.props;
+const { adSlot, size, label = "Advertisement", class: className } = Astro.props;
 const adClient = siteConfig.adsensePublisherId;
 ---
 

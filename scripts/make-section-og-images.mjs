@@ -42,7 +42,8 @@ const SECTIONS = [
   {
     slug: "guides-fixes",
     label: "Guides & Fixes",
-    tagline: "The specific bug, the specific error, the fix that actually works.",
+    tagline:
+      "The specific bug, the specific error, the fix that actually works.",
     accent: "#BE6A2E",
   },
   {
