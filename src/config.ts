@@ -18,6 +18,22 @@ const CATEGORY_NAMES: Record<CategorySlug, string> = {
   "guides-fixes": "Guides & Fixes",
 };
 
+// Same descriptive line about.astro already uses per category — reused here
+// (rather than a generic "All {category} posts." boilerplate) as the
+// archive page's own meta description and visible intro, so a search
+// snippet or social share for /dev-tools/ says something a reader can
+// actually act on instead of restating the page's own title back at them.
+const CATEGORY_DESCRIPTIONS: Record<CategorySlug, string> = {
+  "dev-tools":
+    "Editors, CLIs, Git workflows, and the tooling developers reach for every day.",
+  "data-automation":
+    "CI/CD, deploy pipelines, and scripts that remove a manual step from someone's week.",
+  "ai-productivity":
+    "Using AI coding assistants well: prompting, review habits, and where they genuinely help versus where they don't.",
+  "guides-fixes":
+    "The specific bug, the specific error, the fix that isn't in the official docs yet.",
+};
+
 export const CATEGORIES: { slug: CategorySlug; name: string }[] =
   CATEGORY_SLUGS.map((slug) => ({
     slug,
@@ -26,6 +42,13 @@ export const CATEGORIES: { slug: CategorySlug; name: string }[] =
 
 export function getCategoryName(slug: string): string {
   return CATEGORY_NAMES[slug as CategorySlug] ?? slug;
+}
+
+export function getCategoryDescription(slug: string): string {
+  return (
+    CATEGORY_DESCRIPTIONS[slug as CategorySlug] ??
+    `All ${getCategoryName(slug)} posts.`
+  );
 }
 
 // /tools/ section, added 2026-08-11 — same static-list shape as

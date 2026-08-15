@@ -3,7 +3,12 @@ import { getCollection } from "astro:content";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import Grid from "../../components/layout/Grid.astro";
 import PostCard from "../../components/PostCard.astro";
-import { CATEGORIES, getCategoryName, siteConfig } from "../../config";
+import {
+  CATEGORIES,
+  getCategoryName,
+  getCategoryDescription,
+  siteConfig,
+} from "../../config";
 import { collectionPageJsonLd, breadcrumbJsonLd } from "../../lib/json-ld";
 
 export function getStaticPaths() {
@@ -14,7 +19,7 @@ export function getStaticPaths() {
 
 const { category } = Astro.params;
 const categoryName = getCategoryName(category);
-const description = `All ${categoryName} posts.`;
+const description = getCategoryDescription(category);
 
 const posts = (
   await getCollection("blog", (post) => post.data.category === category)
@@ -37,10 +42,12 @@ const jsonLdBlocks = [
 <BaseLayout
   title={`${categoryName} — Archive`}
   description={description}
+  image={`/og-${category}.png`}
   jsonLd={jsonLdBlocks}
 >
   <p><a href="/" class="home-link">Home</a></p>
   <h1>{categoryName}</h1>
+  <p class="category-intro">{description}</p>
 
   {
     posts.length === 0 ? (
@@ -63,6 +70,14 @@ const jsonLdBlocks = [
     display: inline-flex;
     align-items: center;
     min-height: 24px;
+  }
+
+  .category-intro {
+    max-width: 40rem;
+    margin-top: calc(var(--spacing) * 2);
+    color: var(--color-fg-muted);
+    font-size: var(--text-lg);
+    line-height: 1.7;
   }
 
   .section-heading {
