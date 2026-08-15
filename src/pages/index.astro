@@ -26,8 +26,15 @@ const allPosts = (await getCollection("blog")).sort(
 // — means every post shown below the hero is genuinely different from the
 // last section.
 const [heroPost, ...rest] = allPosts;
-const popularPosts = rest.slice(0, 4);
-const recentPosts = rest.slice(4, 10);
+// 5, not 4: desktop gives the first Popular card a 2-column featured span
+// (see .homepage-secondary-grid's CSS below) inside a fixed 3-column
+// desktop grid — 1 double-span card + 4 regular ones is exactly what
+// fills 2 full rows with no leftover gap. The 5th card is hidden below
+// the desktop breakpoint (same nth-child pattern as .responsive-cap-grid
+// elsewhere on this page), so mobile/tablet still show exactly the 4
+// cards they always have.
+const popularPosts = rest.slice(0, 5);
+const recentPosts = rest.slice(5, 11);
 
 // Same reasoning as [category]/[slug].astro's preloadCover: point the
 // preload hint at the exact asset HeroTile's own <Picture> requests
@@ -215,8 +222,30 @@ const streamItemListJsonLd = itemListJsonLd(
      larger, wider treatment breaks that rhythm right after the hero,
      without touching Recent or the category grids below — those stay
      uniform on purpose, since "here are N more, evenly weighted" is the
-     correct shape for a plain list. */
+     correct shape for a plain list.
+
+     Desktop only, locked to a *fixed* 3 columns rather than this page's
+     usual auto-fill/minItemWidth packing — auto-fill's column count
+     varies continuously with viewport width (at this page's own 72rem
+     max content width it actually lands on 4 columns, not 3), and a
+     fluid count can't stay gap-free against a fixed 5-card, one-double-
+     span layout at every width. Confirmed live (2026-08-15): the featured
+     card's 2-column span plus 4 regular cards left a visible empty cell
+     in the grid at browser widths where auto-fill happened to land on 3
+     columns. A fixed 3 columns + 5 posts (1 double + 4 single = 6 cells
+     exactly) fills both rows with no gap at any desktop width, not just
+     the one the bug was noticed at. Mobile/tablet are untouched — they
+     never reach this media query, so they keep the original 4-visible-
+     card, single-column stack exactly as before. */
   @media (min-width: 64rem) {
+    .homepage-secondary-grid {
+      grid-template-columns: repeat(3, 1fr) !important;
+    }
+
+    .homepage-secondary-grid > :global(.post-card-wrapper:nth-child(n + 5)) {
+      display: block;
+    }
+
     .homepage-secondary-grid > :global(.post-card-wrapper:first-child) {
       grid-column: span 2;
     }
@@ -225,6 +254,12 @@ const streamItemListJsonLd = itemListJsonLd(
       > :global(.post-card-wrapper:first-child .post-card__title) {
       font-size: var(--text-xl);
     }
+  }
+
+  /* 5th Popular card stays desktop-only — hidden below 64rem so mobile
+     and tablet keep showing exactly the 4 cards they always have. */
+  .homepage-secondary-grid > :global(.post-card-wrapper:nth-child(n + 5)) {
+    display: none;
   }
 
   .section-heading {
