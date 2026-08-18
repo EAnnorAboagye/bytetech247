@@ -2,12 +2,14 @@
 import BaseLayout from "../layouts/BaseLayout.astro";
 import AuthorBio from "../components/AuthorBio.astro";
 import { siteConfig } from "../config";
+import { personJsonLd } from "../lib/json-ld";
 ---
 
 <BaseLayout
   title={`About — ${siteConfig.name}`}
   description={`About ${siteConfig.name}: ${siteConfig.description}`}
   image="/og-about.png"
+  jsonLd={personJsonLd()}
 >
   <article class="legal">
     <h1>About</h1>

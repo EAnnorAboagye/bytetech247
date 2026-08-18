@@ -44,6 +44,22 @@ function person(): JsonLdObject | undefined {
 }
 
 /**
+ * Standalone Person block for /about/ itself — every article's Article
+ * JSON-LD already points its `author` at this exact URL (person()'s own
+ * `url: absoluteUrl("/about/")` above) as the authority behind the
+ * content, but the page that authority resolves to previously carried no
+ * Person/entity markup of its own to back that up. Reuses the identical
+ * person() the article template already emits, so the two can't drift
+ * apart — just wrapped with its own @context, since this is now a
+ * top-level block rather than a nested `author` value.
+ */
+export function personJsonLd(): JsonLdObject | undefined {
+  const p = person();
+  if (!p) return undefined;
+  return { "@context": "https://schema.org", ...p };
+}
+
+/**
  * Site-wide blocks (WebSite + SearchAction, Organization) — rendered on
  * every page by BaseLayout, not per-template.
  */
