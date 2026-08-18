@@ -240,6 +240,17 @@ const streamItemListJsonLd = itemListJsonLd(
   @media (min-width: 64rem) {
     .homepage-secondary-grid {
       grid-template-columns: repeat(3, 1fr) !important;
+      /* Default grid behavior stretches every item in a row to match its
+         tallest neighbor — with the featured card's 2-column-wide (so
+         ~2x taller at the same 16:9 ratio) image sharing row 1 with one
+         normal-width card, that stretch left the normal card's own
+         body padded out with a large dead void instead of ending at its
+         real content height. Confirmed live (2026-08-18) via screenshot.
+         align-items: start lets each card size to its own content and
+         sit at the top of its grid cell instead — the row-1 neighbor
+         now just ends where its text ends, no forced empty space inside
+         the card itself. */
+      align-items: start;
     }
 
     .homepage-secondary-grid > :global(.post-card-wrapper:nth-child(n + 5)) {
