@@ -55,10 +55,11 @@ export function getCategoryDescription(slug: string): string {
 // CATEGORY_SLUGS/CATEGORIES above, one entry per tool, each targeting a
 // specific researched SEO opportunity; see the AI Token Counter plan for
 // the research behind tool #1. The first two tools are client-side-only;
-// mcp-compatibility-checker (added 2026-08-14) is this site's first paid
-// tool and the first with real server-side logic (payment gating + a live
-// probe in worker/index.ts) — the list itself stays the same shape either
-// way. Deliberately a plain array here, not a content collection — no
+// mcp-compatibility-checker (added 2026-08-14) is the first with real
+// server-side logic (a live probe in worker/index.ts, currently free — see
+// MCP_CHECK_FREE_MODE below — behind the same Lemon Squeezy payment
+// gating the other two never needed) — the list itself stays the same
+// shape either way. Deliberately a plain array here, not a content collection — no
 // per-item MDX body, exactly what CATEGORIES already covers for the 4
 // content categories.
 export const TOOL_SLUGS = [
@@ -81,16 +82,26 @@ const TOOL_DESCRIPTIONS: Record<ToolSlug, string> = {
   "llm-pricing-calculator":
     "Compare real dollar costs across GPT-5.6, Claude Opus 4.7/4.8, and Gemini 3.6 Flash, including each provider's prompt-caching math. Runs entirely in your browser.",
   "mcp-compatibility-checker":
-    "A 7-point live audit of your remote MCP server against the July 2026 spec rewrite, with upgrade guidance for anything that's out of date. Free re-checks for 60 hours.",
+    "A free, 7-point live audit of your remote MCP server against the July 2026 spec rewrite, with upgrade guidance for anything that's out of date.",
 };
 
-// One-time price for the MCP Compatibility Checker — this site's first
-// paid tool (see the two free ones above). Set at $19.99, a deliberate
-// choice over a cheaper impulse-buy price: the goal is a genuinely useful
-// diagnostic worth paying for, not the lowest number that clears checkout
-// friction. Keep this in sync by hand with the actual Lemon Squeezy variant
-// price (worker/lib/lemon-squeezy.ts creates the checkout against that
-// variant directly; there is no live price sync).
+// Temporarily free (2026-08-15) — running with no paywall to build usage and
+// reviews before turning billing back on. This is the single switch: flip
+// to `false` and redeploy to re-enable the $19.99 Lemon Squeezy checkout
+// with zero other code changes anywhere. worker/index.ts's
+// handleMcpCheckStart branches on this constant directly; every page/
+// component below (tool page, widget, result page) reads it too, so the
+// "paid" copy and JSON-LD Offer come back automatically the moment this
+// flips — nothing to hunt down and re-word by hand later.
+export const MCP_CHECK_FREE_MODE = true;
+
+// One-time price for the MCP Compatibility Checker once MCP_CHECK_FREE_MODE
+// is false — this site's first paid tool (see the two free ones above). Set
+// at $19.99, a deliberate choice over a cheaper impulse-buy price: the goal
+// is a genuinely useful diagnostic worth paying for, not the lowest number
+// that clears checkout friction. Keep this in sync by hand with the actual
+// Lemon Squeezy variant price (worker/lib/lemon-squeezy.ts creates the
+// checkout against that variant directly; there is no live price sync).
 export const MCP_CHECK_PRICE_USD = 19.99;
 
 export const TOOLS: { slug: ToolSlug; name: string; description: string }[] =

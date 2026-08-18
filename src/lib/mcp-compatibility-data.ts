@@ -33,6 +33,17 @@
 // llm-pricing-math.ts — so the classification logic is unit-testable
 // without a live network call.
 
+import { MCP_CHECK_FREE_MODE } from "../config";
+
+// Referenced by the two recommendation strings below, which are the only
+// place in this "pure" module that needs to know about pricing at all —
+// they get echoed verbatim into the JSON result and the exported Markdown
+// report, so "available after payment" would be a false statement while
+// MCP_CHECK_FREE_MODE is on.
+const RECHECK_WINDOW_PHRASE = MCP_CHECK_FREE_MODE
+  ? "available for a limited window"
+  : "available for a limited window after payment";
+
 export const MCP_SPEC_VERIFIED_DATE = "2026-08-14";
 
 export const MCP_SPEC_SOURCE =
@@ -319,7 +330,7 @@ export function classifyCompatibility(
         caveats.length > 0
           ? [
               "Work through the failed items in the check list below — each names exactly what's missing.",
-              "Re-run this check (available for a limited window after payment) once you've addressed them to confirm a fully clean result.",
+              `Re-run this check (${RECHECK_WINDOW_PHRASE}) once you've addressed them to confirm a fully clean result.`,
             ]
           : [
               "No action needed for the July 2026 spec rewrite specifically.",
@@ -340,7 +351,7 @@ export function classifyCompatibility(
       }), but that specific error is only ever produced by a server that already implements the 2026-07-28 request/response contract (per the spec's own documented backward-compatibility guidance). This is strong evidence the server is modern, even without a successful discover result — see the full check list below for the rest of the picture.`,
       recommendations: [
         "Check why server/discover itself failed — the request/header contract is understood, but this specific call isn't returning valid discovery data.",
-        "Re-run this check (available for a limited window after payment) once server/discover returns a real result to confirm full compatibility.",
+        `Re-run this check (${RECHECK_WINDOW_PHRASE}) once server/discover returns a real result to confirm full compatibility.`,
       ],
       source: MCP_TRANSPORT_SOURCE,
       checks,

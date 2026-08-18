@@ -15,7 +15,7 @@
 // buttons that build a Markdown summary client-side, entirely from data
 // already on the page — no new endpoint needed for either.
 import BaseLayout from "../../../layouts/BaseLayout.astro";
-import { siteConfig, getToolName } from "../../../config";
+import { siteConfig, getToolName, MCP_CHECK_FREE_MODE } from "../../../config";
 import { absoluteUrl, breadcrumbJsonLd } from "../../../lib/json-ld";
 
 const toolName = getToolName("mcp-compatibility-checker");
@@ -38,9 +38,17 @@ const breadcrumbItems = [
   <article class="legal tool-page">
     <h1>{toolName} — Result</h1>
 
-    <div data-mcp-result>
+    <div data-mcp-result data-free-mode={MCP_CHECK_FREE_MODE}>
       <div data-mcp-result-pending>
-        <p>Confirming your payment… this usually takes a few seconds.</p>
+        <p>
+          {
+            MCP_CHECK_FREE_MODE ? (
+              <>Running your check… this usually takes a few seconds.</>
+            ) : (
+              <>Confirming your payment… this usually takes a few seconds.</>
+            )
+          }
+        </p>
       </div>
 
       <div data-mcp-result-error hidden>
@@ -279,6 +287,7 @@ const breadcrumbItems = [
     const note = root.querySelector<HTMLElement>(
       "[data-mcp-result-recheck-note]",
     )!;
+    const freeMode = root.dataset.freeMode === "true";
 
     if (!currentRecheckAvailableUntil) {
       recheckButton.hidden = true;
@@ -290,8 +299,9 @@ const breadcrumbItems = [
     if (msRemaining <= 0) {
       recheckButton.hidden = true;
       note.hidden = false;
-      note.textContent =
-        "The re-check window for this payment has expired. Start a new check to run it again.";
+      note.textContent = freeMode
+        ? "The re-check window for this result has expired. Start a new check to run it again."
+        : "The re-check window for this payment has expired. Start a new check to run it again.";
       return;
     }
 
@@ -300,7 +310,9 @@ const breadcrumbItems = [
     recheckButton.disabled = false;
     recheckButton.textContent = "Re-check this server";
     note.hidden = false;
-    note.textContent = `Free re-checks available for about ${hoursRemaining} more hour${hoursRemaining === 1 ? "" : "s"} on this payment.`;
+    note.textContent = freeMode
+      ? `Free re-checks available for about ${hoursRemaining} more hour${hoursRemaining === 1 ? "" : "s"}.`
+      : `Free re-checks available for about ${hoursRemaining} more hour${hoursRemaining === 1 ? "" : "s"} on this payment.`;
   }
 
   function showDone(

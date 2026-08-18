@@ -1,20 +1,31 @@
 ---
-// Third tool in the /tools/ section, and this site's first paid one — a
-// live compatibility check against the July 2026 MCP spec rewrite (see the
-// "MCP's July 2026 spec rewrite" content pillar this links back to). Unlike
-// the two free tools, this one has no client-side computation: the widget
-// (McpCompatibilityCheckerWidget.astro) only starts a Lemon Squeezy
-// checkout, and the actual live probe runs server-side after payment is
-// confirmed, on /tools/mcp-compatibility-checker/result/ (result.astro).
-// See src/lib/mcp-compatibility-data.ts for the detection rules and
-// worker/index.ts for the payment-gated route handlers.
+// Third tool in the /tools/ section. A live compatibility check against the
+// July 2026 MCP spec rewrite (see the "MCP's July 2026 spec rewrite"
+// content pillar this links back to). Unlike the two free tools, this one
+// has no client-side computation — the widget
+// (McpCompatibilityCheckerWidget.astro) starts the check server-side, and
+// the actual live probe runs on /tools/mcp-compatibility-checker/result/
+// (result.astro). See src/lib/mcp-compatibility-data.ts for the detection
+// rules and worker/index.ts for the route handlers.
+//
+// MCP_CHECK_FREE_MODE (src/config.ts) is temporarily true — every string on
+// this page that depends on it is written as an if/else against that one
+// constant, not hand-toggled prose, so flipping it back to false and
+// redeploying restores the paid-tool copy (and the JSON-LD Offer price)
+// everywhere on this page automatically. Nothing here to hunt down by hand
+// later.
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import LastVerified from "../../components/LastVerified.astro";
 import FaqSection from "../../components/FaqSection.astro";
 import AdSlot from "../../components/AdSlot.astro";
 import McpCompatibilityCheckerWidget from "../../components/McpCompatibilityCheckerWidget.astro";
 import Breadcrumbs from "../../components/Breadcrumbs.astro";
-import { siteConfig, getToolName, MCP_CHECK_PRICE_USD } from "../../config";
+import {
+  siteConfig,
+  getToolName,
+  MCP_CHECK_PRICE_USD,
+  MCP_CHECK_FREE_MODE,
+} from "../../config";
 import { getLastVerifiedDate } from "../../lib/last-verified";
 import {
   MCP_SPEC_VERIFIED_DATE,
@@ -28,8 +39,9 @@ import {
 } from "../../lib/json-ld";
 
 const toolName = getToolName("mcp-compatibility-checker");
-const description =
-  "A 7-point live audit of your remote MCP server against the July 2026 spec rewrite — server/discover, header enforcement, deprecated methods, and more. One-time payment, free re-checks for 60 hours.";
+const description = MCP_CHECK_FREE_MODE
+  ? "A free, 7-point live audit of your remote MCP server against the July 2026 spec rewrite — server/discover, header enforcement, deprecated methods, and more. No payment, no account."
+  : "A 7-point live audit of your remote MCP server against the July 2026 spec rewrite — server/discover, header enforcement, deprecated methods, and more. One-time payment, free re-checks for 60 hours.";
 const pageUrl = absoluteUrl("/tools/mcp-compatibility-checker/");
 const lastVerifiedDate = getLastVerifiedDate(
   "src/pages/tools/mcp-compatibility-checker.astro",
@@ -43,20 +55,25 @@ const faq = [
     answer:
       "Seven independent checks against your server, run live: whether it implements server/discover (the RPC every 2026-07-28-compliant server must expose), whether its results carry the required resultType field, whether it's stopped issuing Mcp-Session-Id, whether it actually enforces the required MCP-Protocol-Version/Mcp-Method headers, whether the deprecated ping method has been removed, how it responds to a GET on the MCP endpoint, and whether it still accepts the legacy initialize handshake. Each shows up as its own pass/fail/informational line in your report, not just one overall verdict.",
   },
-  {
-    question: "Why is this a paid tool when your other two are free?",
-    answer:
-      "This one does real work per request — five live outbound network calls to your server, not a calculation that runs entirely in your browser like the AI Token Counter or LLM Pricing Calculator. The one-time payment covers that, plus the depth of running a real multi-point audit instead of a single check.",
-  },
-  {
-    question: "Do I pay before or after the check runs?",
-    answer:
-      "Before. You pay first through Lemon Squeezy's secure checkout, then the live audit runs immediately after payment is confirmed. There's no free preview and no partial result shown before payment.",
-  },
+  ...(MCP_CHECK_FREE_MODE
+    ? []
+    : [
+        {
+          question: "Why is this a paid tool when your other two are free?",
+          answer:
+            "This one does real work per request — five live outbound network calls to your server, not a calculation that runs entirely in your browser like the AI Token Counter or LLM Pricing Calculator. The one-time payment covers that, plus the depth of running a real multi-point audit instead of a single check.",
+        },
+        {
+          question: "Do I pay before or after the check runs?",
+          answer:
+            "Before. You pay first through Lemon Squeezy's secure checkout, then the live audit runs immediately after payment is confirmed. There's no free preview and no partial result shown before payment.",
+        },
+      ]),
   {
     question: "Can I re-check the same server after fixing an issue?",
-    answer:
-      'Yes — free re-checks for 60 hours after your payment is confirmed. Fix what the report flagged and click "Re-check this server" on your result page as many times as you need within that window; no second payment required. After 60 hours, a fresh check requires a new payment.',
+    answer: MCP_CHECK_FREE_MODE
+      ? 'Yes — free re-checks for 60 hours after your first result. Fix what the report flagged and click "Re-check this server" on your result page as many times as you need within that window, without re-entering the URL.'
+      : 'Yes — free re-checks for 60 hours after your payment is confirmed. Fix what the report flagged and click "Re-check this server" on your result page as many times as you need within that window; no second payment required. After 60 hours, a fresh check requires a new payment.',
   },
   {
     question: "Can I keep a copy of my report?",
@@ -88,7 +105,9 @@ const pageJsonLd = [
     name: toolName,
     description,
     url: pageUrl,
-    offer: { price: MCP_CHECK_PRICE_USD.toFixed(2) },
+    ...(MCP_CHECK_FREE_MODE
+      ? {}
+      : { offer: { price: MCP_CHECK_PRICE_USD.toFixed(2) } }),
   }),
   breadcrumbJsonLd(breadcrumbItems),
   ...(faq.length > 0 ? [faqJsonLd(faq)] : []),
@@ -109,8 +128,17 @@ const pageJsonLd = [
       the <a href="/ai-productivity/mcp-2026-07-28-spec-rewrite/"
         >July 2026 spec rewrite</a
       > — a full pass/fail breakdown, not just a single verdict, plus concrete upgrade
-      guidance for anything that's out of date. One-time payment of
-      {priceLabel}, free re-checks for 60 hours, no subscription.
+      guidance for anything that's out of date.
+      {
+        MCP_CHECK_FREE_MODE ? (
+          <>Free, no account needed.</>
+        ) : (
+          <>
+            One-time payment of {priceLabel}, free re-checks for 60 hours, no
+            subscription.
+          </>
+        )
+      }
     </p>
     <LastVerified date={lastVerifiedDate} />
     <p class="tool-page__pricing-verified">
@@ -154,11 +182,25 @@ const pageJsonLd = [
       not a headline you have to take on faith.
     </p>
     <p>
-      Payment happens first, through Lemon Squeezy's hosted checkout. The live
-      audit itself only runs after that payment is confirmed — nothing about
-      your server is probed before you pay, and no partial result is shown. Once
-      you have a result, free re-checks are available for 60 hours so you can
-      confirm a fix without paying again.
+      {
+        MCP_CHECK_FREE_MODE ? (
+          <>
+            Enter your URL above and the audit runs immediately — no payment, no
+            account, no waiting on a checkout redirect. Once you have a result,
+            free re-checks are available for 60 hours so you can confirm a fix
+            without re-entering the URL.
+          </>
+        ) : (
+          <>
+            Payment happens first, through Lemon Squeezy's hosted checkout. The
+            live audit itself only runs after that payment is confirmed —
+            nothing about your server is probed before you pay, and no partial
+            result is shown. Once you have a result, free re-checks are
+            available for 60 hours so you can confirm a fix without paying
+            again.
+          </>
+        )
+      }
     </p>
 
     <AdSlot

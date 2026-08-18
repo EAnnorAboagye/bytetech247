@@ -9,7 +9,7 @@
 // backend" model: article content is always static HTML from `env.ASSETS`,
 // never rendered per-request.
 
-import { CATEGORY_SLUGS, siteConfig } from "../src/config";
+import { CATEGORY_SLUGS, MCP_CHECK_FREE_MODE, siteConfig } from "../src/config";
 import {
   classifyCompatibility,
   type CompatibilityReport,
@@ -485,16 +485,19 @@ async function handleCounter(request: Request, env: Env): Promise<Response> {
   return new Response(null, { status: 204 });
 }
 
-// MCP Compatibility Checker — payment-gated live probe. Three routes, one
-// SESSION_KV record per attempt keyed `mcpcheck:{token}`, moving through
-// exactly three states: "pending" (checkout created, webhook not yet
-// received) -> "paid" (webhook confirmed, probe not yet run) -> "done"
-// (probe ran once, result cached). See the plan file for the full flow
-// diagram and the accepted, documented low-severity race at the paid->done
-// transition (two near-simultaneous status requests for the same token
-// could both observe "paid" and run the probe twice — money has already
-// changed hands by that point either way, so this is a wasted duplicate
-// fetch, not a security or billing bug).
+// MCP Compatibility Checker — payment-gated live probe (currently running
+// free, see MCP_CHECK_FREE_MODE in src/config.ts — the state machine below
+// is unchanged either way, only how a record reaches "paid" differs).
+// Three routes, one SESSION_KV record per attempt keyed `mcpcheck:{token}`,
+// moving through exactly three states: "pending" (checkout created, webhook
+// not yet received) -> "paid" (webhook confirmed, or the free-mode bypass
+// ran, probe not yet run) -> "done" (probe ran once, result cached). See
+// the plan file for the full flow diagram and the accepted, documented
+// low-severity race at the paid->done transition (two near-simultaneous
+// status requests for the same token could both observe "paid" and run the
+// probe twice — in paid mode, money has already changed hands by that
+// point either way, so this is a wasted duplicate fetch, not a security or
+// billing bug; in free mode it's simply a wasted duplicate fetch).
 
 const MCP_CHECK_KEY_PREFIX = "mcpcheck:";
 // A paid check isn't single-use anymore in the sense of "one probe ever" —
@@ -565,6 +568,37 @@ async function handleMcpCheckStart(
   }
 
   const token = crypto.randomUUID();
+  const redirectUrl = `${siteConfig.url}/tools/mcp-compatibility-checker/result/?token=${token}`;
+
+  // MCP_CHECK_FREE_MODE (src/config.ts): skips createCheckout() entirely and
+  // writes the record straight to "paid" — the exact same shape
+  // handleLemonSqueezyWebhook writes on a real confirmed order (status +
+  // recheckAvailableUntil together) — so handleMcpCheckStatus's existing
+  // "paid" branch runs the probe exactly the way it does for a real
+  // payment. That function has no idea (and doesn't need to know) whether a
+  // record reached "paid" via a webhook or via this bypass; it's the same
+  // bytes in KV either way. Reusing the `checkoutUrl` response key means
+  // McpCompatibilityCheckerWidget.astro's `window.location.href =
+  // data.checkoutUrl` needs zero changes — it navigates straight to the
+  // result page instead of to Lemon Squeezy, and everything downstream is
+  // the untouched, already-working paid-flow code path.
+  if (MCP_CHECK_FREE_MODE) {
+    const record: McpCheckRecord = {
+      url: targetUrl,
+      status: "paid",
+      recheckAvailableUntil: Date.now() + RECHECK_WINDOW_MS,
+    };
+    await env.SESSION_KV.put(
+      `${MCP_CHECK_KEY_PREFIX}${token}`,
+      JSON.stringify(record),
+      { expirationTtl: MCP_CHECK_TTL_SECONDS },
+    );
+    return new Response(JSON.stringify({ checkoutUrl: redirectUrl }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
   const record: McpCheckRecord = { url: targetUrl, status: "pending" };
   await env.SESSION_KV.put(
     `${MCP_CHECK_KEY_PREFIX}${token}`,
@@ -572,7 +606,6 @@ async function handleMcpCheckStart(
     { expirationTtl: MCP_CHECK_TTL_SECONDS },
   );
 
-  const redirectUrl = `${siteConfig.url}/tools/mcp-compatibility-checker/result/?token=${token}`;
   const checkoutResult = await createCheckout(
     {
       apiKey: env.LEMON_SQUEEZY_API_KEY,

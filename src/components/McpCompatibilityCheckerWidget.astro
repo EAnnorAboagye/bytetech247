@@ -1,18 +1,24 @@
 ---
-// The MCP Compatibility Checker's interactive core — this site's first
-// paid tool, so unlike TokenCounterWidget.astro / LlmPricingCalculatorWidget
-// .astro this component does no computation itself. It only collects the
-// target server URL and starts a Lemon Squeezy checkout
-// (POST /api/mcp-check/start, worker/index.ts) — the actual live probe only
-// runs after payment is confirmed, on the result page
-// (McpCompatibilityCheckerResult.astro / result.astro), per the plan's
-// "pay first, then the check runs" decision.
-import { MCP_CHECK_PRICE_USD } from "../config";
+// The MCP Compatibility Checker's interactive core — unlike
+// TokenCounterWidget.astro / LlmPricingCalculatorWidget.astro this
+// component does no computation itself. It only collects the target
+// server URL and starts the check (POST /api/mcp-check/start,
+// worker/index.ts) — the actual live probe runs on the result page
+// (McpCompatibilityCheckerResult.astro / result.astro).
+//
+// MCP_CHECK_FREE_MODE (src/config.ts) is temporarily true. Note this
+// component's client-side JS needs ZERO logic changes either way — the
+// worker's free-mode bypass (worker/index.ts, handleMcpCheckStart)
+// deliberately returns the same `{ checkoutUrl }` response shape and this
+// script still just does `window.location.href = data.checkoutUrl`,
+// landing on Lemon Squeezy's checkout in paid mode or straight on the
+// result page in free mode. Only the *display strings* below differ.
+import { MCP_CHECK_PRICE_USD, MCP_CHECK_FREE_MODE } from "../config";
 
 const priceLabel = `$${MCP_CHECK_PRICE_USD.toFixed(2)}`;
 ---
 
-<div class="mcp-check" data-mcp-check>
+<div class="mcp-check" data-mcp-check data-free-mode={MCP_CHECK_FREE_MODE}>
   <form data-mcp-check-form>
     <label class="mcp-check__field" for="mcp-check-url">
       <span>Your MCP server's URL (Streamable HTTP transport)</span>
@@ -26,13 +32,27 @@ const priceLabel = `$${MCP_CHECK_PRICE_USD.toFixed(2)}`;
       />
     </label>
     <button type="submit" class="mcp-check__submit" data-mcp-check-submit>
-      Check compatibility — {priceLabel}
+      Check compatibility — {MCP_CHECK_FREE_MODE ? "Free" : priceLabel}
     </button>
     <p class="mcp-check__note">
-      A 7-point live audit, not just one check. Remote/HTTP servers only in this
-      first version — not stdio-only local servers. You'll be redirected to
-      Lemon Squeezy's secure checkout; the audit runs immediately after payment
-      is confirmed, with free re-checks for 60 hours after.
+      {
+        MCP_CHECK_FREE_MODE ? (
+          <>
+            A 7-point live audit, not just one check. Remote/HTTP servers only
+            in this first version — not stdio-only local servers. Runs
+            immediately, no payment or account required, with free re-checks for
+            60 hours after.
+          </>
+        ) : (
+          <>
+            A 7-point live audit, not just one check. Remote/HTTP servers only
+            in this first version — not stdio-only local servers. You'll be
+            redirected to Lemon Squeezy's secure checkout; the audit runs
+            immediately after payment is confirmed, with free re-checks for 60
+            hours after.
+          </>
+        )
+      }
     </p>
     <p class="mcp-check__error" data-mcp-check-error role="alert" hidden></p>
   </form>
@@ -112,6 +132,13 @@ const priceLabel = `$${MCP_CHECK_PRICE_USD.toFixed(2)}`;
   // lazy-loaded state to preserve, the astro:page-load re-arm requirement
   // itself still applies: the form element is replaced on client-side
   // navigation, so listeners must be re-attached every time, not once.
+  //
+  // MCP_CHECK_FREE_MODE reaches this script via a data-attribute on the
+  // root element, not define:vars — define:vars forces a script to be
+  // treated as is:inline, which strips Astro/Vite's TypeScript processing
+  // entirely (confirmed live: the generic type params and `as` casts
+  // below would otherwise ship to the browser as invalid raw JS). A plain
+  // data-attribute read at runtime keeps this script fully processed.
   function setupMcpCheckWidget() {
     const root = document.querySelector<HTMLElement>("[data-mcp-check]");
     if (!root) return;
@@ -126,13 +153,16 @@ const priceLabel = `$${MCP_CHECK_PRICE_USD.toFixed(2)}`;
     const errorEl = root.querySelector<HTMLElement>("[data-mcp-check-error]");
     if (!form || !urlInput || !submitButton || !errorEl) return;
 
+    const freeMode = root.dataset.freeMode === "true";
     const originalLabel = submitButton.textContent ?? "";
 
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
       errorEl.hidden = true;
       submitButton.disabled = true;
-      submitButton.textContent = "Redirecting to checkout…";
+      submitButton.textContent = freeMode
+        ? "Running your check…"
+        : "Redirecting to checkout…";
 
       try {
         const response = await fetch("/api/mcp-check/start", {
