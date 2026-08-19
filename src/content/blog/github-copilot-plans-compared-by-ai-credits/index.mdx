@@ -1,0 +1,120 @@
+---
+title: "GitHub Copilot Plans Compared by AI Credits, Not Price"
+description: "GitHub Copilot plans don't scale AI credits with price. Real credits-per-dollar math across Free, Pro, Pro+, Max, Business, and Enterprise."
+date: 2026-08-19
+category: ai-productivity
+tags: ["copilot", "github", "pricing", "ai-credits", "plans"]
+relatedSlugs:
+  [
+    "github-copilot-ai-credits-cliff-2026",
+    "github-copilot-budget-controls-setup",
+    "github-copilot-pru-to-ai-credits-migration",
+  ]
+series: "copilot-ai-credits-cliff-2026"
+seriesOrder: 9
+coverImage: "./cover.png"
+coverImageAlt: "A dark comparison-matrix style cover reading GitHub Copilot Plans Compared by AI Credits, badged credits-per-dollar math verified 2026-08-19, listing six row summaries: Pro at $10 per month for 1,500 credits or 150 per dollar, Pro+ at $39 for 7,000 credits or about 180 per dollar, Max at $100 for 20,000 credits or 200 per dollar, Business at $19 per seat for 1,900 credits or 100 per dollar, Enterprise at $39 per seat for 3,900 credits or 100 per dollar, and Free with no published credit figure capped at 2,000 completions per month"
+faq:
+  - question: "Does upgrading from Pro to Pro+ or Max always get more credits per dollar?"
+    answer: "Yes, among the three individual plans. Pro delivers 150 credits per dollar spent, Pro+ about 179.5, and Max exactly 200, so each individual upgrade increases the credit-per-dollar rate rather than diluting it. That pattern doesn't carry over once you cross into a Business or Enterprise seat, which is the whole point of this comparison."
+  - question: "Is Business or Enterprise ever the better deal despite the lower credits-per-dollar rate?"
+    answer: "Often, yes, but not because of the raw ratio. Business and Enterprise pool credits across every seat in the group, so a light user's unused allowance can cover a heavier user's overage, something separate individual Pro+ subscriptions can't do for each other. They also add centralized billing, org-wide policy controls, and admin governance that a per-dollar credit comparison doesn't price in at all."
+  - question: "Does the September 1, 2026 reversion touch Pro, Pro+, or Max credit allotments?"
+    answer: "No. Only the pooled Business (3,000 to 1,900 credits/user/month) and Enterprise (7,000 to 3,900) promotional allowances revert on that date. Pro's 1,500, Pro+'s 7,000, and Max's 20,000 stay exactly where they've been since the June 1, 2026 AI Credits cutover, confirmed on GitHub's own individual-plans billing documentation."
+---
+
+## Quick Answer
+
+GitHub Copilot's six plans don't scale credits proportionally with price. Pro, Pro+, and Max each deliver more credits per dollar moving up the ladder, 150, about 180, and 200. Business and Enterprise, after the September 1 revert, both settle at 100, near half of what a same-priced Pro+ seat gets. Compare the ratio, not the sticker price.
+
+## Why upgrading a tier doesn't mean proportionally more credits
+
+Every Copilot plan sets its own price and its own monthly AI credit allotment, both published on [GitHub's own plans page](https://docs.github.com/en/copilot/get-started/plans). Nothing forces those two numbers to move together. A buyer comparing Pro against Business, or Pro+ against Enterprise, is really comparing two independent variables that GitHub priced separately for each tier, not one number scaled up.
+
+That matters more than it sounds like it should. The instinct is to assume a $39/month plan buys roughly four times what a $10/month plan buys, since the price is four times higher. Run the actual figures from [GitHub's individual-plans billing documentation](https://docs.github.com/en/copilot/concepts/billing/usage-based-billing-for-individuals) and [its organization and enterprise billing documentation](https://docs.github.com/en/copilot/concepts/billing/usage-based-billing-for-organizations-and-enterprises), and that instinct breaks in both directions.
+
+<Callout type="info" title="This comparison covers monthly-billed plans only">
+  Annual Copilot Pro and Pro+ subscribers run on a separate legacy multiplier
+  system, not AI Credits at all, until the plan converts or renews. There's no
+  credits-per-dollar figure to compute for that group yet. See [Annual Copilot
+  Plans: Model Multipliers Just
+  Spiked](/ai-productivity/annual-copilot-plans-model-multipliers-spike/) for
+  what changed on their side instead.
+</Callout>
+
+## Structural Comparison Matrix
+
+Here's every monthly-billed Copilot plan: its price, its published AI credit allotment, and what that allotment is worth at GitHub's fixed 1 credit = $0.01 conversion rate, the same mechanism [covered in more depth here](/ai-productivity/github-copilot-ai-credits-pricing-explained/). Business and Enterprise are shown at their standard, permanent allotment, the number that applies from September 1, 2026, onward, since that's the figure that persists once the promotional cushion runs out.
+
+| Plan           | Price       | Monthly AI credits                                                    | Dollar value of credits | Credits per dollar |
+| :------------- | :---------- | :-------------------------------------------------------------------- | ----------------------: | -----------------: |
+| **Free**       | $0/mo       | Not separately published; capped at 2,000 code completions/mo instead |                     N/A |                N/A |
+| **Pro**        | $10/mo      | 1,500 (1,000 base + 500 flex)                                         |                  $15.00 |                150 |
+| **Pro+**       | $39/mo      | 7,000 (3,900 base + 3,100 flex)                                       |                  $70.00 |              179.5 |
+| **Max**        | $100/mo     | 20,000 (10,000 base + 10,000 flex)                                    |                 $200.00 |                200 |
+| **Business**   | $19/seat/mo | 1,900/user/mo (standard, from Sept 1, 2026)                           |                  $19.00 |                100 |
+| **Enterprise** | $39/seat/mo | 3,900/user/mo (standard, from Sept 1, 2026)                           |                  $39.00 |                100 |
+
+Every figure above was checked directly against GitHub's own plan and billing documentation on 2026-08-19, not carried over from an earlier summary. Business and Enterprise's promotional allowances, 3,000 and 7,000 credits/user/month, in effect until September 1, 2026, are covered in their own section below rather than folded into this table, since they're temporary.
+
+GitHub's individual-plans documentation doesn't publish a specific figure for Free's credits the way it does for the three paid tiers. Quoted directly from that page:
+
+> Copilot Free and Copilot Student both have an allowance of AI credits and access to models through auto model selection only.
+
+The only quantified number attached to Free in that same documentation is 2,000 code completions a month, not a base-plus-flex credit breakdown. Free was never part of the paid credit system the September cliff touches, and there's no published free-tier number to run the same per-dollar math against.
+
+## The same $39 buys two different credit pools
+
+Pick the two plans that share an identical price and the gap stops being abstract. Copilot Pro+ costs $39 a month and includes 7,000 AI credits. Copilot Enterprise costs $39 per seat per month too, and once the promotional period ends on September 1, 2026, it includes 3,900.
+
+Same price, same $0.01-per-credit conversion, two very different pools. An Enterprise seat's standard allotment works out to 55.7% of what an individual Pro+ subscriber gets for the identical monthly price. That's not a rounding difference. It's most of a credit pool disappearing at the same price point.
+
+It wasn't always that far apart. Before September 1, 2026, GitHub's promotional Enterprise allowance is also 7,000 credits/user/month, the exact same number Pro+ gets. Right now, an Enterprise seat and a Pro+ subscription buy identical credit pools at an identical price. The September 1 revert is what breaks that parity, not a price change on either side.
+
+<Callout
+  type="warning"
+  title="Enterprise and Pro+ are priced identically today, not after Sept 1"
+>
+  Right now, before the September 1 revert, a $39 Enterprise seat and a $39 Pro+
+  subscription include the exact same 7,000 credits. That parity breaks
+  permanently once the promotional period ends, not because either plan's price
+  changes at all.
+</Callout>
+
+## Individual plans get more credit-dense as you go up
+
+The three individual plans move the opposite direction from Business and Enterprise. Pro, at $10/month, delivers 1,500 credits, exactly 150 per dollar spent. Pro+ raises that to 179.5 per dollar. Max, the newest and most expensive individual tier at $100/month with 20,000 credits, hits exactly 200 credits per dollar, the highest rate on the entire lineup.
+
+Put another way: Max costs 10 times what Pro costs, but its credit pool is 13.3 times larger, 20,000 against 1,500. Upgrading from Pro to Max isn't proportional. It's a better deal per dollar, not a worse one, which is the opposite of what happens crossing from Pro+ into a same-priced Enterprise seat.
+
+That gap didn't come from June 1, 2026's shift away from flat [Premium Request Unit multipliers](/ai-productivity/github-copilot-pru-to-ai-credits-migration/) either. It's simply how GitHub priced the three individual tiers against each other once real per-token, per-model billing replaced the old flat-multiplier system.
+
+## Team plans, before and after the September 1 revert
+
+Business and Enterprise don't scale against each other the way Pro, Pro+, and Max do, but they scale consistently against themselves. Both sit at exactly 100 credits per dollar on their standard, post-reversion allotment: Business at 1,900 credits for $19, Enterprise at 3,900 for $39. Double the price gets you double the credits, precisely.
+
+The promotional numbers, in effect through September 1, 2026, tell a different story. Business's promotional 3,000 credits/user/month works out to 157.9 credits per dollar. Enterprise's promotional 7,000 works out to 179.5, identical to Pro+'s rate, for the reason covered above. Both team tiers are, for now, priced closer to the individual plans than they will be once September arrives.
+
+GitHub's own organization and enterprise billing documentation describes the change as a scheduled reversion: once the promotional window closes, included usage drops back to the standard allotment on that date. It's not a gradual taper and not something triggered by usage crossing a threshold.
+
+## A concrete example: four developers, two ways to buy them
+
+Run the numbers against an actual team size instead of a single seat. A four-person team can go two ways: four individual Copilot Pro+ subscriptions, or one Copilot Business team of four seats.
+
+Four Pro+ subscriptions cost $156/month combined (4 x $39) and provide 28,000 credits total (4 x 7,000), but each person's 7,000 is siloed to that person. Nobody can borrow from a teammate's unused balance. A four-seat Business team costs $76/month (4 x $19), about half as much, and pools 7,600 credits (4 x 1,900) across all four seats once September 1 arrives, letting a light user's slack cover a heavy user's overage.
+
+Business's pooled total is 27.1% of what four separate Pro+ subscriptions provide, for 48.7% of the cost. Whether that trade is worth it depends on how lumpy the team's actual usage is. One or two people running long Agent Mode loops while others use Copilot lightly benefits from pooling in a way these raw percentages don't show on their own. A team with evenly spread usage is closer to just paying less for less.
+
+## What the per-dollar number doesn't capture
+
+None of the math above prices in what Business and Enterprise sell beyond the credit pool itself. Both add centralized billing, org-wide policy controls, SSO, and audit logging, plus the budget tooling this series' [budget-controls guide](/ai-productivity/github-copilot-budget-controls-setup/) walks through step by step. Enterprise layers on governance controls Business doesn't include at all. None of that shows up in a credits-per-dollar ratio, and for a team that genuinely needs those controls, the ratio isn't the deciding factor.
+
+Credit pooling itself is a real advantage separate from the raw ratio too. A four-seat Business team with wildly uneven usage can outlast a same-cost group of individual subscriptions that each hit a hard per-person ceiling, even with a smaller combined pool, simply because nobody on the pooled plan gets blocked while a teammate's credits sit unused.
+
+## Which plan actually fits your usage pattern
+
+Use Pro or Pro+ when you're buying for yourself and want the highest credits-per-dollar rate on the lineup. Reach for Max only if a single heavy user's real usage genuinely exceeds Pro+'s 7,000-credit pool, and paying $100 beats juggling two separate accounts. Use Business or Enterprise when what you actually need is pooling across an uneven team, or the governance controls that come bundled with a team seat, not the raw credit count. Dollar for dollar, both team tiers buy fewer credits than any individual plan once September 1 arrives.
+
+Check your team's actual usage pattern, [covered earlier in this series](/ai-productivity/check-copilot-ai-credits-usage-before-sept-1/), before assuming the plan you're already on is sized right. A team paying Enterprise prices for what's really an evenly loaded, per-person workload is paying for pooling it never uses.
+
+Browse more coverage like this in the [AI Productivity](/ai-productivity) archive, or start from [GitHub Copilot's AI Credits Cliff](/ai-productivity/github-copilot-ai-credits-cliff-2026/) hub for the full reversion story.

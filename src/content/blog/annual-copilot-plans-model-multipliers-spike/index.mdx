@@ -1,0 +1,139 @@
+---
+title: "Annual Copilot Plans: Model Multipliers Just Spiked"
+description: "GitHub revised Copilot's legacy model-multiplier table for annual Pro/Pro+ plans on June 1, 2026, some models jumped as high as 57x."
+date: 2026-08-19
+category: ai-productivity
+tags: ["copilot", "github", "billing", "annual-plan", "model-multipliers"]
+relatedSlugs:
+  [
+    "github-copilot-ai-credits-cliff-2026",
+    "github-copilot-pru-to-ai-credits-migration",
+  ]
+series: "copilot-ai-credits-cliff-2026"
+seriesOrder: 5
+coverImage: "./cover.png"
+coverImageAlt: "A dark comparison-matrix style cover reading Copilot's Annual Multiplier Spike, badged legacy multiplier table revised June 1 2026, listing five row summaries: GPT-5.5 sits at 57x the table's real ceiling, Claude Opus 4.6 through 4.8 all carry a 27x multiplier, Pro+ annual gets 1,500 premium requests and no more, legacy annual plans get no new models or features, and subscribers can stay cancel for refund or upgrade to Credits"
+faq:
+  - question: "Does this multiplier table revision affect monthly-billed Copilot subscribers too?"
+    answer: "No. GitHub's own documentation scopes the model-multiplier table to Copilot Pro and Pro+ customers specifically, and only the ones who bought an annual plan and stayed on the old request-based billing setup once June 1, 2026 passed. Monthly-billed Pro, Pro+, Business, and Enterprise plans moved to AI Credits on that same date and don't use a multiplier table at all. See GitHub Copilot's PRU to AI Credits Migration, Explained for what they got instead."
+  - question: "Is the widely repeated 27x multiplier figure accurate?"
+    answer: "It's accurate for one specific model family, not the whole table. Claude Opus 4.6, 4.7, and 4.8 do carry a 27x multiplier on GitHub's current live table, verified directly against docs.github.com. But that isn't the table's highest figure: GPT-5.5 sits at 57x, more than double, as of this writing (2026-08-19). Treat 27x as a real but partial snapshot, not the ceiling."
+  - question: "What happens if an annual subscriber's premium requests run out before the month resets?"
+    answer: "Per GitHub's own documentation, Copilot doesn't cut off access outright. Subscribers can still use one of the included models for the rest of the month, though response times may vary and requests may be rate-limited during high demand. Anyone who needs more than that can purchase additional premium requests at $0.04 each, or set a budget to control the spend."
+---
+
+## Quick Answer
+
+Annual Copilot Pro and Pro+ subscribers stayed on the legacy Premium Request Unit system when monthly plans moved to AI Credits on June 1, 2026. GitHub revised that multiplier table the same day: Claude Opus 4.6 through 4.8 now cost 27 premium requests per call, and GPT-5.5 costs 57. Check the live table before assuming your old math still holds.
+
+## Two June 1 changes, and only one hit annual plans
+
+GitHub shipped two separate billing changes on the same date, and the timing makes them easy to conflate. Every monthly-billed Copilot plan retired Premium Request Units for AI Credits on June 1, 2026, a real-per-token pricing system covered in [GitHub Copilot's PRU to AI Credits Migration, Explained](/ai-productivity/github-copilot-pru-to-ai-credits-migration/). Annual-billed Pro and Pro+ subscribers didn't move at all. They stayed on the old multiplier system, unchanged in mechanism.
+
+What did change for that group, on the exact same date, was the multiplier table itself. GitHub's own documentation draws a firm line between the two systems: multipliers belong to the old request-based model and have no equivalent under Credits at all, a distinction that only makes sense once you know the table underneath it kept moving after the surrounding system was declared legacy. This post is about that table: what it charges today, why the most-cited number about it undersells the real cost, and what an annual subscriber can actually do before the next renewal.
+
+## What GitHub's live multiplier table shows today
+
+GitHub still publishes a full multiplier table for this legacy system, at a URL that says "legacy" in the path. The page itself narrows its own audience: Copilot Pro and Pro+ buyers, annual billing only, and only those who never left the old request-based system once June 1, 2026, arrived. Fetched directly from that page on 2026-08-19, here is every model it lists and the exact multiplier attached to it:
+
+| Model              | Multiplier |
+| :----------------- | ---------: |
+| GPT-5.5            |         57 |
+| Claude Opus 4.6    |         27 |
+| Claude Opus 4.7    |         27 |
+| Claude Opus 4.8    |         27 |
+| Claude Opus 4.5    |         15 |
+| Gemini 3.5 Flash   |         14 |
+| Claude Sonnet 4.6  |          9 |
+| Claude Sonnet 4.5  |          6 |
+| Gemini 3 Pro       |          6 |
+| Gemini 3.1 Pro     |          6 |
+| GPT-5.3-Codex      |          6 |
+| GPT-5.4            |          6 |
+| GPT-5.4 mini       |          6 |
+| GPT-5.1            |          3 |
+| GPT-5.1-Codex      |          3 |
+| GPT-5.1-Codex-Max  |          3 |
+| Claude Haiku 4.5   |       0.33 |
+| GPT-4o             |       0.33 |
+| GPT-4o mini        |       0.33 |
+| GPT-5.1-Codex-Mini |       0.33 |
+| GPT-5 mini         |       0.33 |
+| Raptor mini        |       0.33 |
+| MAI-Code-1-Flash   |       0.33 |
+| MAI-Code-1.1-Flash |       0.25 |
+
+That's sorted highest to lowest for readability; GitHub's own table runs alphabetically. Every value above is copied directly from [GitHub's model-multipliers-for-annual-plans documentation](https://docs.github.com/en/copilot/reference/copilot-billing/request-based-billing-legacy/model-multipliers-for-annual-plans), a page GitHub itself warns can move without notice. A separate table on the same page sets Copilot code review at a flat 13x multiplier for every pull request or IDE review it runs, regardless of which chat model is configured elsewhere. Turning on auto model selection anywhere it's offered, chat, the CLI, the mobile app, or a cloud agent run, knocks 10% off whatever multiplier applies, so a 1x model bills at 0.9x instead.
+
+<Callout type="info" title="No historical baseline exists to compare against">
+  GitHub's documentation doesn't publish what this table looked like before June
+  1, 2026, and no earlier snapshot of this exact page exists in the Wayback
+  Machine either. The table above is verified as current, not as a change from a
+  specific prior value GitHub itself confirms.
+</Callout>
+
+## Structural Comparison Matrix
+
+| Operational Aspect              | Annual Pro/Pro+ (legacy, today)                                                                                    | Monthly Pro/Pro+ (AI Credits, today)                                         |
+| :------------------------------ | :----------------------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------- |
+| **Highest-cost model**          | GPT-5.5 at a flat 57x multiplier, confirmed on GitHub's current table                                              | GPT-5.5 priced per token; cost scales with actual prompt and response length |
+| **Base monthly pool**           | Pro: 300 premium requests/month. Pro+: 1,500 premium requests/month                                                | Pro: 1,500 credits/month. Pro+: 7,000 credits/month                          |
+| **New model or feature access** | Frozen. GitHub's own docs say this group is cut off from future model and feature additions (quoted in full below) | Full access as GitHub ships new models                                       |
+| **Running out mid-cycle**       | Falls back to included models, possibly rate-limited, or buy more at $0.04/request                                 | Premium features halt, or metered billing continues if an admin enabled it   |
+| **Path forward**                | Stay to term end (then auto-downgrade to Free), cancel for a prorated refund, or upgrade for prorated credit       | Already on the destination system; nothing left to migrate to                |
+
+Every figure in that table traces to GitHub's own current documentation, cited by section below.
+
+## The 27x figure most people cite isn't the table's ceiling
+
+Third-party coverage of this multiplier table, published as the June 1 changes were rolling out, described some models' multipliers as rising "as much as 27x." That figure isn't wrong. Claude Opus 4.6, 4.7, and 4.8 really do sit at 27x on GitHub's live table today, and that's a real, heavy number for anyone whose workflow leans on Opus-class reasoning.
+
+It's also not the whole picture. GPT-5.5 carries a 57x multiplier on that same live table, more than double the number that's been repeated across recap posts and community threads. Whether GPT-5.5 already had that multiplier when the 27x figure first circulated, or was added to the catalog afterward, isn't something GitHub's documentation records and isn't something this post can verify against a primary source. What's verifiable, directly, right now, is that 27x understates the current ceiling. A subscriber budgeting against "worst case, 27x" is actually budgeting against a number more than half of what the table can charge.
+
+The specific claim that Claude Opus rose from a lower baseline to 27x traces to third-party technical coverage, not a GitHub announcement or changelog entry. [GitHub's own "What changed with Copilot billing" page](https://docs.github.com/en/copilot/reference/copilot-billing/request-based-billing-legacy/what-changed-with-billing) describes the June 1 shift from PRU to token-based billing in general terms and doesn't publish a before/after multiplier comparison anywhere. Read the specific "before" number as reported, not confirmed, and treat the current 57x and 27x figures above as the only parts of this story verified straight from GitHub's own page.
+
+## What a 27x multiplier costs against a 1,500-request pool
+
+The multiplier only means something once it's run against an actual monthly allowance. [GitHub's own plan documentation](https://docs.github.com/en/copilot/reference/copilot-billing/request-based-billing-legacy/copilot-requests) sets that allowance at 300 premium requests a month for an annual Copilot Pro plan, and 1,500 for annual Pro+.
+
+Run the current table's numbers against those pools directly:
+
+1. Pro+ (1,500 requests) against Claude Opus 4.7 at 27x: 1,500 / 27 = 55 calls before the pool empties.
+2. Pro+ (1,500 requests) against GPT-5.5 at 57x: 1,500 / 57 = 26 calls, roughly half as many.
+3. Pro (300 requests) against Claude Opus 4.7 at 27x: 300 / 27 = 11 calls for the entire month.
+4. Pro (300 requests) against GPT-5.5 at 57x: 300 / 57 = 5 calls for the entire month.
+
+Compare that against a lightweight model on the same plan. Claude Haiku 4.5 sits at 0.33x, so a Pro+ subscriber gets roughly 4,545 Haiku calls out of the same 1,500-request pool, a gap of two orders of magnitude between the cheapest and most expensive model on one table. Model choice was already a real lever under PRU. At today's revised multipliers, it's a much sharper one: reaching for Opus or GPT-5.5 by default on an annual plan burns through a month's allowance in single digits to low double digits of calls, not the hundreds a lighter model affords.
+
+## Legacy also means frozen out of new models
+
+The multiplier increase isn't the only structural cost of staying on an annual plan past June 1. GitHub's own documentation says so directly, on the same page as the multiplier table, not buried in a separate FAQ:
+
+> Users on legacy annual Copilot plans will not receive access to new models and features.
+
+That's a second, quieter tax on top of the pricing one. A monthly subscriber gets each new model as GitHub ships it, priced under Credits from day one. An annual subscriber on the legacy track is working from whatever model catalog existed when they last checked, with no guarantee a future model gets added to their table at all. Whether GPT-5.5 shows up as row 57x or doesn't show up for a given annual account isn't something this post can verify beyond what GitHub's own table lists today.
+
+## What annual subscribers can actually do about it
+
+GitHub lays out three explicit options for a Copilot Pro or Pro+ subscriber on an existing annual plan, described directly on its own "What changed with Copilot billing" page:
+
+- **Stay** on the current annual plan under the legacy multiplier system. When the plan ends, the account is automatically downgraded to Copilot Free, not moved to AI Credits.
+- **Cancel** the plan outright for a prorated refund, with the option to re-subscribe to the equivalent monthly plan afterward.
+- **Upgrade** to a monthly paid plan now and receive prorated credit for the annual plan's remaining value, landing on AI Credits immediately instead of waiting for the term to end.
+
+None of those is obviously correct for every subscriber. Someone with months left on an annual term and a workflow that leans on Haiku-tier models at 0.33x isn't facing the same math as someone burning Opus or GPT-5.5 calls regularly against a 300-request Pro pool. The multiplier table above is what makes that comparison concrete instead of hypothetical: run your own actual model mix against it before deciding whether to ride out the renewal or upgrade early.
+
+<Callout type="warning" title="Doing nothing has a default outcome too">
+  Staying on an annual plan isn't a neutral holding pattern. If it lapses
+  without action, GitHub downgrades the account to Copilot Free, not to AI
+  Credits. Reaching the renewal date and deciding then is a real choice with a
+  real default, not a delay with no consequence.
+</Callout>
+
+## Before your annual plan renews
+
+Check which billing system an account actually runs on before assuming the September 1 credits reversion or the June 1 Credits migration applies to it. Neither one touches an annual Pro or Pro+ subscriber still inside their term; this multiplier table is the only mechanism actively affecting that group right now, and it's the one most likely to go unnoticed because nothing about it required an email or a dashboard banner to take effect.
+
+If an annual plan still has months left and the workflow on it leans on GPT-5.5 or Claude Opus regularly, run the math from this post against the actual monthly call count before the next renewal decision. Upgrading early trades the annual plan's remaining value for prorated credit toward a monthly plan, landing on per-token Credits pricing right away instead of waiting for the term to end. Riding out the term only makes sense if the real usage pattern fits comfortably inside 300 or 1,500 premium requests at the multipliers that model mix actually costs today, not the multipliers it cost before this table was last revised.
+
+Browse more coverage like this in the [AI Productivity](/ai-productivity) archive, or start from [GitHub Copilot's AI Credits Cliff](/ai-productivity/github-copilot-ai-credits-cliff-2026/) hub for the full reversion story.

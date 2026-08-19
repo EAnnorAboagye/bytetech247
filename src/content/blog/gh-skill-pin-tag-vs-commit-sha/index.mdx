@@ -1,0 +1,109 @@
+---
+title: "gh skill --pin: Tag vs Commit SHA, Which to Use"
+description: "gh skill install --pin accepts a tag or a commit SHA. Pin to a SHA for CI reproducibility; a tag is fine for casual, supervised installs."
+date: 2026-08-19
+category: dev-tools
+tags: ["github-cli", "gh", "agent-skills", "ci-cd", "reproducibility"]
+relatedSlugs:
+  ["github-cli-2026-agent-era-expansion", "gh-skill-manage-ai-agent-skills"]
+series: "github-cli-agent-era-2026"
+seriesOrder: 3
+coverImage: "./cover.png"
+coverImageAlt: "A dark comparison-matrix cover titled gh skill --pin: Tag vs SHA, listing four rows: a tag is a mutable pointer, a SHA is content-addressed and cannot move, a tag is human-readable, a SHA is the reproducible choice for CI"
+faq:
+  - question: "What happens to a skill pinned with --pin when I run gh skill update?"
+    answer: "It's skipped, with a notice, whether you pinned it to a tag or a commit SHA. GitHub's own manual for gh skill update states it directly: pinned skills are skipped with a notice, and you have to run gh skill update --unpin to clear the pinned version and include that skill in the update again."
+  - question: "Does --pin v1.2.0 behave differently from installing skill@v1.2.0?"
+    answer: "No. GitHub's manual for gh skill install describes them as two equivalent ways to reach the same result: append @VERSION to the skill name, or pass --pin as a separate flag. Either way, the version resolves as a git tag or commit SHA, so the tag-vs-SHA choice in this post applies the same way to both forms."
+  - question: "If a repo has Immutable Releases enabled, is pinning to its tags as safe as pinning to a SHA?"
+    answer: "For that specific repo, yes, per GitHub's own changelog: enabling immutable releases means release content can't be altered after publication, even by repo admins, so tag pinning is protected there. The catch is that it's the source repository's own setting, not something you control or can verify from the install command itself. Treat a tag as movable unless you've separately confirmed the source has immutable releases turned on."
+---
+
+`gh skill install --pin` takes two different kinds of value: a git tag like `v1.2.0`, or a commit SHA like `abc123def`. GitHub's own manual for the command names both as valid targets for the flag. They aren't equally safe to build automation around, though. A tag can move. A commit SHA cannot.
+
+That difference only matters once pinning is worth doing at all, which usually means a CI pipeline or a provisioning script installing the same skill on every run, not a one-off skill you're trying out locally on your own machine.
+
+## Quick Answer
+
+Pin to a commit SHA (`--pin abc123def`) for CI pipelines and provisioning scripts, where a script needs the exact same content installed on every run. Pin to a tag (`--pin v1.2.0`) for a casual, human-run install, where the tag reads clearly, and you'd likely notice if something looked wrong. A tag is a mutable pointer; a commit SHA is not.
+
+## What `--pin` actually resolves to
+
+Run without `--pin`, `gh skill install` resolves to the latest tagged release, falling back to the default branch's HEAD if no tag exists. `--pin` overrides that resolution. GitHub's manual for [`gh skill install`](https://cli.github.com/manual/gh_skill_install) states the mechanism plainly:
+
+> "The version is resolved as a git tag or commit SHA."
+
+Both of the following are documented, working commands, taken directly from [GitHub's own changelog announcement](https://github.blog/changelog/2026-04-16-manage-agent-skills-with-github-cli/):
+
+{/* prettier-ignore */}
+<CodeTabs labels={["Pin to a tag", "Pin to a commit SHA"]}>
+  <Fragment slot="tab-0">
+    ```bash
+    # Pin to a release tag
+    gh skill install github/awesome-copilot documentation-writer --pin v1.2.0
+    ```
+  </Fragment>
+  <Fragment slot="tab-1">
+    ```bash
+    # Pin to a commit for maximum reproducibility
+    gh skill install github/awesome-copilot documentation-writer --pin abc123def
+    ```
+  </Fragment>
+</CodeTabs>
+
+Both commands install the same skill from the same repository. The only difference is what `--pin` points at, and that's exactly where the two options stop being interchangeable.
+
+## Why a tag is a mutable pointer
+
+A git tag is a name attached to a commit, not the commit itself. By default, nothing stops a repository owner from deleting `v1.2.0` and recreating it against a different commit, whether that's an honest re-release, a compromised account, or a supply-chain attack. `--pin v1.2.0` run today and the identical command run six months from now can resolve to different content, even though the flag and the value never changed on your end.
+
+GitHub gives repo owners a way to close that gap. Its changelog describes `gh skill publish` offering to enable immutable releases:
+
+> "Enabling immutable releases, for example, means even if someone gets control of your repository they cannot change existing releases, so users installing via tag pinning are fully protected."
+
+That's real protection, but notice whose decision it is. Enabling immutable releases is a setting the _source_ repository turns on, not something the `--pin` flag or your own install command controls. The install command from the previous section doesn't tell you whether `github/awesome-copilot` has that setting flipped on; nothing about the command line changes when it does.
+
+<Callout type="tip" title="Check what a tag currently resolves to">
+  `git ls-remote <repo-url> <tag>` prints the exact commit SHA a tag points at
+  right now, without cloning anything: `git ls-remote
+  https://github.com/github/awesome-copilot v1.2.0`. Useful for converting a
+  tag you're about to pin into the specific SHA it currently means, so your
+  `--pin` value stops depending on the tag staying put.
+</Callout>
+
+## Why a commit SHA can't move
+
+A commit SHA isn't a label someone assigned; it's computed from the commit's own content: its tree, its parent, its author and message. Change any of that and the SHA changes with it. GitHub's changelog calls this "content-addressed change detection," and the same principle backs `gh skill update`'s own change checks: each installed skill's git tree SHA gets recorded locally and compared against the remote, catching real content changes rather than just version bumps.
+
+That same property is what makes a SHA a safe thing to automate against. Nobody can push a different commit that reuses `abc123def` and have `gh skill install --pin abc123def` silently fetch something else. The tradeoff is readability: a tag tells a human roughly what they're getting at a glance, and a 7-to-40-character hex string doesn't mean anything without looking up what it points to first.
+
+## Structural Comparison Matrix
+
+| Operational Dimension                        | Tag (`--pin v1.2.0`)                                                                                                 | Commit SHA (`--pin abc123def`)                                                                                      |
+| :------------------------------------------- | :------------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------ |
+| **Mutability**                               | Points at whatever commit the tag currently references; the repo owner can delete and recreate it to point elsewhere | Content-addressed: the SHA is derived from the commit's own content, so it can't be reassigned to different content |
+| **Reproducibility across separate installs** | Depends on a setting you don't control: whether the source repo has immutable releases turned on                     | Guaranteed by git's own object model, regardless of what the source repo does or doesn't configure                  |
+| **Human readability**                        | Reads as a version at a glance (`v1.2.0`)                                                                            | Opaque hex string, meaningless without looking up what it actually points to                                        |
+| **Best fit**                                 | A casual, human-run install where you'd likely notice if something looked wrong                                      | CI pipelines and provisioning scripts, where nobody is watching each run                                            |
+
+## What happens after you pin
+
+Pinning doesn't just change what gets installed once. It also changes how [`gh skill update`](https://cli.github.com/manual/gh_skill_update) treats that skill afterward, for either kind of value. GitHub's manual is direct about it:
+
+> "Pinned skills (installed with `--pin`) are skipped with a notice. Use `--unpin` to clear the pinned version and include those skills in the update."
+
+```bash title="pinned skills stay put until you say otherwise"
+# a skill installed with --pin gets a notice here, not an update
+gh skill update --all
+
+# clear every pin and let those skills update normally again
+gh skill update --unpin
+```
+
+That skip behavior is identical for a tag pin and a SHA pin, which is worth stating plainly because it's easy to assume otherwise: `--unpin` doesn't care which kind of value you originally passed. What it doesn't do is retroactively fix a tag-based install if the tag it resolved to at install time already pointed at compromised content. Pinning protects an already-installed skill from moving out from under you later. It doesn't protect the moment of installation itself, and for a tag, that moment is exactly where the mutability risk lives.
+
+## Which one to reach for
+
+Reach for `--pin abc123def` anywhere a script installs the skill without a person watching: CI, a provisioning step, an onboarding script that runs unattended on a new machine. The reproducibility guarantee comes from git's own object model, not from trusting a repo's settings or a person's memory. Reach for `--pin v1.2.0` for a skill you're installing yourself, at your own keyboard, where a version tag is faster to read and a moved tag is something you'd likely notice going wrong in real time. This choice is one piece of `gh skill`'s broader install/manage/publish surface; see [gh skill: Manage AI Agent Skills From GitHub CLI](/dev-tools/gh-skill-manage-ai-agent-skills/) for the rest of that command group, and [GitHub CLI's 2026 agent-era expansion](/dev-tools/github-cli-2026-agent-era-expansion/) for how this fits the wider wave of changes `gh` shipped around it.
+
+Browse more posts like this in the [Dev Tools](/dev-tools) archive.

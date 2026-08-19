@@ -1,0 +1,111 @@
+---
+title: "GitHub Copilot's AI Credits Cliff: Full Guide"
+description: "GitHub Copilot's promotional AI Credits allowances revert to standard levels on September 1, 2026. What changed June 1, what reverts, and how to prepare."
+date: 2026-08-19
+category: ai-productivity
+tags: ["copilot", "github", "ai-credits", "billing", "agent-mode"]
+relatedSlugs:
+  [
+    "same-prompt-different-bill-gpt-claude-gemini",
+    "2026-llm-token-pricing-reset",
+    "prompting-guide-ai-coding-assistants",
+  ]
+series: "copilot-ai-credits-cliff-2026"
+seriesOrder: 1
+coverImage: "./cover.png"
+coverImageAlt: "A dark comparison-matrix style cover reading GitHub Copilot's AI Credits Cliff, badged Sept 1 2026 promo credits revert, listing five row summaries: Business credits dropping 3,000 to 1,900 per user per month, Enterprise dropping 7,000 to 3,900, 1 credit equals $0.01 priced per token per model, annual plans on a separate legacy multiplier system, and AI credits paid usage enabled by default so metered billing continues uncapped unless an admin disables it"
+faq:
+  - question: "Does the September 1 revert affect Free, Pro, Pro+, or Max plans?"
+    answer: "No. Only the pooled Business (3,000 to 1,900 credits/user/month) and Enterprise (7,000 to 3,900 credits/user/month) promotional allowances revert on September 1, 2026. Individual paid tiers, Pro at 1,500 credits, Pro+ at 7,000, and Max at 20,000, keep the same allotment they've had since the June 1 cutover. Free never included paid AI Credits to begin with, so there's nothing to revert on that tier."
+  - question: "Does Copilot silently keep billing once credits run out, or does something visibly break?"
+    answer: 'For Business and Enterprise, it keeps billing. GitHub''s own docs state additional usage is enabled by default for organizations and enterprises, so metered billing continues automatically and uncapped once the pooled AI Credits run out, unless an administrator explicitly disables the "AI credits paid usage" policy in AI Controls settings. There''s no default $0 budget in the current system; GitHub retired that for enterprise and team accounts on 2025-12-02. Individual Pro, Pro+, and Max plans work the opposite way: nothing bills automatically past the included allowance, the subscriber is prompted to upgrade, wait for reset, or manually set a budget.'
+  - question: "Are annual-plan subscribers hit by the same September 1 cliff?"
+    answer: "No, they're on a different clock entirely. Annual-billed plans were never migrated to AI Credits on June 1, 2026; they stayed on the legacy Premium Request Unit and model-multiplier system. GitHub revised that multiplier table on the same June 1 date, though, with some models' multipliers reportedly rising as much as 27x, so annual subscribers already absorbed a separate cost shock months before this one."
+---
+
+## Quick Answer
+
+GitHub's promotional AI Credits allowances, granted when Premium Request Units retired June 1, 2026, revert to standard levels September 1: Business drops 3,000 to 1,900 credits/user/month, Enterprise 7,000 to 3,900. Check usage and set budgets before then: by default, Copilot doesn't halt at zero, it bills metered usage automatically and uncapped.
+
+## Why a promotional number felt like the real one
+
+GitHub Copilot changed its billing model twice in three months, and it's easy to conflate the two changes. On June 1, 2026, GitHub retired Premium Request Units (PRU) in favor of AI Credits for every monthly-billed Pro, Pro+, Business, and Enterprise plan. At that same cutover, Business and Enterprise orgs got a promotional allowance, more credits than the tier's standard allotment, to cushion the transition.
+
+That promotional number was never the permanent one. It reverts to each tier's real allotment on September 1, 2026. For a Business org running close to its promotional 3,000-credit ceiling, that's not a policy footnote. It's a drop to 1,900 credits/user/month, roughly a third less headroom overnight. Enterprise falls further, from 7,000 down to 3,900, a cut of about 44%. Nothing about the billing mechanism itself changes that day. Only the number does.
+
+## Structural Comparison Matrix
+
+| Operational Aspect                      | Before September 1, 2026                                                                                            | After September 1, 2026                                       |
+| :-------------------------------------- | :------------------------------------------------------------------------------------------------------------------ | :------------------------------------------------------------ |
+| **Business tier credits**               | 3,000 credits/user/month (promotional, since 2026-06-01)                                                            | 1,900 credits/user/month (standard, permanent)                |
+| **Enterprise tier credits**             | 7,000 credits/user/month (promotional, since 2026-06-01)                                                            | 3,900 credits/user/month (standard, permanent)                |
+| **Billing mechanism (monthly plans)**   | AI Credits: 1 credit = $0.01, priced per-token, per-model                                                           | Unchanged, same Credits mechanism, only the pool size shrinks |
+| **Annual-plan billing**                 | Legacy PRU/multiplier system, with a revised multiplier table effective 2026-06-01                                  | Unchanged, annual plans don't touch AI Credits at all         |
+| **Default behavior at pool exhaustion** | "AI credits paid usage" enabled by default (Business/Enterprise); metered billing continues automatically, uncapped | Same default, just reached sooner against a smaller pool      |
+
+Every figure in that table comes from GitHub's own living documentation or its billing changelog, not aggregated secondary pricing trackers. The one exception is the "as much as 27x" characterization of the annual-plan multiplier table's extremes, further down, that's a third-party reading of the table, not GitHub's own wording, and it's labeled as such where it appears.
+
+## From flat multipliers to real per-token pricing
+
+Premium Request Units billed every premium model call against a flat multiplier, a request against GPT-4-class models cost roughly the same number of units regardless of how long the prompt or response actually was. AI Credits replaced that on June 1, 2026, with 1 credit equal to $0.01, priced per-token and per-model: input tokens, output tokens, and cache-write tokens each carry their own rate, and that rate differs by model, per [GitHub's own models-and-pricing documentation](https://docs.github.com/en/copilot/reference/copilot-billing/models-and-pricing).
+
+That's the same shift this site already covered for GPT, Claude, and Gemini in the [2026 LLM Token & Pricing Reset](/ai-productivity/2026-llm-token-pricing-reset/) hub: real per-token, per-model economics replacing a flatter, coarser unit. Copilot's version just arrived wearing GitHub's own billing vocabulary, and it means a long, context-heavy prompt against a frontier model now costs visibly more credits than a short one against a lighter model, a distinction PRU's flat multiplier never captured.
+
+## Why Agent Mode changes the math
+
+A single-turn chat question in Copilot burns one round of tokens. Agent Mode's read-file, edit, run-tests, re-read loop burns tokens on every step of that loop, not once per user message. GitHub's own research, as relayed by third-party coverage, puts the difference at roughly 1,000 times more tokens consumed than a single-turn chat query for a comparable task, a figure worth treating as reported rather than a direct GitHub quote.
+
+That multiple shows up in real reported bills: $29 jumping to $750 in a month, $50 jumping to $3,000. A per-message mental model of Copilot cost doesn't predict that jump, because Agent Mode isn't spending per message, it's spending per step. Choosing a lighter model for routine steps, and reserving a frontier model for the step that actually needs it, is a real lever now that credits price by model instead of by flat multiplier. This site's own [prompting guide for AI coding assistants](/ai-productivity/prompting-guide-ai-coding-assistants/) covers the habits, working in checkpoints, specific constraints, that keep an agent loop from running longer than the task needs.
+
+## Annual plans are on a different, quieter clock
+
+Not every Copilot subscriber faces the September 1 cliff. Anyone on an annual-billed plan wasn't migrated to AI Credits on June 1; annual plans stayed on the legacy PRU and model-multiplier system GitHub has run since premium requests first launched. GitHub revised that multiplier table itself on the same June 1 date, and third-party analysis of the table's extremes describes some models' multipliers rising as much as 27x, a characterization worth reading directly rather than secondhand, since it's paraphrased from that analysis, not GitHub's own phrasing.
+
+Annual subscribers don't hit a credit cliff on September 1. They already absorbed a different, quieter one back in June, and it doesn't resolve until the plan comes up for renewal onto the Credits system.
+
+## Budgets, and what actually happens at zero
+
+GitHub gives admins a real lever before September 1 makes the decision for them, but it's worth stating the default plainly first, because it runs backward from what most admins assume. [GitHub's own docs on usage-based billing for organizations and enterprises](https://docs.github.com/en/copilot/concepts/billing/usage-based-billing-for-organizations-and-enterprises) say it directly: additional usage is enabled by default for organizations and enterprises. An org that has never touched its AI Controls settings, never set a budget, and never disabled anything keeps billing metered AI credit usage the moment its shared pool empties, for as long as usage continues. There's no default $0 budget protecting anyone; GitHub retired that for enterprise and team accounts on 2025-12-02, and the Credits system that replaced Premium Request Units on June 1, 2026 doesn't carry it forward.
+
+Budgets can be scoped to an organization, a cost center, or an individual user, per [GitHub's own budgets documentation](https://docs.github.com/en/copilot/tutorials/budgets/getting-started-with-budget-controls). Org- and cost-center-level budgets carry a single toggle, "Stop usage when budget limit is reached": switch it on and metered usage is blocked outright once the limit hits, leave it off (its own default) and admins get a notification while charges keep accruing past the limit instead. A universal user-level budget doesn't get that choice; it always enforces a hard stop, no toggle, no notify-only option.
+
+| Configuration                                                     | What happens                                                                                               |
+| :---------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------- |
+| Nothing configured (Business/Enterprise default)                  | "AI credits paid usage" is already on; metered billing continues automatically and uncapped                |
+| "AI credits paid usage" policy explicitly disabled                | The only configuration that produces a genuine automatic halt, usage blocks entirely once the pool empties |
+| Org/cost-center budget, "Stop usage" toggle on                    | Metered usage is blocked outright once the limit is reached                                                |
+| Org/cost-center budget, "Stop usage" toggle off (its own default) | Admin is notified, but charges keep accruing past the limit                                                |
+| Universal user-level budget                                       | Always hard-stops at the limit, no toggle available                                                        |
+
+GitHub Community discussions [#197557](https://github.com/orgs/community/discussions/197557), [#197605](https://github.com/orgs/community/discussions/197605), and [#197089](https://github.com/orgs/community/discussions/197089) capture real admins working this out the hard way, including one enterprise admin describing a setting that used to read "$0 budget" and block overage automatically now showing "No Usage Limit" instead. The [full exhaustion-behavior breakdown](/ai-productivity/what-happens-when-copilot-credits-run-out/) in this series covers the request-evaluation order and every configuration state in detail.
+
+<Callout type="warning" title="A shrinking pool hits the same wall sooner">
+  If your org is already close to its promotional ceiling, the September 1
+  revert doesn't change how exhaustion behaves, it just moves the date it
+  happens on. Check per-user usage now, not after the first blocked completion.
+</Callout>
+
+## The 10 pieces of this guide
+
+This hub is the starting point for a 10-part series on GitHub Copilot's AI Credits system and the September 1 cliff.
+
+1. **[Check Your Copilot AI Credits Usage Before Sept 1](/ai-productivity/check-copilot-ai-credits-usage-before-sept-1/)**: how to view real usage via the new dashboards and API before the cliff hits.
+2. **[How GitHub Copilot AI Credits Are Actually Priced](/ai-productivity/github-copilot-ai-credits-pricing-explained/)**: the 1 credit = $0.01 per-token, per-model mechanics.
+3. **[GitHub Copilot's PRU to AI Credits Migration, Explained](/ai-productivity/github-copilot-pru-to-ai-credits-migration/)**: what the June 1 cutover actually changed.
+4. **[Annual Copilot Plans: Model Multipliers Just Spiked](/ai-productivity/annual-copilot-plans-model-multipliers-spike/)**: the separate legacy-multiplier mechanism for annual subscribers.
+5. **[Setting Copilot Budget Controls Before the Sept Cliff](/ai-productivity/github-copilot-budget-controls-setup/)**: org, cost-center, and per-user budget configuration.
+6. **[What Happens When GitHub Copilot Credits Run Out](/ai-productivity/what-happens-when-copilot-credits-run-out/)**: default exhaustion behavior, in detail.
+7. **[Why Copilot Agent Mode Burns Through Credits So Fast](/ai-productivity/copilot-agent-mode-credits-consumption/)**: Agent Mode's outsized token consumption.
+8. **[GitHub Copilot Plans Compared by AI Credits, Not Price](/ai-productivity/github-copilot-plans-compared-by-ai-credits/)**: tier-by-tier allotment comparison, not just sticker price.
+9. **[Pick Cheaper Copilot Models to Stretch Your Credits](/ai-productivity/pick-cheaper-copilot-models-stretch-credits/)**: model-selection as a real cost strategy.
+10. **[What to Do Before GitHub Copilot's Sept 1 Credit Cliff](/ai-productivity/github-copilot-sept-1-credit-cliff-checklist/)**: the closing synthesis and checklist.
+
+## What to do before September 1
+
+Three real levers exist right now, not hypothetical advice for later. Check actual usage first: GitHub shipped a per-cycle AI credits view (2026-07-20), a per-user usage-metrics API field (2026-06-19), and an org-level usage metrics impact dashboard (2026-07-22). None of the three existed before this year, so an org running Copilot since the PRU era may genuinely be checking real per-user numbers for the first time.
+
+Set a budget with intent, not as an afterthought. Turn on "Stop usage when budget limit is reached" for a scope that must never lapse, and leave it off for one that should notify instead of blocking a shipping deadline. Apply it at whichever level, org, cost-center, or per-user, matches how the org actually assigns cost accountability. Then route routine agent steps to a cheaper model before September 1 makes the same credit pool feel smaller than it did in July. Credits price by model instead of by flat multiplier, so model choice is a real cost lever PRU never gave you.
+
+None of this requires panic before September 1, but it does require one real decision: whether your org's current usage pattern fits inside the standard allotment, or whether it's been quietly leaning on the promotional cushion without anyone noticing. Check the actual per-user numbers before that date, not after next month's invoice tells you the hard way, since the default here bills uncapped rather than stopping on its own.
+
+Browse more coverage like this in the [AI Productivity](/ai-productivity) archive.

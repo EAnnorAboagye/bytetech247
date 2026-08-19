@@ -1,0 +1,119 @@
+---
+title: "Why Copilot Agent Mode Burns Through Credits So Fast"
+description: "GitHub Copilot's Agent Mode spends AI credits per tool-calling step, not per message. Here's the actual mechanism, with real token math and a sourced case."
+date: 2026-08-19
+category: ai-productivity
+tags: ["copilot", "github", "agent-mode", "ai-credits", "tokens"]
+relatedSlugs:
+  [
+    "github-copilot-ai-credits-cliff-2026",
+    "github-copilot-ai-credits-pricing-explained",
+    "prompting-guide-ai-coding-assistants",
+  ]
+series: "copilot-ai-credits-cliff-2026"
+seriesOrder: 8
+coverImage: "./cover.png"
+coverImageAlt: "A dark comparison-matrix style cover reading Why Copilot Agent Mode Burns Through Credits So Fast, listing five row summaries: credits spend per tool-call step not per chat message, each step resends history plus every tool's full JSON schema, a six-step fix example costs about 12 times one chat question on the same model, GitHub thread 197557 showing 200 credits gone in 10 to 20 requests, and the reported 1,000x figure tracing to no GitHub-linked primary source"
+faq:
+  - question: "Does every Agent Mode step cost as much as the first one?"
+    answer: "Not evenly, but usually more, not less, as the loop goes on. Each step resends the running conversation history plus every enabled tool's full schema, so a later step in a session typically carries more input tokens than the first one did, even though the per-token rate never changes mid-session. GitHub's own agent mode documentation and the VS Code team's token-efficiency post both describe this same mechanism."
+  - question: "Is the '1,000x more tokens' figure something GitHub has confirmed directly?"
+    answer: "No. It traces back to a secondary aggregator (fireup.pro, syndicated through daily.dev) that attributes the figure to 'GitHub's own research' without linking to a GitHub blog post, changelog entry, or dataset. Checking GitHub's and the VS Code team's own writing on agent mode token usage directly turns up no matching statement. Treat it as a widely repeated but unconfirmed figure, not a GitHub-sourced one."
+  - question: "Does switching to a cheaper model stop Agent Mode's step-by-step overhead?"
+    answer: "No, it only lowers the rate each step gets billed at. The step count and the growing context every step resends stay the same no matter which model answers; a cheaper model multiplies a smaller number, but the loop itself, and how many times it runs, is what a checkpoint-based prompting habit actually controls."
+---
+
+## Quick Answer
+
+Agent Mode spends AI credits once per step in its read-edit-test-reread loop, not once per chat message. Each step resends the growing conversation history and every enabled tool's full JSON schema, so a modest six-step bug fix already costs roughly 12 times a single chat question on the same model. Route routine steps to a cheaper model to control it.
+
+## Why a chat message and an agent step aren't the same unit of spend
+
+Copilot Chat's per-token pricing is straightforward once you've seen it: the sibling piece in this series on [how AI Credits are priced](/ai-productivity/github-copilot-ai-credits-pricing-explained/) walks through the exact math, one prompt in, one response out, each priced per token at that model's published rate. A single chat question against a lightweight model rarely reaches even a full credit.
+
+Agent Mode reuses that same per-token pricing. The multiplier isn't a different rate. It's a different number of billed round trips. GitHub's own [Agent Mode 101](https://github.blog/ai-and-ml/github-copilot/agent-mode-101-all-about-github-copilots-powerful-mode/) post describes it as an agentic loop that plans, edits, runs commands, checks the result, and course-corrects, naming three of its underlying tools by their function names: `run_in_terminal` executes a command, `edit_file` applies a change, `read_file` pulls a file's contents into context. Each of those tool calls, and each result that comes back from one, is its own request to the model. A per-message mental model of cost, the one that made sense for Chat, quietly stops describing what you're actually being billed for the moment Agent Mode starts looping.
+
+## What actually happens inside one Agent Mode step
+
+Each step costs more than a chat message not only because there are more of them, but because of what gets resent on every single one. The VS Code team, who ship Copilot's agent mode inside the editor, explained part of the mechanism directly in a June 2026 post on [token efficiency](https://code.visualstudio.com/blogs/2026/06/17/improving-token-efficiency-in-github-copilot):
+
+> Each tool is sent to the model with a full definition (a name, a description, and a complete JSON parameter schema), and historically every one was loaded into context on every request.
+
+The same post describes the loop itself just as plainly:
+
+> An agentic coding turn can involve many sequential requests to the inference provider; one for each step the model takes as it calls tools and works towards a solution.
+
+Put those two observations together and the mechanism is straightforward. Enable a handful of tools, and their full schemas ride along on every step, whether that step needs them or not. Run a test and get back a stack trace, and that stack trace becomes part of the context every step after it has to resend. A six-step bug fix doesn't send six independent, similarly-sized requests. It sends six requests that each carry more than the one before it.
+
+## Structural Comparison Matrix
+
+| Operational Aspect            | Single-turn Chat                                                | Agent Mode session                                                                                                                               |
+| :---------------------------- | :-------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Model calls per request**   | One                                                             | One per loop step (read, edit, test, re-check), until the task finishes                                                                          |
+| **What's resent each call**   | This turn's prompt and immediate context only                   | Full conversation history plus every enabled tool's complete JSON schema                                                                         |
+| **What grows the context**    | Nothing, each turn starts fresh                                 | Tool outputs (file contents, test logs, terminal output) get appended back in for the next step                                                  |
+| **Cost driver**               | Prompt length times one response, at the model's per-token rate | Step count times context growth per step times the model's per-token rate                                                                        |
+| **Real mitigation available** | Rarely needed at this scale                                     | Cached input, priced about a tenth of fresh input on models that support it, and tool search, which cut total session tokens for the median user |
+
+<Callout
+  type="info"
+  title="The cache and tool-search numbers are Microsoft's own measurement"
+>
+  The VS Code team's token-efficiency post found that for most OpenAI models
+  with cached-input pricing, a token served from cache runs about a tenth the
+  cost of that same token sent fresh. GitHub's own Claude Opus 4.8 pricing shows
+  the same roughly-10x gap, independently confirmed by the sibling piece on
+  [credits
+  pricing](/ai-productivity/github-copilot-ai-credits-pricing-explained/) in
+  this series. On tool search specifically, that same post reports total session
+  tokens for the median Copilot user fell 8.97% on GPT-5.4 and 10.92% on
+  GPT-5.5, and roughly 18% on Anthropic models, by not loading every enabled
+  tool's schema into every single step.
+</Callout>
+
+## A real case: a month's credits gone in a day
+
+The clearest evidence for this mechanism isn't a marketing multiplier. It's [GitHub Community discussion #197557](https://github.com/orgs/community/discussions/197557), opened June 1, 2026, the same day GitHub's AI Credits system went live. A Copilot Student-plan user reported their entire monthly allowance, 200 credits ($2.00), gone after what they described as around 10 to 20 Agent Mode requests, on the first day of a fresh billing cycle. That 200-credit figure comes from the reporting user's own dashboard, not from a GitHub-published Student-plan table, so treat the allowance size as one user's reported number rather than an official spec.
+
+The poster's own usage breakdown names three models against a credit total for each: 145.01 credits against GPT-5.4 mini, 35.98 against GPT-5 mini, and 18.93 against Claude Haiku 4.5, adding up to the full 200. Other users replied inside days of the same cutover with the same pattern: one reported 180 of 200 monthly credits gone within two to three days, another reported an entire allowance spent on roughly 10 to 15 agent requests against 4 to 5 simple chat messages that barely moved the number by comparison. That's not one isolated complaint. It's the same read-edit-test-reread loop, run by different people on different tasks, converging on the same outcome: Agent Mode requests cost meaningfully more than chat messages, consistently, not occasionally.
+
+## Why the multiplier compounds: the arithmetic on one bug fix
+
+Real sessions vary too much to reduce to one universal number, so here's a deliberately simple version of the mechanism, built from GitHub's own published per-token rates rather than a captured trace. A single chat question, roughly 3,000 tokens of prompt and file context in, 400 tokens of answer out, against GPT-5 mini's Lightweight-tier rate of $0.25 input and $2.00 output per million tokens, costs $0.00075 plus $0.0008, about $0.00155, or roughly 0.16 credits.
+
+Now walk the same model through a six-step Agent Mode loop fixing one bug: read the failing file, propose an edit, run the tests, read back a failing result, revise, run the tests again. Because each step resends the conversation so far, plausible input token counts climb from around 4,000 on step one to around 14,500 by step six, while each step's own output stays modest, a few hundred tokens for a tool call or a short summary. Total that across all six steps, 57,000 input tokens and 2,200 output tokens, at GPT-5 mini's same rate, and the session costs about $0.0187, or roughly 1.87 credits, about 12 times the single chat question on the identical model.
+
+Run the same six-step shape against a frontier model instead, Claude Opus 4.8's Powerful-tier rate of $5.00 input and $25.00 output per million tokens (the same rate the pricing sibling in this series verifies directly), and the session costs 34 credits against a 2.5-credit chat question on that model, a comparable 12 to 14 times. Step count and growing context drive the multiplier. Model choice multiplies the dollar amount on top of that, but it isn't what causes the multiplier in the first place.
+
+<Callout
+  type="warning"
+  title="This example is arithmetic, not a captured session"
+>
+  The token counts above are a labeled illustration built from GitHub's real
+  published per-token rates, not a logged trace from an actual Copilot session.
+  GitHub doesn't expose a per-step token breakdown for a specific session
+  anywhere in the product, only cycle and per-user totals, covered in this
+  series' piece on [checking your own
+  usage](/ai-productivity/check-copilot-ai-credits-usage-before-sept-1/). Treat
+  the mechanism here as verified and the exact numbers as illustrative.
+</Callout>
+
+## Where the "roughly 1,000x" figure actually comes from
+
+A number bigger than 12x shows up everywhere this topic gets covered: "GitHub's own research found agentic tasks use roughly 1,000x more tokens than single-turn queries." It's a real sentence, written by a secondary aggregator, fireup.pro, syndicated through daily.dev, published July 14, 2026, and it attributes the figure to GitHub without linking to a GitHub blog post, changelog entry, or dataset that actually states it.
+
+Checking that claim directly against GitHub's own writing on the subject doesn't confirm it. Neither GitHub's Agent Mode 101 post nor the VS Code team's token-efficiency piece, the two most relevant GitHub-authored sources on exactly this question, states a 1,000x figure or any single comparable multiplier. That doesn't make the underlying pattern false: the arithmetic above and the real 197557 thread both point the same direction, agent sessions cost meaningfully more than chat messages. It does mean this post won't repeat "1,000x" as a confirmed GitHub number, because the trail to confirm it runs out at a secondary source repeating an unlinked claim, not at GitHub itself.
+
+The same secondary coverage states real bills jumped from $29 to $750 and from $50 to $3,000 a month, again without naming the developer, the thread, or the invoice behind either figure. This post treats those two numbers the same way: unconfirmed against a named source, worth noting as a widely repeated claim, not worth repeating as fact. The 197557 thread above is the concrete, checkable version of the same pattern, a real account, a real dashboard, and a credit total that adds up.
+
+## What actually reduces Agent Mode's credit burn
+
+None of this is an argument against Agent Mode. It's an argument for spending its steps deliberately, and three levers are real, not hypothetical.
+
+Route routine steps to a lighter model. The step count and context growth happen regardless of which model answers each step, but a Lightweight-tier model's per-token rate is a fraction of a Powerful-tier one, and the arithmetic above shows that gap compounds across every step in the loop, not just one.
+
+Work in checkpoints instead of one open-ended prompt. This site's own [prompting guide for AI coding assistants](/ai-productivity/prompting-guide-ai-coding-assistants/) covers asking for a short plan before a multi-file change starts. The same habit caps how many exploratory read-edit-test cycles Agent Mode runs before you've confirmed it's headed the right way, which caps the step count the arithmetic above multiplies against.
+
+Let tool search and prompt caching do the rest. Neither requires a different prompt from you. They're GitHub and the VS Code team optimizing what gets sent under the hood, cutting total session tokens for the median user by the percentages cited above, not a setting you configure by hand.
+
+Agent Mode's credit cost was never really about which model answers your question. It's about how many times that model has to check its own work before the task is done. Watch the step count on a task before you watch the model name, cap exploratory loops with a plan first, and let the cheaper-model, cache-friendly defaults handle the rest. For the full reversion story this cluster sits inside, see the [AI Credits cliff hub](/ai-productivity/github-copilot-ai-credits-cliff-2026/), and browse more coverage in the [AI Productivity](/ai-productivity) archive.

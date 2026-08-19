@@ -1,0 +1,106 @@
+---
+title: "How GitHub CLI Became an AI-Agent Control Surface"
+description: "GitHub CLI (gh) shipped skill, discussion, and issue-hierarchy commands in 2026. See how gh became a real control surface for AI-agent tooling."
+date: 2026-08-19
+category: dev-tools
+tags: ["github-cli", "gh", "ai-agents", "developer-tools", "cli"]
+relatedSlugs:
+  [
+    "github-cli-2026-agent-era-expansion",
+    "gh-skill-manage-ai-agent-skills",
+    "gh-discussion-command-github-cli",
+    "gh-cli-sub-issues-dependencies",
+  ]
+series: "github-cli-agent-era-2026"
+seriesOrder: 11
+coverImage: "./cover.png"
+coverImageAlt: "A dark comparison-matrix style cover reading How GitHub CLI Became an AI-Agent Control Surface, listing five row summaries: gh skill and gh agent-task covering AI-agent tooling, gh discussion and sub-issues covering repo hierarchy, v2.96.0 closing the Codespace Jupyter RCE, v2.97.0 fixing one terminal-injection bug across seven commands, and three of the four new surfaces still labeled preview"
+faq:
+  - question: "Are gh skill, gh discussion, and gh agent-task production-stable, or still preview?"
+    answer: "Mostly still preview. GitHub's own docs label gh skill and gh discussion identically: working with them in the GitHub CLI is in preview and subject to change without notice. gh agent-task's own manual page marks it (preview) directly in its name. The one exception is issue hierarchy: the --parent, --add-sub-issue, and --add-blocked-by flags on gh issue shipped without a preview label, in the same v2.94.0 release as gh discussion. Wire the hierarchy flags into a script with more confidence than the other three for now."
+  - question: "Is gh agent-task the same thing as GitHub Actions' agentic workflows?"
+    answer: "No, they're separate products solving a similar problem from different angles. gh agent-task drives GitHub's asynchronous Copilot coding-agent sessions directly from a terminal command. GitHub Agentic Workflows, covered in this site's Set Up GitHub Agentic Workflows in Actions, compiles natural-language Markdown files into Actions YAML and runs agents inside a CI job, sandboxed behind an Agent Workflow Firewall. One is a CLI command you run by hand; the other is a workflow file that runs on repo events. Both shipped in 2026, and neither replaces the other."
+---
+
+## Quick Answer
+
+Update `gh` to v2.97.0 or later regardless of which commands you use; two of this wave's six changes are security fixes, not features. Then adopt `gh skill` and `gh agent-task` if you drive AI agents from a terminal, and `gh discussion` plus the sub-issue flags if you manage repo hierarchy or Discussions by script.
+
+## Six changes, two directions, one four-month window
+
+Between April and July 2026, `gh` shipped four new command groups and two security-driven point releases. Read as separate changelog entries, each looks routine: a new command here, a patched CVE there. Read together, against real dates, they point the same direction twice.
+
+`gh skill` (2026-04-16) and `gh agent-task` (still preview) give `gh` a terminal surface for AI-agent tooling: installing skills across more than 30 agents, and driving GitHub's own asynchronous Copilot coding-agent runs. `gh discussion` and the sub-issue and dependency flags on `gh issue`, both shipped in the same v2.94.0 release on 2026-06-10, give `gh` a terminal surface for repo hierarchy that used to live only in the web UI or a handwritten GraphQL call. Underneath both threads, v2.96.0 and v2.97.0 closed a real remote-code-execution path and a real terminal-injection bug, hardening the same command surface that now touches more content it didn't write itself: agent output, someone else's PR diff, someone else's gist.
+
+That's the actual synthesis, not a single command worth learning. `gh` spent four months becoming a control surface for two things GitHub used to gate behind a browser: an AI agent's own tooling, and a repository's own issue tree.
+
+## Structural Comparison Matrix
+
+| Capability                                    | Before this wave (pre-April 2026 `gh`)                                                       | After this wave (through v2.97.0)                                                |
+| :-------------------------------------------- | :------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------- |
+| **Cross-agent skill install/update**          | Clone or download a repo, copy files into each agent's own directory by hand, no update path | `gh skill install/update/publish --agent <name>`, one flag across 30+ agents     |
+| **GitHub Discussions from the terminal**      | Raw `gh api graphql` against the Discussions schema, cursor pagination by hand               | `gh discussion list/view/create/edit/comment`                                    |
+| **Issue hierarchy and dependencies**          | GitHub.com sidebar only, or a handwritten GraphQL mutation                                   | `gh issue edit --parent`, `--add-sub-issue`, `--add-blocked-by`                  |
+| **Driving Copilot's async coding agent**      | No terminal path; GitHub.com only                                                            | `gh agent-task create/view/list` (still preview)                                 |
+| **Terminal safety against untrusted content** | Escape sequences in a gist, diff, or agent-task output printed raw                           | Sanitized by default since v2.97.0, opt out only with `--allow-escape-sequences` |
+
+Every row above is sourced from the cluster post that actually researched it, linked below, not re-derived here.
+
+## Thread one: gh becomes agent tooling
+
+`gh skill` gave `gh` its first real lifecycle for AI-agent skills: install, preview, search, update, and publish, all behind one `--agent` flag that recognizes more than 30 coding agents by name. [gh skill: Manage AI Agent Skills From GitHub CLI](/dev-tools/gh-skill-manage-ai-agent-skills/) covers the full command set and the tag-versus-commit-SHA pinning distinction that matters for reproducible CI installs.
+
+`gh agent-task` extends the same thread further. [Its own manual page](https://cli.github.com/manual/gh_agent-task) states plainly what it operates on:
+
+> "a task is a GitHub issue that triggers automated code changes from natural language instructions"
+
+That makes it a terminal driver for GitHub's own Copilot coding agent, still labeled preview, and one of the newest command groups this wave shipped. No dedicated cluster post exists for it yet in this series, so this synthesis leans on that manual definition and the hub's own description rather than research this article didn't do. It's worth distinguishing from a separate GitHub product covering similar ground from a different angle: see the FAQ below on how it differs from GitHub Agentic Workflows in Actions.
+
+## Thread two: gh becomes a repo-hierarchy client
+
+`gh discussion` and the sub-issue and dependency flags on `gh issue` landed in the same v2.94.0 release, 2026-06-10, closing two unrelated gaps at once. Neither depends on the other; they shipped together because both moved a GitHub.com-only feature into a scriptable terminal command.
+
+[gh discussion: GitHub Discussions in Your Terminal](/dev-tools/gh-discussion-command-github-cli/) covers list, view, create, edit, and comment, plus what the command group still can't do (closing, locking, or deleting a discussion still needs raw `gh api graphql`). [Manage GitHub Sub-Issues and Dependencies via gh CLI](/dev-tools/gh-cli-sub-issues-dependencies/) covers `--parent`, `--add-sub-issue`, and `--add-blocked-by`, and one real correction worth repeating here rather than re-deriving: GitHub's own changelog for that release names a `--set-parent` flag that does not exist in the shipped CLI. Only `--parent` and `--remove-parent` are registered; `--parent` handles both the first link and any later change.
+
+## The security cost of touching more untrusted content
+
+A command surface that reads more content it didn't write, gist files, PR diffs, agent-task output, is also a command surface with more to sanitize before printing it to your screen. Both of this wave's security releases fall out of that same expansion.
+
+v2.96.0 (2026-07-02) closed a real remote-code-execution path in `gh codespace jupyter`: a crafted `vscode://` URL from inside a malicious or compromised Codespace could hand off command execution to the victim's own machine, tracked as [GHSA-8cg3-r6g9-fpg2](https://github.com/cli/cli/security/advisories/GHSA-8cg3-r6g9-fpg2). Full detail in [Update gh CLI Now: Codespace Jupyter RCE Fixed](/dev-tools/gh-cli-codespace-jupyter-rce-fixed/).
+
+<Callout
+  type="warning"
+  title="Update before adopting anything else in this post"
+>
+  Neither security release above is optional reading. If `gh --version` reports
+  anything older than 2.97.0, run your package manager's update command before
+  wiring any new command group from this post into a script or a habit.
+</Callout>
+
+v2.97.0 (2026-07-31) is worth one correction here, because a single changelog line invites a conflation that isn't accurate. [GitHub's own release notes for that version](https://github.com/cli/cli/releases/tag/v2.97.0) list four separate security advisories fixed the same day, not four terminal-injection bugs. Only one of them, GHSA-3m3g-3wcr-px46, is the terminal-injection issue, and it touches seven separate command paths, not four, `gh api` and `gh pr diff` among them, both `gh agent-task` subcommands included. The other three advisories fixed that same day cover an unrelated URL-path-escaping bug, a partial auth-token leak in `gh auth status`, and a regex-escaping bypass in `gh attestation verify`, three different bug classes in three different commands. See [gh CLI 2.97.0 Fixes Terminal Injection in 7 Commands](/dev-tools/gh-cli-2-97-0-terminal-injection-fixes/) for the full seven-command list and the fix itself.
+
+Two of the seven sanitized commands, `gh agent-task view` and `gh agent-task create`, belong to the same agent-tooling thread this post opened with. That's not a coincidence worth glossing over: the newest, least-tested command surface is also the one that needed a security patch in its first few months.
+
+## What's still preview, and what already shipped stable
+
+Not every command in this wave carries the same production confidence. GitHub's own `gh` manual states the same caveat for two of the four, word for word except for the one swapped noun:
+
+> "Working with agent skills in the GitHub CLI is in preview and subject to change without notice."
+
+Swap "agent skills" for "discussions" and that's the exact sentence covering `gh discussion` too. `gh agent-task` carries its own preview label directly on its manual page, a shorter but equally direct signal.
+
+Issue hierarchy is the exception. The `--parent`, `--add-sub-issue`, and `--add-blocked-by` flags shipped in v2.94.0 without a preview caveat attached anywhere in GitHub's changelog or `gh`'s own docs. If you're choosing where to script first, that's a real, sourced reason to start with the hierarchy flags over the other three.
+
+This is the tenth and closing post in a 10-part series; it earns its place the same way [Same Prompt, Different Bill](/ai-productivity/same-prompt-different-bill-gpt-claude-gemini/) closes this site's LLM pricing series, tying several individually-dated changes into one decision instead of adding an eleventh isolated fact. See [GitHub CLI's 2026 Agent-Era Expansion](/dev-tools/github-cli-2026-agent-era-expansion/) for the hub linking all ten pieces.
+
+## Update first, then adopt selectively
+
+Check your version before anything else:
+
+```bash
+gh --version
+```
+
+Anything before v2.97.0 is missing a real security fix, not a feature. Update through whatever channel installed `gh`: `brew upgrade gh`, `apt update && apt install gh`, `scoop update gh`, or a fresh binary from [cli.github.com](https://cli.github.com/). Past that baseline, adopt selectively rather than all at once. `gh skill` and `gh agent-task` earn their place the moment you're managing AI-agent tooling across more than one machine or one agent. `gh discussion` and the sub-issue flags earn theirs the moment a script needs to read or change something that used to require a browser tab. None of the four demand adoption on day one, but the pattern behind them does demand attention: `gh` isn't just tracking GitHub's web features anymore, it's becoming the terminal's own control point for them, and a version bump in this series is worth reading before you skip it.
+
+Browse more coverage like this in the [Dev Tools](/dev-tools) archive.

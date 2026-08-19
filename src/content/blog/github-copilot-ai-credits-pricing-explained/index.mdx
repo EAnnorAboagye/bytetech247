@@ -1,0 +1,127 @@
+---
+title: "How GitHub Copilot AI Credits Are Actually Priced"
+description: "GitHub Copilot's AI Credits convert real per-token, per-model pricing into dollars at a fixed 1 credit = $0.01 rate. Here's exactly how the math works."
+date: 2026-08-19
+category: ai-productivity
+tags: ["copilot", "github", "ai-credits", "billing", "tokens"]
+relatedSlugs:
+  [
+    "github-copilot-ai-credits-cliff-2026",
+    "same-prompt-different-bill-gpt-claude-gemini",
+    "2026-llm-token-pricing-reset",
+  ]
+series: "copilot-ai-credits-cliff-2026"
+seriesOrder: 3
+coverImage: "./cover.png"
+coverImageAlt: "A dark comparison-matrix style cover reading How GitHub Copilot AI Credits Are Actually Priced, listing five row summaries: 1 AI credit equals $0.01 USD converted from real token pricing, input and output tokens priced separately per model, cached input billed at roughly 10 percent of the fresh input rate, cache writes priced at 1.25x the input rate on GPT-5.6 and Anthropic models, and a 100K/20K token prompt costing about 15 times more credits on Claude Opus 4.8 than GPT-5 mini"
+faq:
+  - question: "Is the 1 credit = $0.01 conversion rate the same on every Copilot plan?"
+    answer: "Yes. GitHub's own documentation for both individual plans and organization/enterprise plans states the same conversion independently: 1 AI credit equals $0.01 USD. What changes by plan is the size of the monthly credit allowance, 1,500 for Pro, 7,000 for Pro+, 1,900 per user for Business, 3,900 per user for Enterprise, not the dollar value of a credit or the per-token rates that generate it."
+  - question: "Do code completions and Next Edit suggestions consume AI Credits?"
+    answer: "No. GitHub's documentation states plainly that code completions and next edit suggestions are not billed in AI credits and remain unlimited for all paid plans. Only interactions that call a model directly, such as Copilot Chat, Copilot CLI, Copilot cloud agent, Copilot Spaces, Spark, and third-party coding agents, draw from the per-token pricing this post covers."
+  - question: "Can I calculate my exact credit cost before I send a prompt?"
+    answer: "Not exactly. Your input token count is knowable in advance, but the output token count isn't fixed until the model finishes responding, and GitHub doesn't show a pre-flight cost estimate in the product. You can get a close estimate from your prompt's input length and the model's published input rate, the same way the worked examples in this post do, but the final number depends on how much the model actually writes back."
+---
+
+## Quick Answer
+
+GitHub Copilot's AI Credits price real token counts, not flat per-request units. Each model charges separately for input tokens, cached input tokens, and (on some models) cache-write tokens, plus output tokens, then the dollar total converts to credits at a fixed 1 credit = $0.01. Model choice and context size now change your cost, not just your request count.
+
+## Why "per request" was never the same as "per token"
+
+Before June 1, 2026, a Copilot interaction was billed as a Premium Request Unit. Under that system, [GitHub assigned every supported model a fixed multiplier](https://docs.github.com/en/copilot/reference/copilot-billing/request-based-billing-legacy/model-multipliers-for-annual-plans) tied to how heavy that model was to run, then subtracted that many units from your monthly allowance whenever you used it. A single chat call to Claude Opus 4.7 cost 27 premium requests. A call to GPT-5.5 cost 57. Neither number moved whether the prompt was one line or a whole file's worth of context, because the multiplier attaches to the request, not to anything measured inside it.
+
+AI Credits replaced that system for every monthly-billed Pro, Pro+, Business, and Enterprise plan. The unit is no longer the request. It's the token, priced per model, then converted to a dollar figure at a fixed rate: 1 AI credit equals $0.01 USD, confirmed directly on [GitHub's own models-and-pricing documentation](https://docs.github.com/en/copilot/reference/copilot-billing/models-and-pricing). That single conversion rate is the same across every plan; what a request actually costs depends entirely on the model and the tokens it consumes.
+
+<Callout
+  type="warning"
+  title="This post covers the mechanism, not the Sept 1 cliff itself"
+>
+  If you're here because a promotional Business or Enterprise credit allowance
+  is about to shrink on **September 1, 2026**, this post explains the pricing
+  math sitting underneath that number. For the full reversion story and what to
+  do before it hits, see [GitHub Copilot's AI Credits
+  Cliff](/ai-productivity/github-copilot-ai-credits-cliff-2026/) hub.
+</Callout>
+
+## Structural Comparison Matrix
+
+| Operational Aspect                   | Premium Request Units (legacy)                                           | AI Credits (current)                                                                          |
+| :----------------------------------- | :----------------------------------------------------------------------- | :-------------------------------------------------------------------------------------------- |
+| **Billing unit**                     | A flat multiplier per request (Claude Opus 4.7 = 27x, GPT-5.5 = 57x)     | Real token counts priced per model, converted to credits at 1 credit = $0.01                  |
+| **Effect of prompt/response length** | None. The multiplier is fixed no matter how many tokens the request used | Direct. More input or output tokens means more credits, every time                            |
+| **Cached context**                   | Not a distinct concept under the multiplier system                       | Cached input billed separately, consistently around 10% of that model's fresh-input rate      |
+| **Writing to cache**                 | Not priced at all                                                        | Priced on OpenAI's GPT-5.6 family and every Anthropic model, at 1.25x that model's input rate |
+| **Crossing a long-prompt threshold** | No effect. Same multiplier regardless of context size                    | Some models switch to a higher "Long context" rate once input tokens cross a set threshold    |
+
+The 10% cached-input figure and the 1.25x cache-write figure aren't stated as round numbers anywhere in GitHub's docs. They're a pattern this post found by checking every row of the live pricing table that includes both prices, and it held consistently across every one checked, from GPT-5 mini up through Claude Opus 4.8. The next two sections show the arithmetic.
+
+## The real pricing table, and how to read it
+
+GitHub organizes its per-model pricing into separate tables by provider, OpenAI, Anthropic, Google, Microsoft, xAI, Moonshot AI, and GitHub's own fine-tuned models, each with the same shape: a model name, a release status, a category (Lightweight, Versatile, or Powerful), and up to four price columns covering input, cached input, cache write, and output. A handful of models also carry a Tier column, splitting Default pricing from a higher Long context rate past a stated token threshold.
+
+<Callout type="info" title="Every price is per 1 million tokens">
+  Reading $5.00 as "$5 per token" instead of "$5 per million tokens" is the
+  single easiest way to badly misjudge a cost estimate from this table. A
+  100,000-token prompt against a $5.00 input rate costs $0.50 in input tokens,
+  not $500,000.
+</Callout>
+
+Here's a representative snapshot, quoted directly from GitHub's live pricing table on 2026-08-19:
+
+> | Model                          | Category    | Input | Cached input |    Cache write | Output |
+> | :----------------------------- | :---------- | ----: | -----------: | -------------: | -----: |
+> | **GPT-5 mini**                 | Lightweight | $0.25 |       $0.025 | Not applicable |  $2.00 |
+> | **GPT-5.4** (default tier)     | Versatile   | $2.50 |        $0.25 | Not applicable | $15.00 |
+> | **GPT-5.6 Sol** (default tier) | Powerful    | $5.00 |        $0.50 |          $6.25 | $30.00 |
+> | **Claude Haiku 4.5**           | Versatile   | $1.00 |        $0.10 |          $1.25 |  $5.00 |
+> | **Claude Opus 4.8**            | Powerful    | $5.00 |        $0.50 |          $6.25 | $25.00 |
+> | **Gemini 3.6 Flash**           | Versatile   | $0.75 |       $0.075 |            n/a |  $3.75 |
+
+All rates above are per 1 million tokens. Gemini 3.6 Flash's row is promotional pricing in effect through December 31, 2026, per GitHub's own table, not a permanent rate. This is a snapshot, not a live feed either way. GitHub's table changes as models and rates change, so treat the columns and the pattern as the durable part and check [the live table](https://docs.github.com/en/copilot/reference/copilot-billing/models-and-pricing) for the current numbers before budgeting against them.
+
+## A worked example: the same prompt, two different models
+
+Take a Copilot Chat request that sends 100,000 input tokens (a decent chunk of repo context) and gets back 20,000 output tokens, with nothing served from cache. Here's what that costs on two models from the table above.
+
+**GPT-5 mini** (Lightweight, $0.25 input / $2.00 output per 1M tokens):
+
+1. Input: 100,000 tokens x $0.25 / 1,000,000 = $0.025
+2. Output: 20,000 tokens x $2.00 / 1,000,000 = $0.04
+3. Total: $0.025 + $0.04 = $0.065
+4. Credits: $0.065 / $0.01 = 6.5 credits
+
+**Claude Opus 4.8** (Powerful, $5.00 input / $25.00 output per 1M tokens):
+
+1. Input: 100,000 tokens x $5.00 / 1,000,000 = $0.50
+2. Output: 20,000 tokens x $25.00 / 1,000,000 = $0.50
+3. Total: $0.50 + $0.50 = $1.00
+4. Credits: $1.00 / $0.01 = 100 credits
+
+Same prompt, same token counts, roughly 15 times more credits on the more capable model. That gap is the whole point of moving to per-token pricing: a flat PRU multiplier could only tell you a model costs "more," never how much more a specific request actually spent.
+
+## Cached tokens cost less, cache writes cost more
+
+The Structural Comparison Matrix above flags a pattern worth showing directly. Take Claude Opus 4.8 again, this time for the same 100,000 tokens handled three different ways.
+
+A fresh, uncached input call: 100,000 tokens x $5.00 / 1,000,000 = $0.50, or 50 credits.
+
+Writing that same context to cache for the first time: 100,000 tokens x $6.25 / 1,000,000 = $0.625, or 62.5 credits, a 25% premium over the plain input rate.
+
+Reading that context back from cache on a later call: 100,000 tokens x $0.50 / 1,000,000 = $0.05, or 5 credits, one tenth of the fresh-input cost.
+
+The first cache write costs more than just sending the tokens fresh would have. Every reuse after that costs a tenth as much. A workflow that repeats the same large context across several calls, an agent looping over the same file, a chat session that keeps referencing the same repo, comes out well ahead by writing to cache once and reading from it repeatedly, instead of resending the same tokens as plain input every time.
+
+## Crossing the long-context threshold changes the rate too
+
+Some models in the table carry a second lever: a Tier column that splits Default pricing from a higher Long context rate once your input crosses a stated threshold. GPT-5.4 is a clean example. Its Default tier applies at or below 272,000 input tokens, at $2.50 input and $15.00 output per million tokens. Its Long context tier applies above 272,000 input tokens, at $5.00 input and $22.50 output, exactly double the input rate and 1.5x the output rate.
+
+GitHub's table presents Default and Long context as two separate rows with two separate rates, not a blended formula, so a request appears to be billed against whichever tier its input falls into rather than only the tokens past the line. That reading isn't spelled out explicitly in GitHub's own pricing docs, so treat it as the most reasonable interpretation of how the table is structured, not a directly confirmed billing mechanic. Either way, the practical takeaway holds: a prompt that quietly grows past a model's context threshold can jump to a meaningfully higher per-token rate, on top of simply containing more tokens to price.
+
+## Model choice, not request count, is now the lever
+
+The mental model that mattered under Premium Request Units, count how many requests you're sending, doesn't transfer to AI Credits. What matters now is which model answers the request and how many tokens that answer actually took, input, cached, written to cache, and generated. The worked example above shows a 15x swing between two models on the exact same prompt, computed directly from GitHub's published rates, not estimated.
+
+That's the same structural shift this site already covered for GPT, Claude, and Gemini's own pricing in [Same Prompt, Different Bill](/ai-productivity/same-prompt-different-bill-gpt-claude-gemini/) and [The 2026 LLM Token & Pricing Reset](/ai-productivity/2026-llm-token-pricing-reset/): flat, coarse units giving way to real per-token, per-model economics that a reader actually has to compute rather than just look up. Copilot's version arrived a few months later, wearing GitHub's own credit vocabulary, but the underlying math is the same industry pattern. Before the standard credit allowance becomes the only allowance your org has to work with, check which models your default routing actually sends requests to, since that choice now moves your bill more than your request count ever did.
+
+Browse more coverage like this in the [AI Productivity](/ai-productivity) archive, or start from [GitHub Copilot's AI Credits Cliff](/ai-productivity/github-copilot-ai-credits-cliff-2026/) hub for the full reversion story.

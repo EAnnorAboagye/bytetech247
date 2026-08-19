@@ -1,0 +1,108 @@
+---
+title: "gh release download No Longer Needs Auth (Public Repos)"
+description: "gh release download now works against public repos without auth, matching gh extension install. What changed in v2.96.0, and a CI example."
+date: 2026-08-19
+category: dev-tools
+tags: ["github-cli", "gh", "ci-cd", "releases", "cli"]
+relatedSlugs:
+  ["github-cli-2026-agent-era-expansion", "gh-cli-codespace-jupyter-rce-fixed"]
+series: "github-cli-agent-era-2026"
+seriesOrder: 8
+coverImage: "./cover.png"
+coverImageAlt: "A terminal-style cover comparing gh release download against a public repository before and after GitHub CLI v2.96.0: the pre-v2.96.0 run hits gh's shared authentication-required error, the v2.96.0-and-later run succeeds with no token and downloads the real gh_2.96.0_checksums.txt asset"
+faq:
+  - question: "Does the dropped auth requirement also apply to private repositories?"
+    answer: 'No. Anonymous REST reads only work for data GitHub already serves without a session, and a private repo''s release data isn''t public data. Running gh release download unauthenticated against a repo an anonymous session can''t see returns "release not found," the same response you''d get for a repo that doesn''t exist at all, not the old auth-required error. A private repo still needs a token with access to that repo.'
+  - question: "If I still pass a token, does gh release download ignore it now?"
+    answer: 'No, it''s still used when present. GitHub CLI''s own v2.96.0 release notes say it directly: "A token is still used when one is present." The change only removes the requirement to have one, not the benefit of having one. An authenticated request also gets GitHub''s 5,000-requests-per-hour rate limit instead of the 60-per-hour limit unauthenticated requests share, which matters more in a CI run that hits the API repeatedly than the download itself.'
+---
+
+## Quick Answer
+
+`gh release download` used to require an authenticated session even for public repos, hitting the same auth-gate error every other unauthenticated command threw. GitHub CLI v2.96.0 removes that gate for public repositories, matching `gh extension install`. Drop the `GH_TOKEN` line from CI steps that only pull public release assets; keep it for private repos.
+
+## What the auth gate actually blocked
+
+`gh` runs one shared check before most subcommands execute: is there a token, or a logged-in host, available. Individual commands don't get their own custom login logic; they either run behind that shared gate or they're explicitly marked to skip it. Before v2.96.0, `gh release download` wasn't marked to skip it, so a CI step pulling a release asset from a completely public repo still hit the same "please authenticate" wall as any command that genuinely needed write access.
+
+`gh extension install` got the same exemption three months earlier, in v2.90.0. The problem there was more specific: Codespaces issues SAML-scoped tokens that fail authorization checks against extension repos they were never scoped for, so installing a public extension from inside a Codespace could fail even though installing it never needed elevated access. [PR #13176](https://github.com/cli/cli/pull/13176) fixed it with a one-line opt-out, `cmdutil.DisableAuthCheck`, added specifically to the `extension install` subcommand.
+
+[PR #13723](https://github.com/cli/cli/pull/13723), which shipped the `gh release download` change in v2.96.0, points at that exact precedent:
+
+> "Release endpoints for public repositories are readable anonymously over REST, so the login gate is unnecessary. Removing it is the same one-line `cmdutil.DisableAuthCheck` change that #13176 made for `gh extension install`."
+
+Both fixes trace back to the same tracking issue, [#2680, "Allow certain requests to be unauthenticated"](https://github.com/cli/cli/issues/2680) - a running list of `gh` commands that were gated by default even when the underlying GitHub API endpoint never required a session in the first place.
+
+## Structural Comparison Matrix
+
+| Operational Aspect                     | Before v2.96.0                                                           | v2.96.0+                                                                        |
+| :------------------------------------- | :----------------------------------------------------------------------- | :------------------------------------------------------------------------------ |
+| **Public repo, no token present**      | Fails at the shared auth gate before the download starts                 | Succeeds; the REST release endpoint is read anonymously                         |
+| **Private repo, no token present**     | Fails at the shared auth gate                                            | Fails differently: "release not found," the same response as a nonexistent repo |
+| **Token present**                      | Used for the request                                                     | Still honored opportunistically; nothing about supplying one changed            |
+| **Parity with `gh extension install`** | None; that command got its own-command exemption in v2.90.0 (April 2026) | Matched; both now carry the same `cmdutil.DisableAuthCheck` opt-out             |
+| **CI wiring for a public-asset step**  | A `GH_TOKEN` env line was required just to clear the gate                | Optional; only needed for private repos or to get the higher rate limit         |
+
+## What actually happens now, verified live
+
+<Callout type="info" title="How this was tested">
+  Since GitHub CLI v2.96.0 has already shipped, showing the old behavior meant
+  pointing `gh` at an empty, isolated config directory with no `GH_TOKEN` or
+  `GITHUB_TOKEN` set, so it had zero stored credentials to fall back on. `gh
+  auth status` confirmed that isolated session was genuinely unauthenticated
+  before either command below ran against it.
+</Callout>
+
+With that isolated, credential-free config, `gh release download` against a real public release succeeds with no token at all:
+
+```bash title="unauthenticated gh release download, real repo, real asset"
+$ gh release download v2.96.0 --repo cli/cli -p "gh_2.96.0_checksums.txt"
+$ ls
+gh_2.96.0_checksums.txt
+```
+
+No prompt, no error, exit code 0. That's `gh`'s own v2.96.0 checksums file, pulled from `cli/cli`'s public release, using the exact repo the release notes' own example points at.
+
+The shared auth gate is still very much alive elsewhere in the same binary. `gh release view` never got the same opt-out `gh release download` did, so running it against the same isolated, unauthenticated session reproduces the exact wall `gh release download` itself used to hit before v2.96.0:
+
+```bash title="a command that still requires auth, same isolated session"
+$ gh release view v2.96.0 --repo cli/cli --json assets
+To get started with GitHub CLI, please run:  gh auth login
+Alternatively, populate the GH_TOKEN environment variable
+with a GitHub API authentication token.
+```
+
+Exit code 4. That message comes from the same shared pre-command check `gh release download` was routed through before v2.96.0; only the per-command opt-out changed, not the message itself.
+
+## Use it in CI: drop the token for public assets
+
+`gh` ships preinstalled on GitHub-hosted runners, so a workflow step pulling a public release asset no longer needs a token wired in just to clear the auth gate:
+
+```yaml title=".github/workflows/fetch-release-asset.yml"
+name: Fetch a public release asset
+on:
+  workflow_dispatch:
+
+jobs:
+  download:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download checksums from a public release
+        run: >
+          gh release download v2.96.0 --repo cli/cli
+          -p "gh_2.96.0_checksums.txt" --clobber
+```
+
+No `env: GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}` line, and no PAT stored as a repo secret for a step that never needed write access in the first place. `--clobber` overwrites a stale file from a previous run instead of failing; `--skip-existing` does the opposite if the goal is to avoid re-downloading unchanged assets, and `-D <directory>` picks a target other than the current directory, per [`gh`'s own manual for `gh release download`](https://cli.github.com/manual/gh_release_download).
+
+One caveat worth keeping in mind: dropping the token doesn't remove every reason to keep one. Unauthenticated requests share GitHub's public rate limit of 60 requests per hour, against 5,000 per hour for an authenticated request. A workflow that only downloads one asset from one public repo won't notice. A workflow that also calls the API repeatedly in the same run, across matrix jobs sharing the same runner IP, might still want the token, for the rate limit headroom, not because the download itself demands it anymore.
+
+## What else shipped in the same release
+
+[v2.96.0](https://github.com/cli/cli/releases/tag/v2.96.0) wasn't a single-change release. The same version fixed a real remote-code-execution path in `gh codespace jupyter`, where a malicious Codespace could hand the CLI a `vscode://` URL and get command execution on the victim's machine after one click-through. That fix is unrelated to the auth-gate change here and covered on its own in [Update gh CLI Now: Codespace Jupyter RCE Fixed](/dev-tools/gh-cli-codespace-jupyter-rce-fixed/).
+
+Both changes, along with the rest of `gh`'s 2026 expansion into agent-skill management and Discussions support, are covered in [GitHub CLI's 2026 agent-era expansion](/dev-tools/github-cli-2026-agent-era-expansion), the hub this post is part of.
+
+Drop the token from any CI step that only downloads a public release asset; it's dead weight now, not a requirement. Keep it anywhere the repo is private, or where the same job leans on the API enough that the rate-limit gap actually matters.
+
+Browse more coverage like this in the [Dev Tools](/dev-tools) archive.

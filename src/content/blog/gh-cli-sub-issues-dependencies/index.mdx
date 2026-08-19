@@ -1,0 +1,168 @@
+---
+title: "Manage GitHub Sub-Issues and Dependencies via gh CLI"
+description: "Set parent issues, list sub-issues, and add blocked-by dependencies with gh CLI's issue edit and create commands, no browser needed."
+date: 2026-08-19
+category: dev-tools
+tags: ["github-cli", "gh", "issues", "project-management", "cli"]
+relatedSlugs:
+  ["github-cli-2026-agent-era-expansion", "gh-discussion-command-github-cli"]
+series: "github-cli-agent-era-2026"
+seriesOrder: 5
+coverImage: "./cover.png"
+coverImageAlt: "A terminal window running the real GitHub CLI commands gh issue edit 23 --parent 100, gh issue edit 100 --add-sub-issue 123,124, and gh issue edit 123 --add-blocked-by 200 --add-blocking 300,301, with a note that GitHub CLI v2.94.0 or later is required"
+faq:
+  - question: "Does managing sub-issues and dependencies require a specific gh version?"
+    answer: "Yes. GitHub's own changelog states it three times: issue hierarchy and dependencies need GitHub CLI v2.94.0 or later, released 2026-06-10. Run gh --version to check your installed copy, and update through whatever channel installed it (Homebrew, winget, apt, or a fresh binary from cli.github.com) if you're behind. Anything older doesn't recognize --parent, --add-sub-issue, or the blocked-by/blocking flags at all."
+  - question: "Why doesn't gh issue edit --set-parent work?"
+    answer: "Because that flag doesn't exist in the shipped CLI, even though GitHub's own 2026-06-10 changelog announcement names it alongside --parent and --remove-parent. Running gh issue edit --help on a live v2.97.0 install, and checking the current pkg/cmd/issue/edit/edit.go source in cli/cli directly, both show only two registered flags for parent handling: --parent (sets or changes the parent) and --remove-parent (clears it). Use --parent for both the initial link and any later change; there's no separate set-vs-change flag."
+---
+
+## Quick Answer
+
+Use `gh issue edit <number> --parent <number>` to link an issue under a parent, `--add-sub-issue`/`--remove-sub-issue` on the parent to manage its children, and `--add-blocked-by`/`--add-blocking` for cross-issue dependencies. All of it needs GitHub CLI v2.94.0 or later. Skip the web UI or hand-rolled GraphQL calls once you're scripting bulk changes to an issue tree.
+
+GitHub CLI's `gh issue` command picked up issue types, parent/sub-issue relationships, and cross-issue dependencies in [v2.94.0](https://github.blog/changelog/2026-06-10-manage-sub-issues-types-and-dependencies-from-github-cli/), shipped 2026-06-10. Before that release, every one of those relationships lived only in the GitHub.com web UI. Reading or changing a project's issue tree from a script meant writing raw `gh api graphql` calls against the Issues GraphQL schema by hand, since `gh issue` itself had no concept of a parent, a sub-issue, or a dependency.
+
+## Structural Comparison Matrix
+
+| Operational Task                     | Before v2.94.0                                                       | gh CLI v2.94.0+                                                   |
+| :----------------------------------- | :------------------------------------------------------------------- | :---------------------------------------------------------------- |
+| **Set a parent issue**               | GitHub.com issue sidebar, or a handwritten `gh api graphql` mutation | `gh issue edit <number> --parent <number>`                        |
+| **Link a sub-issue from the parent** | Add it through the sub-issues panel in the web UI                    | `gh issue edit <parent> --add-sub-issue <number>`                 |
+| **Read an issue's hierarchy**        | Open the issue page and scroll to the sub-issues panel               | `gh issue view <number> --json parent,subIssues,subIssuesSummary` |
+| **Set a cross-issue dependency**     | No dedicated UI control; scripted against the GraphQL API            | `gh issue edit <number> --add-blocked-by <number>`                |
+| **Filter issues by type**            | `type:` qualifier in the web search bar                              | `gh issue list --type <name>`                                     |
+
+## Check your gh version before any of this works
+
+```bash
+gh --version
+```
+
+Every flag in this post needs GitHub CLI v2.94.0 or later. If your version is older, update through whatever channel installed `gh`: `brew upgrade gh` on Homebrew, `winget upgrade --id GitHub.cli --source winget` on Windows, or your Linux package manager. This machine is running v2.97.0, and every command below was run against that install.
+
+## Set, change, or remove a parent issue
+
+`gh issue edit` takes one number or URL argument for the parent, straight from [GitHub's own manual page](https://cli.github.com/manual/gh_issue_edit):
+
+```bash title="link issue 23 under parent issue 100"
+gh issue edit 23 --parent 100
+```
+
+`--parent` does double duty. Run it once to link an unparented issue, or run it again later with a different number to move that issue under a new parent. There's no separate flag for the two cases.
+
+```bash title="unlink the parent without closing or deleting the issue"
+gh issue edit 23 --remove-parent
+```
+
+GitHub's own 2026-06-10 announcement describes the same capability this way:
+
+> Link, change, or remove a parent with `--parent`, `--set-parent`, and `--remove-parent`.
+
+<Callout type="info" title="That third flag doesn't exist in the shipped CLI">
+  Running `gh issue edit --help` on a real v2.97.0 install shows only two flags
+  registered for parent handling: `--parent` and `--remove-parent`. The current
+  [`pkg/cmd/issue/edit/edit.go`](https://github.com/cli/cli/blob/trunk/pkg/cmd/issue/edit/edit.go)
+  source in `cli/cli` confirms it, just two calls to `cmd.Flags()` for this. A
+  script or an older tutorial that references `--set-parent` will fail with an
+  unknown-flag error. Use `--parent` for both the first link and any later
+  change; it does the job the announcement's `--set-parent` describes.
+</Callout>
+
+## Create a new issue directly as a sub-issue
+
+`gh issue create` takes the same `--parent` flag, so a new issue can join the hierarchy at creation instead of needing a follow-up `edit` call:
+
+```bash title="create issue 23's sibling, parented under 100 from the start"
+gh issue create \
+  --title "Fix login redirect loop after SSO callback" \
+  --body "Users land back on /login after a successful SSO callback instead of the app." \
+  --parent 100
+```
+
+The parent accepts a URL too, useful when the parent lives in a different repository: `--parent https://github.com/cli/go-gh/issues/42`, straight from the flag's own documented example.
+
+## Link and unlink sub-issues from the parent side
+
+The same relationship can be managed from the parent issue instead of the child, and `--add-sub-issue` takes a comma-separated list for more than one at a time:
+
+```bash title="attach two existing issues as sub-issues of 100"
+gh issue edit 100 --add-sub-issue 123,124
+```
+
+```bash title="detach one of them again, without touching its open/closed state"
+gh issue edit 100 --remove-sub-issue 124
+```
+
+## Read the hierarchy back with --json
+
+`gh issue view` and `gh issue list` both expose `parent`, `subIssues`, and `subIssuesSummary` as JSON fields, so a script can read the tree without scraping HTML. Run against a real public issue on `cli/cli` itself, this is the actual shape `gh` returns:
+
+```bash
+gh issue view 5545 --repo cli/cli --json parent,subIssues,subIssuesSummary
+```
+
+```json title="real output, captured live against cli/cli issue 5545"
+{
+  "parent": null,
+  "subIssues": { "nodes": [], "totalCount": 0 },
+  "subIssuesSummary": { "completed": 0, "percentCompleted": 0, "total": 0 }
+}
+```
+
+That particular issue has no sub-issues linked, which is why the fields are empty. When they're populated, `subIssues.nodes` holds the full list of child issue objects, and `subIssuesSummary` gives a ready-made completed/total/percentCompleted count, so a script doesn't have to iterate the array itself to show progress.
+
+## Set and filter by issue type
+
+```bash title="set a type on an existing issue"
+gh issue edit 23 --type Bug
+```
+
+```bash title="clear it again"
+gh issue edit 23 --remove-type
+```
+
+`gh issue list` filters by the same field. This is real output from `cli/cli`'s own tracker, showing the full `issueType` object a populated field actually returns:
+
+```bash
+gh issue list --repo cli/cli --type Bug --limit 1 --json number,title,issueType
+```
+
+```json title="real output, captured live"
+[
+  {
+    "issueType": {
+      "id": "IT_kwDOA48Fh84AtH84",
+      "name": "Bug",
+      "description": "An unexpected problem or behavior",
+      "color": "RED"
+    },
+    "number": 9569,
+    "title": "Can't install / update `gh` due to expired GPG key?"
+  }
+]
+```
+
+## Set cross-issue dependencies
+
+Dependencies are separate from parent/child hierarchy. "Blocked by" and "blocking" describe ordering between two issues that don't need a parent-child relationship at all:
+
+```bash title="issue 123 is blocked by 200, and itself blocks 300 and 301"
+gh issue edit 123 --add-blocked-by 200 --add-blocking 300,301
+```
+
+Both flags take comma-separated lists, and both directions can be set in the same call, as shown in `gh issue edit`'s own `--help` output. Remove either side the same way:
+
+```bash title="clear the blocked-by relationship, leave blocking untouched"
+gh issue edit 123 --remove-blocked-by 200
+```
+
+`gh issue create` has the equivalent flags for setting dependencies at creation time: `--blocked-by` and `--blocking`, both accepting the same comma-separated issue-number or URL lists.
+
+## Where this fits in the wider gh CLI wave
+
+Sub-issue and dependency support shipped in the same v2.94.0 release as `gh discussion`, GitHub CLI's new command group for GitHub Discussions. Neither depends on the other; they landed the same day because both closed a gap where GitHub.com had a feature `gh` couldn't touch at all. See [gh discussion: GitHub Discussions in Your Terminal](/dev-tools/gh-discussion-command-github-cli/) for that side of the same release, and [GitHub CLI's 2026 Agent-Era Expansion](/dev-tools/github-cli-2026-agent-era-expansion/) for the full ten-part wave this cluster belongs to.
+
+Reach for these flags the moment you're managing more than a handful of issues in one hierarchy, triaging a big feature into sub-issues from a script, or wiring an agent to file work broken down by parent task automatically. For a one-off parent link on a single issue, the GitHub.com sidebar is still fewer keystrokes. Once you're doing it more than once, `gh issue edit --parent` is the version that survives being scripted.
+
+Browse more coverage like this in the [Dev Tools](/dev-tools) archive.

@@ -235,3 +235,139 @@ Status values: pending (researched, not yet approved) -> approved (user greenlit
 - Proposed H1: `Set Up GitHub Agentic Workflows in Actions`
 - Source: github.blog/changelog/2026-06-11-github-agentic-workflows-is-now-in-public-preview/ (2026-06-11)
 - Interlinks: none yet — plausible future interlink to this site's own AI/LLM content (e.g. the LLM Token & Pricing Reset series) once an agentic-workflows cluster exists, since this is a CI/CD x AI-agent crossover topic, but no existing post covers this ground today
+
+# Pillar 3
+
+## Pillar
+
+**GitHub CLI's 2026 Agent-Era Command Expansion**
+
+- Status: written (2026-08-19)
+- Slug: github-cli-2026-agent-era-expansion
+- Series: `github-cli-agent-era-2026`
+- Hub article: **Yes** — user approved a standalone hub (2026-08-19), matching every prior pillar's precedent on this site.
+- Why pillar: User-supplied Google Keyword Planner export showed "github cli" pulling 50,000 avg. monthly searches (Low ad competition, +900% YoY — real surging interest), cross-referenced against live research per `content-planner`'s CSV-cross-reference mechanism (logged `.claude/content-plans/discovered-keywords.md`, 2026-08-19 entry). A dense, dated ~4-month wave of `gh` (cli/cli) releases — `gh skill` for cross-agent skill management (2026-04-16), a PGP signing-key rotation (2026-04-08), `gh discussion` and sub-issue/dependency management (both 2026-06-10, v2.94.0), and two security-driven point releases (v2.96.0, 2026-07-02; v2.97.0, 2026-07-31) — gives enough distinct, structural ground for 10 non-overlapping clusters, every one requiring a real terminal/CLI action (install, pin, run a command, update for security) to resolve, matching this category's hands-on bar. Confirmed via live research that this is specifically about the classic `gh` tool (`cli/cli`), not the separate GitHub Copilot CLI product (`github/copilot-cli`) — an early search result conflated the two before a disambiguating pass caught it. Checked against `src/content/blog/*/index.mdx` (grep for "github cli"/"gh cli"/"GitHub CLI") — zero collisions, this is genuinely new ground for the site.
+
+## Clusters (Pillar 3)
+
+### 21. gh skill: Manage AI Agent Skills From GitHub CLI
+
+- Status: written (2026-08-19)
+- Slug: gh-skill-manage-ai-agent-skills
+- Series: `github-cli-agent-era-2026`
+- SeriesOrder: 2 (frontmatter value — hub is 1; this pillar's own series starts fresh, distinct from this plan file's running cluster-number 21)
+- Search Intent / Signal: "install, pin, search, update, and publish agent skills" — verbatim confirmed (changelog).
+- Structural Problem: Before `gh skill`, installing an agent skill (Claude Code, Copilot, Cursor, Codex, Gemini CLI, Antigravity) meant manually cloning/copying files per-agent with no standard install/update/publish flow. `gh skill` gives one CLI surface across all of them via its `--agent` flag.
+- Proposed H1: `gh skill: Manage AI Agent Skills From GitHub CLI`
+- Source: github.blog/changelog/2026-04-16-manage-agent-skills-with-github-cli/ (2026-04-16)
+- Interlinks: none yet — this is the pillar's own hub topic
+
+### 22. gh skill --pin: Tag vs Commit SHA, Which to Use
+
+- Status: written (2026-08-19)
+- Slug: gh-skill-pin-tag-vs-commit-sha
+- Series: `github-cli-agent-era-2026`
+- SeriesOrder: 3
+- Search Intent / Signal: "gh skill install github/awesome-copilot documentation-writer --pin v1.2.0" — verbatim confirmed (official docs example).
+- Structural Problem: pinning to a mutable git tag isn't fully reproducible — tags can be reassigned unless Immutable Release is enabled — while pinning to a commit SHA is the actually-safe option for CI/provisioning scripts. A distinction the flag's own docs surface but that's easy to get wrong on first use.
+- Proposed H1: `gh skill --pin: Tag vs Commit SHA, Which to Use`
+- Source: cli.github.com/manual/gh_skill_install (official manual, living doc) + github.blog 2026-04-16 changelog
+- Interlinks: cluster 21
+
+### 23. gh discussion: GitHub Discussions in Your Terminal
+
+- Status: written (2026-08-19)
+- Slug: gh-discussion-command-github-cli
+- Series: `github-cli-agent-era-2026`
+- SeriesOrder: 4
+- Search Intent / Signal: "gh discussion list, view, create, edit, comment" — verbatim confirmed (changelog command list).
+- Structural Problem: GitHub Discussions previously had no first-class `gh` surface — anything beyond browsing meant falling back to raw `gh api` calls against the GraphQL Discussions API by hand. The new command group gives Discussions the same terminal ergonomics issues/PRs already had.
+- Proposed H1: `gh discussion: GitHub Discussions in Your Terminal`
+- Source: github.blog/changelog/2026-06-10-list-view-and-create-discussions-in-github-cli/ (2026-06-10)
+- Interlinks: cluster 24 (shipped same release wave, v2.94.0)
+
+### 24. Manage GitHub Sub-Issues and Dependencies via gh CLI
+
+- Status: written (2026-08-19)
+- Slug: gh-cli-sub-issues-dependencies
+- NOTE (2026-08-19): live verification found the changelog's claimed `--set-parent` flag does not actually exist in the shipped CLI (only `--parent` and `--remove-parent` are registered) — the post documents this discrepancy explicitly rather than repeating the changelog's inaccurate claim.
+- Series: `github-cli-agent-era-2026`
+- SeriesOrder: 5
+- Search Intent / Signal: `--parent`, `--set-parent`, `--remove-parent` — verbatim confirmed (flag names from the changelog/PR).
+- Structural Problem: issue hierarchy (types, parent/sub-issue relationships, cross-issue dependencies) was GitHub.com-UI-only before v2.94.0 — scripting or bulk-managing a project's issue tree required the API directly. These flags make hierarchy a first-class CLI operation.
+- Proposed H1: `Manage GitHub Sub-Issues and Dependencies via gh CLI`
+- Source: github.blog/changelog/2026-06-10-manage-sub-issues-types-and-dependencies-from-github-cli/ (2026-06-10); cli/cli PR #13057
+- Interlinks: cluster 23
+
+### 25. Update gh CLI Now: Codespace Jupyter RCE Fixed
+
+- Status: written (2026-08-19)
+- Slug: gh-cli-codespace-jupyter-rce-fixed
+- Series: `github-cli-agent-era-2026`
+- SeriesOrder: 6
+- Search Intent / Signal: "connecting to a malicious Codespace via gh codespace jupyter can allow command execution" — verbatim confirmed (GHSA advisory text).
+- Structural Problem: from v2.10.0 through v2.95.0, `gh codespace jupyter` opened a JupyterLab URL supplied by the Codespace itself without validating it was a loopback address, so a crafted `vscode://` URL from inside a malicious/compromised Codespace could hand off command execution to VS Code on the user's machine — a real, dated, fixed vulnerability, not a hypothetical.
+- Proposed H1: `Update gh CLI Now: Codespace Jupyter RCE Fixed`
+- Source: GHSA-8cg3-r6g9-fpg2, cli/cli release v2.96.0 (2026-07-02)
+- Interlinks: cluster 26 (next security release, same "update now" thread)
+
+### 26. gh CLI 2.97.0 Fixes 4 Terminal Injection Bugs
+
+- Status: written (2026-08-19)
+- Slug: gh-cli-2-97-0-terminal-injection-fixes
+- NOTE (2026-08-19): live verification found v2.97.0 fixed 4 SEPARATE security advisories that day (terminal injection, a URL-path-escaping bug, an auth-token leak, an attestation-verify bypass) — only one of which is the terminal-injection issue, which itself spans 7 commands, not "4 bugs." Final published title is "gh CLI 2.97.0 Fixes Terminal Injection in 7 Commands" to avoid repeating the conflated figure. The hub article may still use the imprecise "4" framing and needs a check during final QA.
+- Series: `github-cli-agent-era-2026`
+- SeriesOrder: 7
+- Search Intent / Signal: "printed externally controlled content without neutralizing terminal escape sequences" across `gh gist view`, `gh api`, `gh pr diff`, `gh release download --output -`, `gh codespace logs`, `gh skills preview`, `gh agent-task view/create` — verbatim confirmed (GHSA-3m3g-3wcr-px46 advisory text).
+- Structural Problem: any of those seven commands could print attacker-controlled content (a gist body, an API response, a PR diff, agent-task output) containing raw terminal escape sequences, letting a malicious repo/gist/PR manipulate the victim's terminal the moment the command ran. v2.97.0 sanitizes escape sequences across all seven before they reach the terminal.
+- Proposed H1: `gh CLI 2.97.0 Fixes 4 Terminal Injection Bugs`
+- Source: GHSA-3m3g-3wcr-px46, cli/cli release v2.97.0 (2026-07-31)
+- Interlinks: cluster 25, cluster 29 (`gh agent-task` is one of the seven affected commands)
+
+### 27. gh release download No Longer Needs Auth (Public Repos)
+
+- Status: written (2026-08-19)
+- Slug: gh-release-download-no-auth-public-repos
+- Series: `github-cli-agent-era-2026`
+- SeriesOrder: 8
+- Search Intent / Signal: "gh release download now works against public repositories without authentication, matching gh extension install" — verbatim confirmed (v2.96.0 release notes).
+- Structural Problem: previously, downloading a release asset from a public repo via `gh release download` required an authenticated session even though the repo/asset was public — CI pipelines pulling public release artifacts had to carry a token for no real access-control reason. v2.96.0 removes that requirement, aligning the command's auth behavior with `gh extension install`'s.
+- Proposed H1: `gh release download No Longer Needs Auth (Public Repos)`
+- Source: cli/cli release v2.96.0 (2026-07-02)
+- Interlinks: cluster 25 (same release)
+
+### 28. gh CLI's New PGP Signing Key for Linux Packages
+
+- Status: written (2026-08-19)
+- Slug: gh-cli-new-pgp-signing-key-linux
+- Series: `github-cli-agent-era-2026`
+- SeriesOrder: 9
+- Search Intent / Signal: "updated PGP keyring for GitHub CLI's Linux package repositories that includes both the current signing key and a new replacement key" — verbatim confirmed (changelog text).
+- Structural Problem: Linux package-manager installs of `gh` (apt/yum-style repos) verify package signatures against a known PGP key. GitHub published a dual-key keyring (old + new) so installs/updates don't break mid-rotation — a real, dated action item for anyone provisioning `gh` via a Linux package manager or CI base image.
+- Proposed H1: `gh CLI's New PGP Signing Key for Linux Packages`
+- Source: github.blog/changelog/2026-04-08-new-pgp-signing-key-for-github-cli-linux-packages/ (2026-04-08)
+- Interlinks: none yet
+
+### 29. gh agent-task: Run Copilot Coding Sessions From gh
+
+- Status: written (2026-08-19)
+- Slug: gh-agent-task-copilot-coding-sessions
+- Series: `github-cli-agent-era-2026`
+- SeriesOrder: 10
+- Search Intent / Signal: "a task is a GitHub issue that triggers automated code changes from natural language instructions" — verbatim confirmed (official docs); the command is explicitly labeled "(preview)" — verbatim confirmed.
+- Structural Problem: `gh agent-task` (create/view/list, still preview) is how `gh` itself drives GitHub's own asynchronous Copilot coding-agent sessions from the terminal — genuinely part of the same 2026 wave turning `gh` into a cross-agent control surface alongside `gh skill`, and one of the seven commands the July escape-sequence fix (cluster 26) touched, tying the pillar's "new agent surface" and "security hardening" threads together.
+- Proposed H1: `gh agent-task: Run Copilot Coding Sessions From gh`
+- Source: cli.github.com/manual/gh_agent-task (official manual, living doc); GHSA-3m3g-3wcr-px46 (2026-07-31, security-fix context)
+- Interlinks: cluster 26, `github-actions-agentic-workflows-setup` (site's existing post on GitHub's Actions-side agentic tooling — natural cross-link, same "GitHub + AI agents" ground from a different product surface)
+
+### 30. How GitHub CLI Became an AI-Agent Control Surface
+
+- Status: written (2026-08-19)
+- Slug: github-cli-ai-agent-control-surface
+- Series: `github-cli-agent-era-2026`
+- SeriesOrder: 11
+- Search Intent / Signal: Synthesis/closing cluster, not a single dated announcement — ties together clusters 21, 23, 24, 29 (four genuinely new command surfaces shipped within one ~4-month window) plus clusters 25-26 (two security-driven releases in the same window).
+- Structural Problem: four new command groups (skill, discussion, sub-issue management, agent-task's growing role) plus two security-driven point releases landed on `gh` between April and July 2026 — read individually each looks like a routine changelog entry, but together they show `gh` deliberately expanding from "GitHub's API wrapper" into a control surface for both repo hierarchy and AI-agent tooling, which is the actual reason to keep `gh` current rather than treat version bumps as optional.
+- Proposed H1: `How GitHub CLI Became an AI-Agent Control Surface`
+- Source: synthesis of clusters 21, 23, 24, 25, 26, 29 above
+- Interlinks: cluster 21, cluster 23, cluster 24, cluster 29

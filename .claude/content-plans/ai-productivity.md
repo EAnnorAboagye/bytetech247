@@ -204,3 +204,137 @@ Status values: pending (researched, not yet approved) -> approved (user greenlit
 - Structural Problem: Cost comparisons that were done even a few months ago (before GPT-5.6, Opus 4.8, and Gemini 3.6 all shipped) are stale on two axes at once — token count per prompt and price per token both moved. This is the cluster explicitly designed to drive to, and be driven from, `/tools/ai-token-counter/` — the practical "check it yourself, don't trust a stale blog post's numbers" resource.
 - Source: synthesis of clusters 11, 15, 16, 18 above
 - Interlinks: cluster 11, cluster 15, cluster 16, cluster 18, `/tools/ai-token-counter/` (primary — this cluster is the direct content-to-tool bridge)
+
+## Pillar 3
+
+**GitHub Copilot's AI Credits Promo Cliff (Sept 1, 2026)**
+
+- Status: written (2026-08-19)
+- Slug: github-copilot-ai-credits-cliff-2026
+- Why pillar: User-supplied Google Keyword Planner export showed "github copilot" pulling 500,000 avg. monthly searches (Low ad competition, -90% 3-month change — plausibly the pricing-shock backlash itself), cross-referenced against live research per `content-planner`'s CSV-cross-reference mechanism (logged `.claude/content-plans/discovered-keywords.md`, 2026-08-19 entry). GitHub's June 1, 2026 retirement of Premium Request Units in favor of "AI Credits" created promotional Business/Enterprise allowances (3,000/7,000 credits/user/mo) that revert to standard levels (1,900/3,900) on 2026-09-01 — a real, dated, hard deadline forcing admin action, with enough distinct structural ground underneath it (calculation mechanics, migration behavior, a separate annual-subscriber multiplier spike, budget controls, tier comparison, Agent Mode's cost profile) for 10 non-overlapping clusters. Checked against `src/content/blog/*/index.mdx` (grep for "copilot"/"Copilot") — zero collisions, this is genuinely new ground for the site.
+- Series: `copilot-ai-credits-cliff-2026`
+- seriesOrder: hub is 1, clusters are 2-11 (this pillar's own series starts fresh, distinct from this plan file's running cluster-number 21-30)
+- Hub article: **Yes** — user approved a standalone hub (2026-08-19), matching every prior pillar's precedent on this site.
+
+## Clusters (Pillar 3)
+
+### 21. Check Your Copilot AI Credits Usage Before Sept 1
+
+- Status: written (2026-08-19)
+- Slug: check-copilot-ai-credits-usage-before-sept-1
+- Series: `copilot-ai-credits-cliff-2026`
+- SeriesOrder: 2
+- Search Intent / Signal: "Copilot users can now see AI credits used per billing cycle" — verbatim confirmed (changelog title, 2026-07-20); "AI credits consumed per user now in the Copilot usage metrics API" — verbatim confirmed (changelog title, 2026-06-19).
+- Structural Problem: Before mid-2026, an individual's or org's real-time AI Credits consumption wasn't visible anywhere in the product. GitHub shipped three separate, stacked additions within about a month, an individual per-cycle usage view (2026-07-20), a per-user API field (2026-06-19), and an org-level "usage metrics impact dashboard" (2026-07-22), giving admins the actual visibility needed to see whether they're heading toward the Sept 1 cliff before it hits, not just budget controls to react after the fact. (Note: replaces this cluster's original angle, "the cliff itself, explained," which duplicated the hub article's own headline rather than adding a distinct sub-angle — caught before drafting started.)
+- Proposed H1: `Check Your Copilot AI Credits Usage Before Sept 1`
+- Source: github.blog changelog — "Copilot users can now see AI credits used per billing cycle" (2026-07-20), "AI credits consumed per user now in the Copilot usage metrics API" (2026-06-19), "New Copilot usage metrics impact dashboard" (2026-07-22); docs.github.com "Monitoring your GitHub AI Credits usage" (official, living doc)
+- Interlinks: none yet — this is the pillar's own hub topic (the hub covers the cliff broadly; this cluster is the narrow, hands-on "check your own numbers" companion), cluster 25 (budget controls — usage visibility is the precondition for setting an informed budget)
+
+### 22. How GitHub Copilot AI Credits Are Actually Priced
+
+- Status: written (2026-08-19)
+- Slug: github-copilot-ai-credits-pricing-explained
+- Series: `copilot-ai-credits-cliff-2026`
+- SeriesOrder: 3
+- Search Intent / Signal: "1 credit = $0.01 USD" — verbatim confirmed (official docs).
+- Structural Problem: Credits replace flat per-request PRU multipliers with real per-token, per-model pricing (input/output/cache-write priced differently per model), which is why usage now scales with actual model choice and context size instead of a fixed per-request count the way PRUs did.
+- Proposed H1: `How GitHub Copilot AI Credits Are Actually Priced`
+- Source: docs.github.com/en/copilot/reference/copilot-billing/models-and-pricing (official, living doc)
+- Interlinks: `same-prompt-different-bill-gpt-claude-gemini`, `2026-llm-token-pricing-reset` (both cover per-token/per-model pricing mechanics for other providers — natural cross-link into this site's existing pricing-reset pillar)
+
+### 23. GitHub Copilot's PRU to AI Credits Migration, Explained
+
+- Status: written (2026-08-19)
+- Slug: github-copilot-pru-to-ai-credits-migration
+- Series: `copilot-ai-credits-cliff-2026`
+- SeriesOrder: 4
+- Search Intent / Signal: "Updates to GitHub Copilot billing and plans" — verbatim confirmed (changelog title).
+- Structural Problem: The June 1, 2026 cutover retired the Premium Request Unit multiplier system for monthly-billed Pro/Pro+/Business/Enterprise plans in favor of Credits — this cluster explains what actually changed under the hood (multiplier system removed) versus what stayed the same (per-model cost still varies, just priced in real token-based credits now instead of a flat multiplier).
+- Proposed H1: `GitHub Copilot's PRU to AI Credits Migration, Explained`
+- Source: github.blog changelog, "Updates to GitHub Copilot billing and plans" (2026-06-01)
+- Interlinks: `2026-llm-token-pricing-reset` (hub of the site's existing pricing-reset pillar — this is the Copilot-specific instance of that same industry-wide pattern)
+
+### 24. Annual Copilot Plans: Model Multipliers Just Spiked
+
+- Status: written (2026-08-19)
+- Slug: annual-copilot-plans-model-multipliers-spike
+- Series: `copilot-ai-credits-cliff-2026`
+- SeriesOrder: 5
+- Search Intent / Signal: the official model-multiplier table revision — verbatim confirmed; the "up to 27x" characterization of the table's extremes — paraphrased (a third-party read of the table, not a github.com quote).
+- Structural Problem: Annual-plan subscribers were NOT migrated to Credits on June 1 — they stayed on the legacy PRU/multiplier system, but GitHub revised the multiplier table itself on that same date, so some models got dramatically more expensive in PRU terms for a subscriber population that can't access the new Credits system until renewal. Genuinely distinct mechanism from clusters 22-23, easy to conflate with the Credits migration but isn't the same change.
+- Proposed H1: `Annual Copilot Plans: Model Multipliers Just Spiked`
+- Source: docs.github.com/en/copilot/reference/copilot-billing/request-based-billing-legacy/model-multipliers-for-annual-plans (official, living doc, revised 2026-06-01); levelup.gitconnected.com investigative piece
+- Interlinks: cluster 23 (contrast — what monthly subscribers got instead)
+
+### 25. Setting Copilot Budget Controls Before the Sept Cliff
+
+- Status: written (2026-08-19)
+- Slug: github-copilot-budget-controls-setup
+- Series: `copilot-ai-credits-cliff-2026`
+- SeriesOrder: 6
+- Search Intent / Signal: "Getting started with budget controls" — verbatim confirmed (official doc page title).
+- Structural Problem: Orgs/enterprises can set budgets at org, cost-center, or per-user level. CORRECTED 2026-08-19 (the hub-drafting agent live-verified this against the real docs and found the plan's original "stop vs limit named modes" framing was wrong): it's a boolean toggle, "Stop usage when budget limit is reached," available on org/cost-center budgets — ON hard-blocks premium features once the budget is exceeded, OFF lets usage continue with charges accruing uncapped past the budget (notify-only). A universal per-user budget always hard-stops with no toggle. This is the actual lever an admin has to configure before Sept 1, not a passive dashboard.
+- Proposed H1: `Setting Copilot Budget Controls Before the Sept Cliff`
+- Source: docs.github.com/en/copilot/tutorials/budgets/getting-started-with-budget-controls (official, living doc — note: not the "-for-copilot" suffixed URL guessed in earlier research, that 404s)
+- Interlinks: cluster 21 (checking usage is the precondition for setting an informed budget), cluster 30 (checklist)
+
+### 26. What Happens When GitHub Copilot Credits Run Out
+
+- Status: written (2026-08-19)
+- Slug: what-happens-when-copilot-credits-run-out
+- CORRECTION FOUND (2026-08-19): this cluster's own live verification found the hub article's exhaustion-default claim is wrong for Business/Enterprise — the real default is uncapped, automatic metered billing (additional usage enabled by default; charges accrue without a cap until an admin explicitly disables the AI credits paid usage policy or a budget stops it), not a safe halt. The hub needs a correction pass before publish.
+- Series: `copilot-ai-credits-cliff-2026`
+- SeriesOrder: 7
+- Search Intent / Signal: community-reported confusion across GitHub Community discussions #197557, #197605, #197089 — paraphrased (no single verbatim error string; the reported symptom is "premium features stop working").
+- Structural Problem: CAUTION — the "default $0 overage budget" framing this entry originally used has NOT been independently live-verified, and cluster 25's own research needed a correction after live-checking the primary docs (the mechanism turned out to be a "Stop usage when budget limit is reached" toggle, not named "stop/limit" modes — see cluster 25 above). Before drafting this cluster, independently live-verify against docs.github.com/en/copilot/tutorials/budgets/* what actually happens with NO budget configured at all (as opposed to a budget configured with the toggle off) — don't assume the original framing is correct, confirm it against the current primary source the same way cluster 25's drafting agent did.
+- Proposed H1: `What Happens When GitHub Copilot Credits Run Out`
+- Source: docs.github.com budget docs (official) + GitHub Community discussions #197557, #197605, #197089
+- Interlinks: cluster 25 (budget controls — this is what happens without one configured)
+
+### 27. Why Copilot Agent Mode Burns Through Credits So Fast
+
+- Status: written (2026-08-19)
+- Slug: copilot-agent-mode-credits-consumption
+- Series: `copilot-ai-credits-cliff-2026`
+- SeriesOrder: 8
+- Search Intent / Signal: "~1,000x more tokens than a single-turn chat query" — paraphrased (GitHub's own research figure, as relayed by third-party coverage, not a directly quoted GitHub sentence).
+- Structural Problem: Agent Mode's multi-step tool-calling loop (read file → edit → run tests → re-read → repeat) burns tokens per step, not per user message, so a single "fix this bug" agent session can consume credits at a rate a per-message mental model doesn't predict — explains real reported bill jumps ($29→$750, $50→$3,000/mo).
+- Proposed H1: `Why Copilot Agent Mode Burns Through Credits So Fast`
+- Source: daily.dev coverage citing GitHub's own research; corroborating third-party billing-shock reports
+- Interlinks: cluster 22 (calculation mechanics), `prompting-guide-ai-coding-assistants` (site's existing general AI-coding-assistant guide)
+
+### 28. GitHub Copilot Plans Compared by AI Credits, Not Price
+
+- Status: written (2026-08-19)
+- Slug: github-copilot-plans-compared-by-ai-credits
+- Series: `copilot-ai-credits-cliff-2026`
+- SeriesOrder: 9
+- Search Intent / Signal: exact figures — Free (completions + limited chat, no paid credits), Pro $10/mo=1,500 credits, Pro+ $39/mo=7,000 credits, Max $100/mo=20,000 credits, Business=1,900/user/mo pooled, Enterprise=3,900/user/mo pooled — verbatim confirmed (published pricing figures, cross-checked across official + third-party trackers).
+- Structural Problem: the six plans don't scale credits linearly with price, so "upgrade one tier" doesn't reliably mean "proportionally more headroom" — a structural comparison a buyer needs before deciding which plan actually absorbs their usage pattern.
+- Proposed H1: `GitHub Copilot Plans Compared by AI Credits, Not Price`
+- Source: GitHub official plan pages + cross-referenced third-party pricing trackers
+- Interlinks: cluster 21, cluster 25
+
+### 29. Pick Cheaper Copilot Models to Stretch Your Credits
+
+- Status: written (2026-08-19)
+- Slug: pick-cheaper-copilot-models-stretch-credits
+- Series: `copilot-ai-credits-cliff-2026`
+- SeriesOrder: 10
+- Search Intent / Signal: per-model token pricing table (frontier vs. lightweight models priced differently per credit) — verbatim confirmed (official docs pricing table).
+- Structural Problem: because credits are priced per-model, routing routine tasks to a cheaper model and reserving frontier models for genuinely hard tasks is a real cost lever credits expose more directly than PRU's flat multipliers did — a practical "which model for which task" angle distinct from cluster 22's mechanics explanation.
+- Proposed H1: `Pick Cheaper Copilot Models to Stretch Your Credits`
+- Source: docs.github.com/en/copilot/reference/copilot-billing/models-and-pricing (same table as cluster 22, different angle — model-selection strategy, not calculation mechanics)
+- Interlinks: cluster 22, cluster 27 (Agent Mode — model choice matters most there)
+
+### 30. What to Do Before GitHub Copilot's Sept 1 Credit Cliff
+
+- Status: written (2026-08-19)
+- Slug: github-copilot-sept-1-credit-cliff-checklist
+- Series: `copilot-ai-credits-cliff-2026`
+- SeriesOrder: 11
+- Search Intent / Signal: Synthesis/closing cluster, not a single dated announcement — ties together clusters 21, 25, 26, 28 into a practical "what to configure before Sept 1" action sequence.
+- Structural Problem: an admin facing the Sept 1 cliff needs the budget-control mechanism (cluster 25), the exhaustion behavior it prevents (cluster 26), and the tier comparison (cluster 28) synthesized into one decision sequence, not scattered across separate docs pages — matches this site's own established pattern of a synthesis cluster closing out a pricing-reset pillar (same shape as cluster 20's `same-prompt-different-bill-gpt-claude-gemini` closing Pillar 2).
+- Proposed H1: `What to Do Before GitHub Copilot's Sept 1 Credit Cliff`
+- Source: synthesis of clusters 21, 25, 26, 28 above
+- Interlinks: cluster 21, cluster 25, cluster 26, cluster 28, `same-prompt-different-bill-gpt-claude-gemini` (structural precedent for a closing synthesis cluster)

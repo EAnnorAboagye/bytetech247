@@ -1,0 +1,142 @@
+---
+title: "gh discussion: GitHub Discussions in Your Terminal"
+description: "gh discussion adds list, view, create, edit, and comment subcommands to GitHub CLI, giving GitHub Discussions the same terminal ergonomics as issues and PRs."
+date: 2026-08-19
+category: dev-tools
+tags: ["github-cli", "gh", "discussions", "cli", "github"]
+relatedSlugs:
+  ["github-cli-2026-agent-era-expansion", "gh-cli-sub-issues-dependencies"]
+series: "github-cli-agent-era-2026"
+seriesOrder: 4
+coverImage: "./cover.png"
+coverImageAlt: "A dark terminal window showing the real GitHub CLI commands gh discussion list --state all --label bug,enhancement, gh discussion view 123 --comments --order oldest, and gh discussion create --title My question --category Q&A --body Details here, with a note that GitHub CLI v2.94.0 or later is required and the feature is still in preview"
+faq:
+  - question: "Does gh discussion require a specific GitHub CLI version?"
+    answer: "Yes. GitHub's own changelog says to install or upgrade to GitHub CLI v2.94.0 to get started, and the command works only on a repository where GitHub Discussions is already enabled. Run gh --version to check your installed version, and update through whatever channel you installed gh with if you're on an older release."
+  - question: "Can gh discussion close, lock, or delete a discussion?"
+    answer: "No. The command group covers list, view, create, edit, and comment only. GitHub's GraphQL API has separate closeDiscussion, reopenDiscussion, deleteDiscussion, and lockLockable mutations for those actions, none of which gh discussion wraps yet. Reaching one of those still means calling gh api graphql directly with the matching mutation."
+---
+
+## Quick Answer
+
+Use `gh discussion list`, `view`, `create`, `edit`, and `comment` for day-to-day terminal work on GitHub Discussions: browsing threads, reading replies, opening a new discussion, or answering one. Reach for `gh api graphql` only when you need to close, lock, delete, or react to a discussion, since the command group doesn't cover those yet. Requires GitHub CLI v2.94.0 or later.
+
+## What gh discussion replaces
+
+GitHub Discussions has had a public GraphQL API for years. A repository exposes its threads through a `discussions` connection, and creating one meant firing a `createDiscussion` mutation by hand, but until 2026-06-10 there was no first-class `gh` command wrapping any of it.
+
+Reading a thread's replies meant writing a GraphQL query against that `discussions` connection yourself and paging through the results with `after`/`before` cursors, [the same generic pagination pattern](https://docs.github.com/en/graphql/guides/using-the-graphql-api-for-discussions) every list field in GitHub's GraphQL schema uses. Starting a new discussion meant looking up the target category's internal node ID first, then composing a `createDiscussion` mutation with that ID, the repository's ID, a title, and a body, all through `gh api graphql -f query=...`. `gh issue` and `gh pr` never asked a user to know GraphQL to do routine work. `gh discussion` closes that specific gap.
+
+GitHub's changelog entry for the release states the fix plainly:
+
+> "Install or upgrade to GitHub CLI v2.94.0 to get started on any repository where GitHub Discussions is enabled."
+
+That's [the same v2.94.0 release](https://github.com/cli/cli/releases/tag/v2.94.0) that added sub-issue and dependency flags to `gh issue`, shipped the same day. See [Manage GitHub Sub-Issues and Dependencies via gh CLI](/dev-tools/gh-cli-sub-issues-dependencies/) for that half of the release; this post covers `gh discussion` only.
+
+## Structural Comparison Matrix
+
+| Operational Aspect                 | Before `gh discussion` (raw `gh api graphql`)                                                                                       | After (`gh discussion`, v2.94.0+)                                          |
+| :--------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------- | -------- |
+| **Listing recent discussions**     | Write a query against the repository's `discussions` connection, handle cursor pagination by hand                                   | `gh discussion list --state <state> --label <names>`                       |
+| **Reading a thread's replies**     | Query nested comment/reply connections, tracking your own `after` cursor between pages                                              | `gh discussion view <number> --comments --order <oldest                    | newest>` |
+| **Starting a new discussion**      | Look up the category's node ID separately, then send a `createDiscussion` mutation with repository ID, category ID, title, and body | `gh discussion create --title <title> --category <category> --body <body>` |
+| **Editing title, body, or labels** | Send an `updateDiscussion` mutation with only the fields you're changing                                                            | `gh discussion edit 123 --title "Updated title" --add-label bug`           |
+| **Scripting against results**      | Parse raw GraphQL JSON yourself                                                                                                     | `--json` plus `-q`/`--jq` for a filtered, scriptable field list            |
+
+## Before you run anything: version and scope
+
+```bash
+gh --version
+```
+
+`gh discussion` needs GitHub CLI v2.94.0 or later, and it only works against a repository that has GitHub Discussions turned on; run it against a repo without that feature enabled and there's nothing for the command to list. Every subcommand also accepts `-R`/`--repo <[HOST/]OWNER/REPO>` to target a repository other than the one in your current working directory.
+
+<Callout type="info" title="Still labeled preview">
+  `gh`'s own manual is direct about it: "Working with discussions in the GitHub
+  CLI is in preview and subject to change without notice." Flag names and output
+  could shift in a later release, the same caveat that applies to `gh skill`.
+</Callout>
+
+## List discussions from the terminal
+
+```bash
+# every open discussion, most recently updated first (the defaults)
+gh discussion list
+
+# only General-category discussions
+gh discussion list --category General
+
+# closed discussions from one author
+gh discussion list --state closed --author monalisa
+
+# any state, filtered by label
+gh discussion list --state all --label bug,enhancement
+
+# unanswered discussions, JSON output for scripting
+gh discussion list --answered=false --json number,title,url
+```
+
+Every one of those is a real example from [`gh`'s own manual for `gh discussion list`](https://cli.github.com/manual/gh_discussion_list). `--state` accepts `open`, `closed`, or `all` (default `open`); `--sort` takes `created` or `updated` (default `updated`); `--order` takes `asc` or `desc` (default `desc`). The short alias `gh discussion ls` works too, matching the `gh issue ls` / `gh pr ls` convention the rest of `gh` already uses.
+
+## Read a discussion and its replies
+
+```bash
+gh discussion view 123
+gh discussion view 123 --comments
+gh discussion view 123 --comments --order oldest
+gh discussion view 123 --comments --limit 10
+```
+
+Pass a bare number, a full discussion URL, a comment's node ID, or a comment's URL as the target; all four forms are documented and work interchangeably. `--comments` pulls the replies alongside the discussion body, `--order` controls whether they print oldest-first or newest-first (default `newest`), and `--limit` caps how many replies come back per page (default 30). Add `-w`/`--web` instead to skip the terminal output entirely and open the discussion in a browser.
+
+## Start a new discussion
+
+```bash
+# interactive: gh prompts for category, title, and body
+gh discussion create
+
+# non-interactive: pass everything as flags
+gh discussion create --title "My question" --category "Q&A" --body "Details here"
+```
+
+Both are [the documented examples](https://cli.github.com/manual/gh_discussion_create) from `gh`'s manual. Running `gh discussion create` with no flags on an interactive terminal walks you through category, title, and body one at a time. For scripts, pass `--title`, `--category`, and either `--body` or `--body-file -` (the trailing `-` reads the body from stdin) to skip the prompts entirely. `--category` takes the category's name or slug, not an internal ID, which is the piece the raw GraphQL mutation made you look up separately.
+
+## Edit a discussion, then comment on it
+
+```bash
+# change title, body, and category together
+gh discussion edit 123 --title "Updated title" --body "Updated body" --category "Ideas"
+
+# add and remove labels in the same call
+gh discussion edit 123 --add-label "bug,help wanted" --remove-label "stale"
+```
+
+`gh discussion edit` takes the same shape as `create`, plus `--add-label`/`--remove-label` for label changes that `create` doesn't handle.
+
+```bash
+# top-level comment
+gh discussion comment 123 --body 'Thanks'
+
+# reply to a specific comment, by its URL
+gh discussion comment 'https://github.com/OWNER/REPO/discussions/123#discussioncomment-456' --body 'Thanks'
+
+# edit or delete a comment or reply
+gh discussion comment 'https://github.com/OWNER/REPO/discussions/123#discussioncomment-456' --edit --body 'Updated'
+gh discussion comment 'https://github.com/OWNER/REPO/discussions/123#discussioncomment-456' --delete --yes
+```
+
+`gh discussion comment` takes the same four target forms as `view`: a discussion number posts a new top-level comment, while a comment's own URL or node ID replies to (or, with `--edit`/`--delete`, modifies) that specific comment. `--yes` skips the delete confirmation prompt, useful in a script where nothing is watching the terminal to answer it.
+
+## What gh discussion still can't do
+
+The five subcommands cover browsing and content, not moderation. [GitHub's GraphQL reference for Discussions](https://docs.github.com/en/graphql/reference/discussions) lists mutations that `gh discussion` doesn't wrap at all: `closeDiscussion`, `reopenDiscussion`, `deleteDiscussion`, `addUpvote`/`removeUpvote`, and `markDiscussionCommentAsAnswer`. The `Discussion` type also implements GitHub's generic `Lockable` interface, so `lockLockable`/`unlockLockable` apply too. Closing a discussion as resolved, deleting one outright, upvoting a reply, locking a thread, or marking a comment as the accepted answer all still mean dropping to `gh api graphql` and calling the matching mutation by hand, the exact friction this command group otherwise removes.
+
+That gap is worth knowing before you script anything that depends on discussion state changing beyond editing content. A bot that needs to auto-close stale discussions, for instance, can list and read them through `gh discussion` but still needs a raw GraphQL call for the actual close.
+
+## Where this fits in GitHub CLI's 2026 agent push
+
+`gh discussion` is one piece of a wider wave covered in [GitHub CLI's 2026 agent-era expansion](/dev-tools/github-cli-2026-agent-era-expansion/), which also added [`gh skill`](/dev-tools/gh-skill-manage-ai-agent-skills/) for managing AI agent skills and, in this same v2.94.0 release, sub-issue and dependency flags on `gh issue` (see [Manage GitHub Sub-Issues and Dependencies via gh CLI](/dev-tools/gh-cli-sub-issues-dependencies/)).
+
+Reach for `gh discussion` the next time you'd otherwise open a browser tab to check on a repository's Discussions tab, or the next time a script needs to read or post to one. Skip the raw `gh api graphql` route unless you land on one of the gaps above; hand-writing GraphQL for something `gh discussion list` already does in one line is wasted typing.
+
+Browse more posts like this in the [Dev Tools](/dev-tools) archive.

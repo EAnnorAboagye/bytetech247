@@ -1,0 +1,104 @@
+---
+title: "GitHub Copilot's PRU to AI Credits Migration, Explained"
+description: "GitHub retired Premium Request Units for AI Credits on June 1, 2026, for monthly Copilot plans. Here's what changed under the hood, and what didn't."
+date: 2026-08-19
+category: ai-productivity
+tags: ["copilot", "github", "ai-credits", "billing", "premium-requests"]
+relatedSlugs:
+  [
+    "github-copilot-ai-credits-cliff-2026",
+    "github-copilot-ai-credits-pricing-explained",
+    "annual-copilot-plans-model-multipliers-spike",
+    "2026-llm-token-pricing-reset",
+  ]
+series: "copilot-ai-credits-cliff-2026"
+seriesOrder: 4
+coverImage: "./cover.png"
+coverImageAlt: "A dark comparison-matrix style cover reading GitHub Copilot's PRU to AI Credits Migration, badged June 1 2026 billing cutover, listing five row summaries: PRU's flat per-request multiplier removed for monthly plans, credits price real input output and cached tokens per model, premium requests first enforced June 18 2025, annual Pro and Pro+ subscribers stayed on PRU not migrated, and a lapsed annual plan downgrades to Free not to Credits"
+faq:
+  - question: "Did I have to do anything to switch from Premium Request Units to AI Credits?"
+    answer: "Not on a monthly-billed plan. GitHub's June 1, 2026 changelog describes usage-based billing on AI Credits as already live for every plan that day, with no separate opt-in or signup step mentioned in that announcement. If you're on an annual Pro or Pro+ plan, though, nothing switched automatically at all, see the next question."
+  - question: "What happens to an annual Copilot Pro or Pro+ plan when it ends?"
+    answer: "By default, it doesn't roll over into AI Credits. GitHub's documentation gives annual Pro and Pro+ subscribers three explicit choices: stay on the plan under the legacy premium-request system until it ends, at which point the account is automatically downgraded to Copilot Free; cancel outright for a prorated refund; or upgrade to a monthly plan and receive prorated credit for the remaining annual value. Doing nothing means the plan lapses to Free, not to Credits."
+  - question: "Does this migration apply to Copilot Business and Enterprise the same way it applies to Pro?"
+    answer: "For monthly billing, yes. GitHub's changelog states that as of June 1, 2026, all Copilot plans bill based on AI Credits consumed, and GitHub's own plans page confirms Business ($19 per seat/month) and Enterprise ($39 per seat/month) kept their sticker prices through the change. The annual-plan carve-out described above is specific to individual Copilot Pro and Pro+ subscribers; GitHub's documentation doesn't describe an equivalent annual legacy track for Business or Enterprise."
+---
+
+## Quick Answer
+
+On June 1, 2026, GitHub retired Premium Request Units, a flat per-model multiplier, in favor of AI Credits, which price real input, output, and cached tokens per model. Every monthly-billed Pro, Pro+, Business, and Enterprise plan moved automatically. Annual Pro and Pro+ subscribers didn't move at all; they stayed on the old multiplier system.
+
+## Why GitHub metered "premium" models in the first place
+
+GitHub didn't invent request-based metering on June 1, 2026. It retired one it had already run for exactly a year. Starting June 18, 2025, GitHub began enforcing a monthly cap on premium requests for every seat on Pro, Pro+, Business, and Enterprise, with each plan's spending limit for anything past that cap defaulting to $0 unless an admin raised it, per [GitHub's own 2025 changelog entry](https://github.blog/changelog/2025-06-18-update-to-github-copilot-consumptive-billing-experience/).
+
+A premium request wasn't every interaction with Copilot. Per [GitHub's legacy billing documentation](https://docs.github.com/en/copilot/reference/copilot-billing/request-based-billing-legacy/github-copilot-premium-requests), it metered the model-backed layer on top of the base subscription: chat sessions against a named premium model, extra-large context windows, advanced reasoning models, cloud agent runs, and generating a Spark app. Some of those models cost more to run than others, so GitHub attached a multiplier to each one: a request against a lightweight model like GPT-4o counted as 0.33 of a premium request, while an advanced reasoning model could burn through 5x or 20x the standard rate for a single call. That multiplier was the entire pricing mechanism. It didn't care how long the prompt was or how much the model wrote back, only which model answered.
+
+## Structural Comparison Matrix
+
+| Operational Aspect                      | Before June 1, 2026                                                                    | After June 1, 2026                                                                                      |
+| :-------------------------------------- | :------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------ |
+| **Billing unit**                        | One premium request unit (PRU) per interaction, scaled by a fixed per-model multiplier | Real input, output, and cached token counts, priced per model, converted to credits at 1 credit = $0.01 |
+| **Effect of prompt or response length** | None. The multiplier is fixed no matter how many tokens the request used               | Direct. More tokens in or out means more credits spent, every time                                      |
+| **Who was on it**                       | Every paid plan: Pro, Pro+, Business, Enterprise, monthly and annual billing alike     | Monthly-billed Pro, Pro+, Business, and Enterprise; annual Pro and Pro+ stayed on PRU                   |
+| **Monthly plan price**                  | Pro $10/month, Pro+ $39/month, Business $19/seat/month, Enterprise $39/seat/month      | Unchanged. Same sticker prices, a different billing mechanism underneath                                |
+| **A lapsed annual Pro/Pro+ plan**       | Renews under the same PRU multiplier system                                            | Nothing to renew into. GitHub downgrades it to Copilot Free instead of moving it to Credits             |
+
+Every figure in that table traces to GitHub's own changelog or living documentation, cited by section below. Nothing here is a third-party estimate.
+
+## What actually changed under the hood
+
+GitHub's own docs page written specifically for subscribers affected by this change draws the line cleanly. Quoted directly from [GitHub's "What changed with Copilot billing" page](https://docs.github.com/en/copilot/reference/copilot-billing/request-based-billing-legacy/what-changed-with-billing), describing the system before June 1:
+
+> Each model interaction cost one premium request unit (PRU), and a multiplier was applied based on which model you used.
+
+And describing the system after:
+
+> The cost of an interaction depends on two things: the model and the number of tokens consumed.
+
+That's a structural change, not a rename. Under PRU, a five-word prompt and a five-thousand-token prompt against the same model cost identically, because the multiplier attached to the request as a whole, never to anything measured inside it. Under Credits, GitHub's own [models-and-pricing documentation](https://docs.github.com/en/copilot/reference/copilot-billing/models-and-pricing) prices input tokens, output tokens, and cached tokens separately for each model, then converts the dollar total to credits at a fixed 1 credit equals $0.01. The multiplier itself, the thing that used to do all the work, is gone for every plan this migration touched. What replaced it counts tokens instead of guessing at request weight.
+
+The same changelog entry that announced this also folded Copilot code review into Actions-minutes billing and rolled out general availability for user-level budget controls, separate changes bundled into the same June 1 release. Worth knowing so you don't mistake either one for part of the credits migration itself.
+
+## A single request, priced two different ways
+
+Here's what that structural difference looks like on one real model. Claude Haiku 4.5 prices at $1.00 per million input tokens and $5.00 per million output tokens under Credits, per GitHub's live pricing table. Send it 8,000 tokens of context and get back a 1,200-token response, nothing served from cache, and the math runs like this:
+
+1. Input: 8,000 tokens x $1.00 / 1,000,000 = $0.008
+2. Output: 1,200 tokens x $5.00 / 1,000,000 = $0.006
+3. Total: $0.014, or 1.4 credits at the fixed $0.01-per-credit rate
+
+Today, on the legacy multiplier table that annual Pro and Pro+ subscribers still use, [Claude Haiku 4.5 carries a 0.33x multiplier](https://docs.github.com/en/copilot/reference/copilot-billing/request-based-billing-legacy/model-multipliers-for-annual-plans). That exchange, on that system, counts as 0.33 of a single premium request against the monthly allowance, full stop. Send it 500 tokens or 50,000, the multiplier doesn't move. It's the same contrast as the Structural Comparison Matrix above, just run through one specific model instead of stated abstractly.
+
+<Callout type="info" title="Two different tables, not one revised over time">
+  The 0.33x figure above is what GitHub's current annual-plan multiplier table
+  shows today, not a reconstruction of what monthly-plan users paid before June
+  1. GitHub revised the annual multiplier table on the same date it retired PRU
+  for monthly plans, a separate event covered in [Annual Copilot Plans: Model
+  Multipliers Just
+  Spiked](/ai-productivity/annual-copilot-plans-model-multipliers-spike/).
+</Callout>
+
+## What didn't change
+
+Two things survived the migration intact. Plan prices held: Pro is still $10/month, Pro+ still $39/month, Business still $19 per seat/month, and Enterprise still $39 per seat/month, confirmed directly on [GitHub's plans page](https://docs.github.com/en/copilot/get-started/plans). Whatever changed on June 1, it wasn't what a subscription costs to buy.
+
+And per-model cost variance never went away, it just changed units. A heavier reasoning model still costs more to run than a lightweight one; PRU expressed that with a multiplier, Credits express it with a higher per-token rate. That's the same industry-wide shift this site already covered for OpenAI, Anthropic, and Google's own pricing in [The 2026 LLM Token & Pricing Reset](/ai-productivity/2026-llm-token-pricing-reset/): flat, coarse units giving way to real per-token economics. Copilot's version just arrived wearing GitHub's own billing vocabulary. The exact mechanics of how a token count turns into a credit figure, cached input, cache writes, long-context tiers, are covered in more depth in [How GitHub Copilot AI Credits Are Actually Priced](/ai-productivity/github-copilot-ai-credits-pricing-explained/).
+
+## If you're on an annual Pro or Pro+ plan, none of this happened yet
+
+Everything above describes monthly billing. Individual subscribers who bought an annual Copilot Pro or Pro+ plan weren't migrated on June 1 at all; they're still metered by the PRU multiplier system this post just described, unchanged in mechanism. GitHub's documentation lays out three explicit options for that group: stay on the annual plan under premium request-based billing, cancel for a prorated refund, or upgrade to a monthly plan and receive prorated credit for the plan's remaining value.
+
+<Callout type="warning" title="Doing nothing doesn't mean staying put">
+  Choosing to ride out an annual Pro or Pro+ plan isn't a neutral choice.
+  GitHub's own documentation states that when the plan ends, the account is
+  "automatically downgraded to Copilot Free," not migrated to AI Credits. Nobody
+  lands on Credits without deliberately cancelling and re-subscribing, or
+  explicitly upgrading before the annual term runs out.
+</Callout>
+
+Annual subscribers aren't skipping the credits system, they're on a delayed track toward it, and the default outcome if they don't act is a downgrade, not an upgrade. [Annual Copilot Plans: Model Multipliers Just Spiked](/ai-productivity/annual-copilot-plans-model-multipliers-spike/) covers what changed for that group instead, a revised multiplier table on the very same date, a distinct event from the credits migration that's easy to conflate with it.
+
+Check which billing system your own plan is actually on before assuming this migration already happened to you. Monthly subscribers got a new pricing mechanism automatically. Annual Pro and Pro+ subscribers got three choices and a deadline, and reading a changelog post won't tell you which one applies to your seat, your own billing settings will.
+
+Browse more coverage like this in the [AI Productivity](/ai-productivity) archive, or start from [GitHub Copilot's AI Credits Cliff](/ai-productivity/github-copilot-ai-credits-cliff-2026/) hub for the full reversion story.
