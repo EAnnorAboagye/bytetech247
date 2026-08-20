@@ -294,6 +294,16 @@ const jsonLdBlocks = [
       name="google-site-verification"
       content="Q7Gw17KC8cG9r4zyeMycGAfPXpAzdGeThLa9evSl-54"
     />
+    <!-- Redundant AdSense ownership signal alongside the ad-serving script
+         itself (adsbygoogle.js, further down this file) and the ads.txt
+         declaration (public/ads.txt) — same defensive-redundancy reasoning
+         as the Search Console tag above: three independent ways for
+         Google to confirm this property is legitimately connected to this
+         AdSense account, rather than depending on any single one. -->
+    <meta
+      name="google-adsense-account"
+      content={siteConfig.adsensePublisherId}
+    />
     <script is:inline>
       // Dark mode, applied before first paint to avoid a flash of the
       // wrong theme (build-spec.md Phase 5) — a manually-saved preference
