@@ -132,20 +132,33 @@ const jsonLdBlocks = [
          default would violate that policy the moment a real EEA/UK
          visitor loads the page. Revisit only alongside adding a real CMP.
 
-         The actual gtag.js fetch is deferred until the window "load" event,
-         not a static <script src> tag — the old consent-gated version
-         never made this request during an automated Lighthouse audit
-         (nothing clicks Accept), so this LCP regression only appeared once
-         loading went unconditional. A static tag with `async` still gets
-         default (High) fetch priority in Chrome, competing with the page's
-         real LCP resources for early bandwidth; `fetchpriority="low"`
-         measured 2414ms locally (comfortably under the 3000ms budget) but
-         still failed the same threshold on the GitHub Actions runner twice
-         — a soft priority hint the browser may or may not honor
-         consistently isn't reliable enough. Not starting the fetch until
-         "load" (by definition after every LCP candidate has already
-         rendered) removes the competition entirely rather than hoping a
-         hint wins a scheduling race. -->
+         gtag.js is now a static `<script defer fetchpriority="low" src>`
+         tag (2026-08-20), not window.load-deferred JS-created injection —
+         reverting the 2026-08-06 fix below because that fix is *why* an
+         automated GA-verification check against the live index page
+         reported no tracking code found: a tool that fetches raw HTML
+         without executing JS (or without waiting past window.load) never
+         sees a <script src="...gtag/js..."> element at all when it's only
+         ever created via document.createElement() inside a "load"
+         listener — there's no static tag in the response body for it to
+         find, ever, regardless of how long it waits.
+
+         This isn't simply re-trying the exact thing the 2026-08-06 fix
+         moved away from: that regression was `async` + `fetchpriority=
+         "low"`, which only deprioritizes *fetch start*, not *execution*.
+         `async` still runs the instant the (small, ~28KB) file finishes
+         downloading, which race-availability plus a background fetch can
+         still land well before paint. `defer` is a different scheduling
+         primitive: execution is withheld until after the document has
+         finished parsing (right before DOMContentLoaded), which is a hard
+         ordering guarantee the browser enforces, not a priority hint it
+         may or may not honor — the actual documented failure mode of the
+         `async` attempt. Validated via this repo's own Lighthouse CI gate
+         (.lighthouserc.json, LCP <= 3000ms) against a real PR before
+         merging, not assumed safe by reasoning alone — see that PR for
+         the before/after numbers. If a future regression shows up here
+         again, the fallback is the same as before (window.load), not a
+         third scheduling attribute to try blind. -->
     <script define:vars={{ analyticsId: siteConfig.analyticsId }}>
       // A bare top-level `function gtag(){}` here stays scoped to this
       // script's own wrapper (Astro implicitly treats a `define:vars`
@@ -204,33 +217,22 @@ const jsonLdBlocks = [
           page_title: document.title,
         });
       });
-
-      window.addEventListener("load", () => {
-        const gtagSrc = `https://www.googletagmanager.com/gtag/js?id=${analyticsId}`;
-        // Trusted Types (enforced via the Content-Security-Policy header,
-        // see worker/index.ts's cspFor()) rejects a plain
-        // string assigned to script.src — this policy only ever returns
-        // the one hardcoded gtag.js URL built above, never an
-        // attacker-influenced value, which is what makes it a real
-        // sanitizer rather than a pass-through that defeats the point of
-        // Trusted Types. Firefox/Safari don't implement
-        // window.trustedTypes yet, so this falls back to the plain string
-        // there — nothing to satisfy without the enforcement header.
-        const scriptUrl = window.trustedTypes
-          ? window.trustedTypes
-              .createPolicy("gtag-loader", {
-                createScriptURL: (url) =>
-                  url === gtagSrc ? url : "about:blank",
-              })
-              .createScriptURL(gtagSrc)
-          : gtagSrc;
-        const script = document.createElement("script");
-        script.async = true;
-        script.fetchPriority = "low";
-        script.src = scriptUrl;
-        document.head.appendChild(script);
-      });
     </script>
+    <!-- gtag.js itself — a static tag, not a JS-driven Trusted Types sink
+         (unlike the JS-created version this replaced), so it's unaffected
+         by require-trusted-types-for the same way the AdSense tag below
+         already is. `defer`, not `async`: see the long comment above this
+         block for why that's the load-bearing difference from the
+         attribute combination that previously regressed LCP.
+         `fetchpriority="low"` is additionally applied on top of `defer` —
+         doesn't change the *ordering* guarantee defer already provides,
+         but still deprioritizes the download itself against whatever the
+         LCP candidate needs. -->
+    <script
+      defer
+      fetchpriority="low"
+      src={`https://www.googletagmanager.com/gtag/js?id=${siteConfig.analyticsId}`}
+    ></script>
     <!-- Cloudflare Web Analytics, self-hosted (Manual Setup) — see the
          cloudflareBeaconToken comment in src/config.ts for why this isn't
          left to the zone's Automatic Setup. A same-origin-authored
