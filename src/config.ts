@@ -176,8 +176,10 @@ export const siteConfig = {
   // source once loaded. Loaded unconditionally in BaseLayout.astro's
   // <head> for every visitor (no consent gate, as of 2026-08-04) — see
   // privacy.astro's "What this site collects today" section, which this
-  // ID must stay consistent with.
-  analyticsId: "G-QCK9SYFM29",
+  // ID must stay consistent with. Updated 2026-08-20 to G-JRES2NJPH5
+  // (previous ID: G-QCK9SYFM29) — a new tag Google issued for this
+  // property.
+  analyticsId: "G-JRES2NJPH5",
 
   // Cloudflare Web Analytics beacon token (dash.cloudflare.com > Web
   // Analytics > this site > Manage Site) — not a secret, same reasoning
