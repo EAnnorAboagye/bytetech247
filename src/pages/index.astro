@@ -83,7 +83,11 @@ const formatShortDate = (date: Date) =>
     .toUpperCase();
 ---
 
-<BaseLayout jsonLd={streamItemListJsonLd} preloadImage={heroPreload?.src}>
+<BaseLayout
+  jsonLd={streamItemListJsonLd}
+  preloadImage={heroPreload?.src}
+  preloadMastheadFonts
+>
   <Center gutter="0">
     <HomeMasthead />
 
