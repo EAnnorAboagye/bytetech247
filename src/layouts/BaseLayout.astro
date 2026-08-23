@@ -26,17 +26,6 @@ interface Props {
   /** Absolute URL of the post's plain-Markdown export ([slug].md.ts), if any. */
   markdownUrl?: string;
   /**
-   * Preloads Plex Mono 700 / Plex Serif 700 — the homepage masthead's own
-   * above-the-fold faces (trust pill + <h1>). Homepage-only: every other
-   * page still renders both faces above the fold too (header wordmark,
-   * article h1), just not as this page's own LCP candidate — adding two
-   * more high-priority requests there measurably pushed a category
-   * archive page's LCP over the Lighthouse CI budget (confirmed live,
-   * 2026-08-23: 3037ms against a 3000ms gate) for a face that page isn't
-   * actually racing against its own LCP image for.
-   */
-  preloadMastheadFonts?: boolean;
-  /**
    * Set on tag pages, /archive/, and legal/about pages (contact, privacy,
    * terms, affiliate-disclosure, editorial-policy) — Google should only
    * index category pages and posts, not these navigation/utility pages.
@@ -55,7 +44,6 @@ const {
   jsonLd,
   preloadImage,
   markdownUrl,
-  preloadMastheadFonts = false,
   noindex = false,
 } = Astro.props;
 
@@ -370,34 +358,6 @@ const jsonLdBlocks = [
     <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <meta name="theme-color" content="#0D9488" />
-
-    {
-      /* The homepage masthead's two above-the-fold faces (trust pill in
-         Plex Mono 700, the <h1> in Plex Serif 700) — preloaded so they're
-         available before the fonts' own @font-face rules (global.css)
-         would otherwise discover them. Homepage-only, not every page: see
-         preloadMastheadFonts's own comment above for why. */
-    }
-    {
-      preloadMastheadFonts && (
-        <>
-          <link
-            rel="preload"
-            as="font"
-            type="font/woff2"
-            href="/fonts/plex-mono-700.woff2"
-            crossorigin
-          />
-          <link
-            rel="preload"
-            as="font"
-            type="font/woff2"
-            href="/fonts/plex-serif-700.woff2"
-            crossorigin
-          />
-        </>
-      )
-    }
 
     <meta name="generator" content={Astro.generator} />
 
