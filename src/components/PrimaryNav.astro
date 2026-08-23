@@ -39,8 +39,11 @@ interface Props {
   currentPath?: string;
 }
 
-const { topTagsByCategory, variant = "vertical", currentPath = "" } =
-  Astro.props;
+const {
+  topTagsByCategory,
+  variant = "vertical",
+  currentPath = "",
+} = Astro.props;
 
 // Exact-match only (no partial/nested-route matching) — the strip marks
 // Home or a category active only when a visitor is actually on that
@@ -73,7 +76,9 @@ const legalLinks = [
     CATEGORIES.map((category) => (
       <li data-category={category.slug}>
         <details class="primary-nav__dropdown">
-          <summary aria-current={isActive(`/${category.slug}/`) ? "page" : undefined}>
+          <summary
+            aria-current={isActive(`/${category.slug}/`) ? "page" : undefined}
+          >
             {category.name} <span aria-hidden="true">&#9662;</span>
           </summary>
           <div class="primary-nav__panel">

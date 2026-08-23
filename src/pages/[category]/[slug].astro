@@ -179,9 +179,11 @@ const nextInSeries =
           class="post-byline__avatar"
         />
         <div class="post-byline__text">
-          {siteConfig.author.name && (
-            <p class="post-byline__name">{siteConfig.author.name}</p>
-          )}
+          {
+            siteConfig.author.name && (
+              <p class="post-byline__name">{siteConfig.author.name}</p>
+            )
+          }
           <p class="post-meta">
             <time datetime={post.data.date.toISOString()}>
               {
@@ -194,22 +196,28 @@ const nextInSeries =
               }
             </time>{" "}
             · {readingTime} min read
-            {lastVerifiedDate && (
-              <>
-                {" "}
-                · Verified{" "}
-                <time datetime={lastVerifiedDate.toISOString()}>
-                  {lastVerifiedDate.toLocaleDateString("en-US", {
-                    month: "short",
-                    day: "numeric",
-                    timeZone: "UTC",
-                  })}
-                </time>
-              </>
-            )}
+            {
+              lastVerifiedDate && (
+                <>
+                  {" "}
+                  · Verified{" "}
+                  <time datetime={lastVerifiedDate.toISOString()}>
+                    {lastVerifiedDate.toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                      timeZone: "UTC",
+                    })}
+                  </time>
+                </>
+              )
+            }
           </p>
         </div>
-        <ShareButtons url={pageUrl} title={post.data.title} class="post-share" />
+        <ShareButtons
+          url={pageUrl}
+          title={post.data.title}
+          class="post-share"
+        />
       </div>
 
       <Picture
