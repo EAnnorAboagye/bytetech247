@@ -349,9 +349,19 @@ const currentPath = Astro.url.pathname;
   }
 
   /* The category strip — the second row, full width under the brand row,
-     separated by a hairline. Real <a> links, overflow-x: auto so it
-     scrolls rather than wraps at a narrow desktop width. Hidden below
-     64rem, where the mobile disclosure carries the same links instead. */
+     separated by a hairline. Real <a> links. Hidden below 64rem, where
+     the mobile disclosure carries the same links instead.
+     No overflow-x here, deliberately: each category/Tools item opens a
+     mega-panel that's absolutely positioned relative to its own <li>
+     (see .primary-nav--horizontal .primary-nav__panel below) and
+     overflows *vertically* below the strip — any non-visible overflow-x
+     value on an ancestor also clips that vertical overflow (CSS forces
+     overflow-y to a non-visible value too once overflow-x isn't
+     'visible'), which silently hid every dropdown panel behind this
+     row's own height. Confirmed live, 2026-08-23. At the >=64rem widths
+     this strip actually renders at, its content comfortably fits within
+     the 72rem container without needing to scroll, so dropping the
+     scroll affordance costs nothing in practice. */
   .site-header__strip {
     display: none;
   }
@@ -364,7 +374,6 @@ const currentPath = Astro.url.pathname;
     .site-header__strip {
       display: block;
       border-top: 1px solid var(--color-hairline);
-      overflow-x: auto;
     }
 
     .site-header__strip :global(.primary-nav) {

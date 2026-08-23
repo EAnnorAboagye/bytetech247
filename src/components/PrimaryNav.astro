@@ -362,12 +362,13 @@ const legalLinks = [
     }
   }
 
-  /* Tag list becomes a two-column grid here — "horizontal," not the
-     mobile accordion's single vertical column — so up to 5 tags read as
-     a scannable block instead of a tall single-file list. */
+  /* Tags flow left to right and wrap, not the mobile accordion's single
+     vertical column — a horizontal row of pills reads as a scannable
+     block instead of a tall single-file list. */
   .primary-nav--horizontal .primary-nav__tags {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(7rem, 1fr));
-    gap: calc(var(--spacing) * 0.5) calc(var(--spacing) * 3);
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: calc(var(--spacing) * 1) calc(var(--spacing) * 1.5);
   }
 </style>

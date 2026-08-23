@@ -288,6 +288,7 @@ const destinations = [
   const dialog = document.querySelector<HTMLDialogElement>(".command-palette");
   const resultsList = document.getElementById("palette-results");
   const hint = document.getElementById("palette-hint");
+  const defaultHint = hint?.textContent ?? "";
 
   // Loaded lazily on first real query rather than on page load — this is
   // an enhancement layered on top of the always-working static-page list
@@ -342,6 +343,7 @@ const destinations = [
       clearResults();
       input.focus();
     }
+    if (hint) hint.textContent = defaultHint;
     // Warm the index as soon as the palette opens, so the first keystroke
     // isn't the thing paying the network/init cost.
     void loadPagefind();
@@ -370,8 +372,17 @@ const destinations = [
     const q = query.trim();
     if (q.length < 2) {
       clearResults();
+      if (hint) hint.textContent = defaultHint;
       return;
     }
+    // Pagefind's own bundle + index are fetched lazily (see loadPagefind
+    // above) — on the first query of a session that download can take
+    // close to a second, during which the results list previously stayed
+    // empty with no feedback at all, reading as a frozen/broken search
+    // rather than one still working. This is the one visible sign
+    // anything is happening until real results (or the "isn't available"
+    // message below) replace it.
+    if (hint) hint.textContent = "Searching…";
     const pagefind = await loadPagefind();
     if (!pagefind) {
       if (hint)
@@ -381,6 +392,7 @@ const destinations = [
     const { results } = await pagefind.search(q);
     const items = await Promise.all(results.slice(0, 8).map((r) => r.data()));
     if (!resultsList) return;
+    if (hint) hint.textContent = defaultHint;
     resultsList.replaceChildren();
     for (const item of items) {
       const li = document.createElement("li");
