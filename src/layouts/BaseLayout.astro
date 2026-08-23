@@ -359,6 +359,25 @@ const jsonLdBlocks = [
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <meta name="theme-color" content="#0D9488" />
 
+    <!-- The two faces in the above-the-fold masthead (wordmark/chip/pill
+         in Plex Mono 700, the h1 in Plex Serif 700) — preloaded so they're
+         available before the fonts' own @font-face rules (global.css)
+         would otherwise discover them. -->
+    <link
+      rel="preload"
+      as="font"
+      type="font/woff2"
+      href="/fonts/plex-mono-700.woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      as="font"
+      type="font/woff2"
+      href="/fonts/plex-serif-700.woff2"
+      crossorigin
+    />
+
     <meta name="generator" content={Astro.generator} />
 
     <!-- Open Graph / Twitter — build-spec.md Phase 9 §11: mirrors the

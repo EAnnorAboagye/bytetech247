@@ -15,15 +15,35 @@ const { faq } = Astro.props;
 {
   faq.length > 0 && (
     <section class="faq-section" aria-labelledby="faq-heading">
-      <h2 id="faq-heading">Frequently asked questions</h2>
-      <dl class="faq-section__list">
+      <h2 id="faq-heading">Frequently asked</h2>
+      <div class="faq-section__list">
         {faq.map((item) => (
           <div class="faq-section__item">
-            <dt class="faq-section__question">{item.question}</dt>
-            <dd class="faq-section__answer">{item.answer}</dd>
+            <div class="faq-section__row">
+              <p class="faq-section__question">{item.question}</p>
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+                width="16"
+                height="16"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="faq-section__chevron"
+              >
+                <path d="M5 9l7 7 7-7" />
+              </svg>
+            </div>
+            <p class="faq-section__answer">{item.answer}</p>
           </div>
         ))}
-      </dl>
+      </div>
+      <p class="faq-section__footnote">
+        Emitted as FAQPage JSON-LD from the same frontmatter — one source,
+        no duplicated prose.
+      </p>
     </section>
   )
 }
@@ -33,24 +53,58 @@ const { faq } = Astro.props;
     margin-top: calc(var(--spacing) * 8);
   }
 
+  /* This heading sits outside .article-content (FaqSection is a sibling,
+     not part of the rendered MDX body), so it needs its own copy of the
+     article template's Serif-headline override rather than inheriting
+     .article-content :global(h2)'s. */
+  .faq-section h2 {
+    font-family: var(--font-serif);
+    letter-spacing: normal;
+    margin: 0 0 calc(var(--spacing) * 2.5);
+  }
+
   .faq-section__list {
-    margin: calc(var(--spacing) * 4) 0 0;
-    display: flex;
-    flex-direction: column;
-    gap: calc(var(--spacing) * 4);
+    margin: calc(var(--spacing) * 2.5) 0 0;
   }
 
   .faq-section__item {
-    margin: 0;
+    padding: calc(var(--spacing) * 2.25) 0;
+    border-top: 1px solid var(--color-hairline);
+  }
+
+  .faq-section__row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: calc(var(--spacing) * 2);
   }
 
   .faq-section__question {
+    margin: 0;
     font-weight: 600;
+    font-size: var(--text-base);
+    line-height: 1.4;
     color: var(--color-fg);
   }
 
+  .faq-section__chevron {
+    flex-shrink: 0;
+    margin-top: 3px;
+    color: var(--color-fg-muted);
+  }
+
   .faq-section__answer {
-    margin: calc(var(--spacing) * 1) 0 0;
+    margin: calc(var(--spacing) * 1.25) 0 0;
+    max-width: 62ch;
+    line-height: 1.7;
+    color: var(--color-fg-muted);
+  }
+
+  .faq-section__footnote {
+    margin: calc(var(--spacing) * 2.5) 0 0;
+    font-family: var(--font-display);
+    font-size: 10.5px;
+    letter-spacing: 0.04em;
     color: var(--color-fg-muted);
   }
 </style>

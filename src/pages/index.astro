@@ -1,40 +1,42 @@
 ---
-// Bento hero -> Recent -> per-category sections (build-spec.md Phase 2).
+// Homepage (2026-08 redesign): masthead -> hero row (+ Latest list) ->
+// free tools strip -> Most read -> Recent (list) -> per-category sections.
 // Trending is explicitly deferred to Phase 13 — not built here.
 import { getCollection } from "astro:content";
-import { getImage } from "astro:assets";
+import { getImage, Picture } from "astro:assets";
 import BaseLayout from "../layouts/BaseLayout.astro";
 import Center from "../components/layout/Center.astro";
-import Grid from "../components/layout/Grid.astro";
-import Stack from "../components/layout/Stack.astro";
 import HeroTile from "../components/HeroTile.astro";
 import PostCard from "../components/PostCard.astro";
+import RecentList from "../components/RecentList.astro";
+import ToolsStrip from "../components/ToolsStrip.astro";
+import HomeMasthead from "../components/HomeMasthead.astro";
 import AdSlot from "../components/AdSlot.astro";
-import { CATEGORIES, CATEGORY_HOMEPAGE_AD_SLOT, siteConfig } from "../config";
+import {
+  CATEGORIES,
+  CATEGORY_HOMEPAGE_AD_SLOT,
+  getCategoryDescription,
+  getCategoryName,
+  siteConfig,
+} from "../config";
+import { calculateReadingTime } from "../lib/reading-time";
 import { itemListJsonLd, absoluteUrl } from "../lib/json-ld";
 
 const allPosts = (await getCollection("blog")).sort(
   (a, b) => b.data.date.valueOf() - a.data.date.valueOf(),
 );
 
-// Popular and Recent used to be overlapping windows into the same handful
-// of latest posts (Popular = allPosts[1..4], Recent = allPosts[0..5], so
-// every "Popular" post was also shown in "Recent" a few inches below it —
-// wasted homepage real estate on posts a visitor already scrolled past).
-// Treating the homepage as one continuous chronological stream instead —
-// hero, then Popular, then Recent picks up exactly where Popular left off
-// — means every post shown below the hero is genuinely different from the
-// last section.
 const [heroPost, ...rest] = allPosts;
-// 5, not 4: desktop gives the first Popular card a 2-column featured span
-// (see .homepage-secondary-grid's CSS below) inside a fixed 3-column
-// desktop grid — 1 double-span card + 4 regular ones is exactly what
-// fills 2 full rows with no leftover gap. The 5th card is hidden below
-// the desktop breakpoint (same nth-child pattern as .responsive-cap-grid
-// elsewhere on this page), so mobile/tablet still show exactly the 4
-// cards they always have.
-const popularPosts = rest.slice(0, 5);
-const recentPosts = rest.slice(5, 11);
+// Latest recaps the freshest posts right beside the hero — independent of
+// Popular/Recent below it, which is why it can (and does) overlap with
+// them: it's a compact "what just went up" widget, not another
+// non-overlapping window into the stream.
+const latestPosts = rest.slice(0, 5);
+// 3, not 5 — the redesign drops Popular's old double-span featured
+// treatment (that special treatment moved to the hero row itself), so
+// Popular is now a plain, evenly-weighted 3-card row.
+const popularPosts = rest.slice(0, 3);
+const recentPosts = rest.slice(3, 9);
 
 // Same reasoning as [category]/[slug].astro's preloadCover: point the
 // preload hint at the exact asset HeroTile's own <Picture> requests
@@ -60,278 +62,561 @@ const streamItemListJsonLd = itemListJsonLd(
     .filter((post): post is NonNullable<typeof post> => Boolean(post))
     .map((post) => absoluteUrl(`/${post.data.category}/${post.id}/`)),
 );
+
+const categorySections = CATEGORIES.map((category) => {
+  // Lead card + 3 compact thumbnail rows — 4 posts total, not the old
+  // 6-post grid. Homepage sections are a preview/entry point, not the
+  // full archive; "View all" is what keeps every other post reachable.
+  const categoryPosts = allPosts
+    .filter((post) => post.data.category === category.slug)
+    .slice(0, 4);
+  return { category, lead: categoryPosts[0], items: categoryPosts.slice(1) };
+});
+
+const formatShortDate = (date: Date) =>
+  date
+    .toLocaleDateString("en-US", {
+      month: "short",
+      day: "2-digit",
+      timeZone: "UTC",
+    })
+    .toUpperCase();
 ---
 
 <BaseLayout jsonLd={streamItemListJsonLd} preloadImage={heroPreload?.src}>
-  {
-    /* gutter="0" — <main> (BaseLayout) already applies its own
-       padding-inline as a safety net for pages that don't wrap in
-       <Center>. Center's default gutter would stack on top of that
-       rather than replace it, quietly eating ~128px of a 375px phone
-       screen (32px main + 32px Center, both sides) for zero visual
-       reason. Center's max-width is still worth keeping here. */
-  }
   <Center gutter="0">
-    <Stack space="12" class="homepage-sections">
-      <AdSlot
-        adSlot={siteConfig.adSlots.homepageHeader}
-        size="banner"
-        label="Advertisement"
-      />
+    <HomeMasthead />
 
-      <div>
-        <h1 class="sr-only">{siteConfig.title}</h1>
-        <p class="homepage-intro">
-          ByteTech247 delivers expert Dev Tools, automation, and AI productivity
-          insights. Get production-ready guides and fixes to optimize your
-          workflows.
-        </p>
-      </div>
+    <AdSlot
+      adSlot={siteConfig.adSlots.homepageHeader}
+      size="banner"
+      label="Advertisement"
+    />
 
-      {
-        heroPost && (
-          <section aria-label="Featured post">
-            <HeroTile post={heroPost} />
-          </section>
-        )
-      }
-
-      <AdSlot
-        adSlot={siteConfig.adSlots.homepageAfterHero}
-        size="rectangle"
-        label="Advertisement"
-      />
-
-      {
-        heroPost && popularPosts.length > 0 && (
-          <section aria-label="Popular posts">
-            <h2 class="section-heading">Popular</h2>
-            <Grid
-              minItemWidth="16rem"
-              space="4"
-              class="homepage-secondary-grid"
-            >
-              {popularPosts.map((post) => (
-                <PostCard post={post} eager />
+    {
+      heroPost && (
+        <section aria-label="Featured post" class="hero-row">
+          <HeroTile post={heroPost} />
+          <aside class="hero-row__latest" aria-label="Latest posts">
+            <div class="hero-row__latest-header">
+              <h2 class="hero-row__latest-heading">Latest</h2>
+              <a href="/archive/" class="hero-row__latest-archive">
+                Archive →
+              </a>
+            </div>
+            <ul class="hero-row__latest-list">
+              {latestPosts.map((post) => (
+                <li data-category={post.data.category}>
+                  <a
+                    href={`/${post.data.category}/${post.id}/`}
+                    class="hero-row__latest-link"
+                  >
+                    <span class="hero-row__latest-meta">
+                      <span class="hero-row__latest-dot" aria-hidden="true" />
+                      {getCategoryName(post.data.category)} ·{" "}
+                      {formatShortDate(post.data.date)}
+                    </span>
+                    <h3 class="hero-row__latest-title">{post.data.title}</h3>
+                  </a>
+                </li>
               ))}
-            </Grid>
-          </section>
-        )
-      }
+            </ul>
+          </aside>
+        </section>
+      )
+    }
 
-      <AdSlot
-        adSlot={siteConfig.adSlots.homepageAfterFeatured}
-        size="rectangle"
-        label="Advertisement"
-      />
+    <ToolsStrip />
 
-      <section aria-label="Recent posts">
+    <AdSlot
+      adSlot={siteConfig.adSlots.homepageAfterHero}
+      size="rectangle"
+      label="Advertisement"
+    />
+
+    {
+      popularPosts.length > 0 && (
+        <section aria-label="Popular posts" class="homepage-section">
+          <h2 class="section-heading">Most read</h2>
+          <div class="most-read-grid">
+            {popularPosts.map((post) => (
+              <PostCard post={post} eager />
+            ))}
+          </div>
+        </section>
+      )
+    }
+
+    <section aria-label="Recent posts" class="homepage-section">
+      <div class="homepage-section__header">
         <h2 class="section-heading">Recent</h2>
-        {
-          recentPosts.length > 0 ? (
-            <Grid minItemWidth="18rem" space="4" class="responsive-cap-grid">
-              {recentPosts.map((post) => (
-                <PostCard post={post} />
-              ))}
-            </Grid>
-          ) : (
-            <p>No posts yet. Check back soon.</p>
-          )
-        }
-      </section>
-
-      <AdSlot
-        adSlot={siteConfig.adSlots.homepageAfterRecent}
-        size="rectangle"
-        label="Advertisement"
-      />
-
+        <a href="/archive/" class="homepage-view-all">All posts →</a>
+      </div>
       {
-        CATEGORIES.map((category, index) => {
-          // 6 max per section, same as Recent — homepage sections are a
-          // preview/entry point, not the full archive. Capped here
-          // because this loop previously rendered every single post ever
-          // published in that category with no limit at all,
-          // unbounded growth on the one page every visitor lands on
-          // first. "View all" below is what keeps every post still
-          // reachable from here despite the cap.
-          const categoryPosts = allPosts
-            .filter((post) => post.data.category === category.slug)
-            .slice(0, 6);
-          const isLast = index === CATEGORIES.length - 1;
-          return (
-            <>
-              <section aria-label={category.name}>
-                <h2 class="section-heading">{category.name}</h2>
-                {categoryPosts.length > 0 ? (
-                  <>
-                    <Grid
-                      minItemWidth="18rem"
-                      space="4"
-                      class="responsive-cap-grid"
-                    >
-                      {categoryPosts.map((post) => (
-                        <PostCard post={post} />
-                      ))}
-                    </Grid>
-                    <a href={`/${category.slug}/`} class="homepage-view-all">
-                      View all in {category.name} →
-                    </a>
-                  </>
-                ) : (
-                  <p>No posts yet in {category.name}.</p>
-                )}
-              </section>
-
-              <AdSlot
-                adSlot={
-                  siteConfig.adSlots[CATEGORY_HOMEPAGE_AD_SLOT[category.slug]]
-                }
-                size="rectangle"
-                label="Advertisement"
-                class={isLast ? "homepage-last-ad" : undefined}
-              />
-            </>
-          );
-        })
+        recentPosts.length > 0 ? (
+          <RecentList posts={recentPosts} />
+        ) : (
+          <p>No posts yet. Check back soon.</p>
+        )
       }
-    </Stack>
+    </section>
+
+    <AdSlot
+      adSlot={siteConfig.adSlots.homepageAfterRecent}
+      size="rectangle"
+      label="Advertisement"
+    />
+
+    {
+      categorySections.map(({ category, lead, items }, index) => {
+        const isLast = index === categorySections.length - 1;
+        return (
+          <>
+            <section
+              aria-label={category.name}
+              class="category-section"
+              data-category={category.slug}
+            >
+              <div class="category-section__header">
+                <div>
+                  <h2 class="category-section__heading">{category.name}</h2>
+                  <p class="category-section__description">
+                    {getCategoryDescription(category.slug)}
+                  </p>
+                </div>
+                <a href={`/${category.slug}/`} class="category-section__view-all">
+                  View all →
+                </a>
+              </div>
+
+              {lead ? (
+                <div class="category-section__body">
+                  <a
+                    href={`/${category.slug}/${lead.id}/`}
+                    class="category-section__lead"
+                  >
+                    <Picture
+                      src={lead.data.coverImage}
+                      alt={lead.data.coverImageAlt}
+                      widths={[640]}
+                      formats={["avif", "webp"]}
+                      loading="lazy"
+                      class="category-section__lead-cover"
+                    />
+                    <h3 class="category-section__lead-title">
+                      {lead.data.title}
+                    </h3>
+                    <p class="category-section__lead-dek">
+                      {lead.data.description}
+                    </p>
+                    <p class="category-section__lead-meta">
+                      {formatShortDate(lead.data.date)} ·{" "}
+                      {calculateReadingTime(lead.body ?? "")} min read
+                    </p>
+                  </a>
+                  <ul class="category-section__list">
+                    {items.map((post) => (
+                      <li>
+                        <a
+                          href={`/${category.slug}/${post.id}/`}
+                          class="category-section__row"
+                        >
+                          <Picture
+                            src={post.data.coverImage}
+                            alt={post.data.coverImageAlt}
+                            widths={[176]}
+                            formats={["avif", "webp"]}
+                            loading="lazy"
+                            class="category-section__row-thumb"
+                          />
+                          <span>
+                            <span class="category-section__row-title">
+                              {post.data.title}
+                            </span>
+                            <span class="category-section__row-meta">
+                              {formatShortDate(post.data.date)} ·{" "}
+                              {calculateReadingTime(post.body ?? "")} min
+                            </span>
+                          </span>
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : (
+                <p>No posts yet in {category.name}.</p>
+              )}
+            </section>
+
+            <AdSlot
+              adSlot={
+                siteConfig.adSlots[CATEGORY_HOMEPAGE_AD_SLOT[category.slug]]
+              }
+              size="rectangle"
+              label="Advertisement"
+              class={isLast ? "homepage-last-ad" : undefined}
+            />
+          </>
+        );
+      })
+    }
   </Center>
 </BaseLayout>
 
 <style>
-  .homepage-intro {
-    max-width: 40rem;
-    margin-top: calc(var(--spacing) * 2);
-    color: var(--color-fg-muted);
-    font-size: var(--text-lg);
-    /* Same "give plain text room to breathe" line-height as .legal
-       (global.css) and .article-content — this paragraph never got it,
-       so it was stuck on Tailwind's Preflight default of 1.5 while every
-       other block of prose on the site reads at 1.7. */
-    line-height: 1.7;
+  /* Uniform vertical rhythm around every AdSlot on this page — replaces
+     the Stack primitive's old blanket gap now that top-level sections
+     each carry their own padding instead. Also satisfies the 36px
+     margin-top the per-category slot needs. */
+  :global(.center) > :global(.ad-slot) {
+    margin: calc(var(--spacing) * 4.5) 0;
   }
 
-  .homepage-secondary-grid {
-    margin-top: calc(var(--spacing) * 4);
+  .hero-row {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: calc(var(--spacing) * 5);
+    padding: calc(var(--spacing) * 4.5) 0;
+    border-bottom: 1px solid var(--color-hairline);
   }
 
-  /* Six stacked, identically-shaped 3-column grids in a row (Popular,
-     Recent, then one per category) reads as one long repeating pattern
-     rather than distinct sections. Giving Popular's own first card a
-     larger, wider treatment breaks that rhythm right after the hero,
-     without touching Recent or the category grids below — those stay
-     uniform on purpose, since "here are N more, evenly weighted" is the
-     correct shape for a plain list.
-
-     Desktop only, locked to a *fixed* 3 columns rather than this page's
-     usual auto-fill/minItemWidth packing — auto-fill's column count
-     varies continuously with viewport width (at this page's own 72rem
-     max content width it actually lands on 4 columns, not 3), and a
-     fluid count can't stay gap-free against a fixed 5-card, one-double-
-     span layout at every width. Confirmed live (2026-08-15): the featured
-     card's 2-column span plus 4 regular cards left a visible empty cell
-     in the grid at browser widths where auto-fill happened to land on 3
-     columns. A fixed 3 columns + 5 posts (1 double + 4 single = 6 cells
-     exactly) fills both rows with no gap at any desktop width, not just
-     the one the bug was noticed at. Mobile/tablet are untouched — they
-     never reach this media query, so they keep the original 4-visible-
-     card, single-column stack exactly as before. */
   @media (min-width: 64rem) {
-    .homepage-secondary-grid {
-      grid-template-columns: repeat(3, 1fr) !important;
-      /* Default grid behavior stretches every item in a row to match its
-         tallest neighbor — with the featured card's 2-column-wide (so
-         ~2x taller at the same 16:9 ratio) image sharing row 1 with one
-         normal-width card, that stretch left the normal card's own
-         body padded out with a large dead void instead of ending at its
-         real content height. Confirmed live (2026-08-18) via screenshot.
-         align-items: start lets each card size to its own content and
-         sit at the top of its grid cell instead — the row-1 neighbor
-         now just ends where its text ends, no forced empty space inside
-         the card itself. */
+    .hero-row {
+      grid-template-columns: 1.4fr 1fr;
       align-items: start;
     }
 
-    .homepage-secondary-grid > :global(.post-card-wrapper:nth-child(n + 5)) {
-      display: block;
-    }
-
-    .homepage-secondary-grid > :global(.post-card-wrapper:first-child) {
-      grid-column: span 2;
-    }
-
-    .homepage-secondary-grid
-      > :global(.post-card-wrapper:first-child .post-card__title) {
-      font-size: var(--text-xl);
+    /* min-width: 0 is load-bearing here — grid items default to
+       min-width: auto, so this column would otherwise refuse to shrink
+       below its own min-content, break the 1.4fr/1fr fraction math, and
+       force horizontal scroll below roughly 1200px. */
+    .hero-row > :global(.hero-tile),
+    .hero-row__latest {
+      min-width: 0;
     }
   }
 
-  /* 5th Popular card stays desktop-only — hidden below 64rem so mobile
-     and tablet keep showing exactly the 4 cards they always have. */
-  .homepage-secondary-grid > :global(.post-card-wrapper:nth-child(n + 5)) {
-    display: none;
+  .hero-row__latest-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: calc(var(--spacing) * 1.375);
+    border-bottom: 2px solid var(--color-fg);
+  }
+
+  .hero-row__latest-heading {
+    margin: 0;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: var(--text-xs);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .hero-row__latest-archive {
+    font-family: var(--font-display);
+    font-size: var(--text-xs);
+    color: var(--color-accent);
+    text-decoration: none;
+  }
+
+  .hero-row__latest-archive:hover {
+    text-decoration: underline;
+  }
+
+  .hero-row__latest-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .hero-row__latest-link {
+    display: block;
+    padding: calc(var(--spacing) * 2) 0;
+    border-bottom: 1px solid var(--color-hairline);
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .hero-row__latest-meta {
+    display: flex;
+    align-items: center;
+    gap: calc(var(--spacing) * 1.125);
+    font-family: var(--font-display);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-fg-muted);
+  }
+
+  .hero-row__latest-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: var(--card-accent, var(--color-accent));
+    flex-shrink: 0;
+  }
+
+  .hero-row__latest-title {
+    margin: calc(var(--spacing) * 1) 0 0;
+    font-family: var(--font-serif);
+    font-weight: 700;
+    letter-spacing: normal;
+    font-size: 1rem;
+    line-height: 1.32;
+    text-wrap: pretty;
+    overflow-wrap: anywhere;
+  }
+
+  .hero-row__latest-link:hover .hero-row__latest-title {
+    color: var(--card-accent, var(--color-accent));
+  }
+
+  .homepage-section {
+    padding: calc(var(--spacing) * 5.5) 0;
+    border-bottom: 1px solid var(--color-hairline);
+  }
+
+  .homepage-section__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: calc(var(--spacing) * 0.75);
+    padding-bottom: calc(var(--spacing) * 1.375);
+    border-bottom: 2px solid var(--color-fg);
+  }
+
+  .homepage-section > .section-heading {
+    padding-bottom: calc(var(--spacing) * 1.375);
+    border-bottom: 2px solid var(--color-fg);
   }
 
   .section-heading {
-    font-size: var(--text-2xl);
-    margin-bottom: calc(var(--spacing) * 4);
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: var(--text-xs);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    margin: 0 0 calc(var(--spacing) * 2.75);
     color: var(--color-fg);
+  }
+
+  .homepage-section__header .section-heading {
+    margin: 0;
+    padding: 0;
+    border: none;
+  }
+
+  .most-read-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: calc(var(--spacing) * 2.75);
+  }
+
+  @media (min-width: 40rem) {
+    .most-read-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (min-width: 64rem) {
+    .most-read-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
   }
 
   .homepage-view-all {
     display: inline-flex;
     align-items: center;
     min-height: 24px;
-    margin-top: calc(var(--spacing) * 3);
-    font-size: var(--text-sm);
-    font-weight: 600;
+    font-family: var(--font-display);
+    font-size: var(--text-xs);
     color: var(--color-accent);
     text-decoration: none;
+    white-space: nowrap;
   }
 
   .homepage-view-all:hover {
     text-decoration: underline;
   }
 
-  /*
-   * Recent and each category grid render up to 6 posts in the static
-   * HTML (so the full set exists for crawlers/SEO and desktop readers),
-   * but only the first 4 should actually show on mobile/tablet —
-   * requested 2026-08-11. :global() is required here: this class is
-   * applied via Grid.astro's `class` prop, so the actual element it
-   * lands on is rendered by Grid.astro's own template, not this page's
-   * — Astro's scoped-style attribute only ever lands on elements a
-   * component writes directly in its own template (confirmed live
-   * elsewhere in this codebase: PostCard.astro's :global(.post-card)
-   * comment has the same root cause). Reverted back to visible at
-   * >=64rem, the same breakpoint TOCSidebar.astro already uses to mean
-   * "desktop, not tablet."
-   */
-  .responsive-cap-grid > :global(.post-card-wrapper:nth-child(n + 5)) {
-    display: none;
+  .category-section {
+    padding: calc(var(--spacing) * 6) 0;
+    border-bottom: 1px solid var(--color-hairline);
+  }
+
+  .category-section__header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: calc(var(--spacing) * 3.5);
+    margin-bottom: calc(var(--spacing) * 3.25);
+    padding-bottom: calc(var(--spacing) * 1.625);
+    border-bottom: 2px solid var(--card-accent, var(--color-accent));
+  }
+
+  .category-section__heading {
+    margin: 0;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: var(--text-sm);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--card-accent, var(--color-accent));
+  }
+
+  .category-section__description {
+    margin: calc(var(--spacing) * 1.25) 0 0;
+    max-width: 64ch;
+    font-size: var(--text-sm);
+    line-height: 1.6;
+    color: var(--color-fg-muted);
+  }
+
+  .category-section__view-all {
+    flex-shrink: 0;
+    font-family: var(--font-display);
+    font-size: var(--text-xs);
+    color: var(--color-fg-muted);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .category-section__view-all:hover {
+    color: var(--card-accent, var(--color-accent));
+  }
+
+  .category-section__body {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: calc(var(--spacing) * 4.5);
   }
 
   @media (min-width: 64rem) {
-    .responsive-cap-grid > :global(.post-card-wrapper:nth-child(n + 5)) {
-      display: block;
+    .category-section__body {
+      grid-template-columns: 1.15fr 1fr;
     }
+
+    /* Same load-bearing min-width: 0 as the hero row above — this pairing
+       has the identical shape (a fixed-ratio grid with a nowrap-metadata
+       child) and hits the same horizontal-scroll wall without it. */
+    .category-section__lead,
+    .category-section__list {
+      min-width: 0;
+    }
+  }
+
+  .category-section__lead {
+    display: block;
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .category-section__lead-cover {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+    border-radius: 0.625rem;
+    border: 1px solid var(--color-hairline);
+  }
+
+  .category-section__lead-title {
+    display: block;
+    margin: calc(var(--spacing) * 2) 0 0;
+    font-family: var(--font-serif);
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    font-size: 1.3125rem;
+    line-height: 1.2;
+    text-wrap: balance;
+    overflow-wrap: anywhere;
+    color: var(--color-fg);
+  }
+
+  .category-section__lead:hover .category-section__lead-title {
+    color: var(--card-accent, var(--color-accent));
+  }
+
+  .category-section__lead-dek {
+    margin: calc(var(--spacing) * 1.25) 0 0;
+    font-size: var(--text-sm);
+    line-height: 1.6;
+    color: var(--color-fg-muted);
+  }
+
+  .category-section__lead-meta {
+    margin: calc(var(--spacing) * 1.625) 0 0;
+    font-family: var(--font-display);
+    font-size: 10.5px;
+    letter-spacing: 0.04em;
+    color: var(--color-fg-muted);
+  }
+
+  .category-section__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .category-section__row {
+    display: flex;
+    gap: calc(var(--spacing) * 2);
+    padding: calc(var(--spacing) * 1.875) 0;
+    border-bottom: 1px solid var(--color-hairline);
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .category-section__row-thumb {
+    width: 88px;
+    flex-shrink: 0;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+    border-radius: 0.4375rem;
+    border: 1px solid var(--color-hairline);
+  }
+
+  .category-section__row-title {
+    display: block;
+    font-family: var(--font-serif);
+    font-weight: 700;
+    letter-spacing: normal;
+    font-size: 0.9375rem;
+    line-height: 1.3;
+    text-wrap: pretty;
+    overflow-wrap: anywhere;
+    color: var(--color-fg);
+  }
+
+  .category-section__row:hover .category-section__row-title {
+    color: var(--card-accent, var(--color-accent));
+  }
+
+  .category-section__row-meta {
+    display: block;
+    margin-top: calc(var(--spacing) * 1);
+    font-family: var(--font-display);
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-fg-muted);
   }
 
   /* The last category's trailing ad slot sits directly above the
      footer rather than another content section — a hair more breathing
-     room than the Stack gap alone gives every other inter-section gap. */
+     room than the page's own bottom padding alone gives every other
+     inter-section gap. */
   :global(.homepage-last-ad) {
     margin-bottom: calc(var(--spacing) * 2);
   }
 
-  /* 6rem between major sections (hero / recent / each category) reads
-     fine on desktop but is a lot of empty scrolling on a phone — tighten
-     it below the tablet breakpoint rather than carrying the same value
-     down to every screen size. */
+  /* Section padding reads fine on desktop but is a lot of empty
+     scrolling on a phone — tighten it below the tablet breakpoint rather
+     than carrying the same value down to every screen size. */
   @media (max-width: 48rem) {
-    :global(.homepage-sections) {
-      --stack-space: calc(var(--spacing) * 8);
+    .homepage-section,
+    .category-section {
+      padding-block: calc(var(--spacing) * 4);
     }
   }
 </style>

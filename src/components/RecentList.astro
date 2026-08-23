@@ -1,0 +1,162 @@
+---
+// Homepage "Recent" section (2026-08 redesign) — a list, not cards: date
+// column, category dot, serif headline, one-line description, read time.
+// Breaks the card rhythm the six stacked identically-shaped grids used to
+// read as, fits six posts in a third of the height, and reads faster.
+import type { CollectionEntry } from "astro:content";
+import { getCategoryName } from "../config";
+import { calculateReadingTime } from "../lib/reading-time";
+
+interface Props {
+  posts: CollectionEntry<"blog">[];
+}
+
+const { posts } = Astro.props;
+---
+
+<ul class="recent-list">
+  {
+    posts.map((post) => (
+      <li>
+        <a href={`/${post.data.category}/${post.id}/`} class="recent-list__row">
+          <time
+            class="recent-list__date"
+            datetime={post.data.date.toISOString()}
+          >
+            {post.data.date
+              .toLocaleDateString("en-US", {
+                month: "short",
+                day: "2-digit",
+                timeZone: "UTC",
+              })
+              .toUpperCase()}
+          </time>
+          <div class="recent-list__body" data-category={post.data.category}>
+            <div class="recent-list__meta">
+              <span class="recent-list__dot" aria-hidden="true" />
+              <span class="recent-list__category">
+                {getCategoryName(post.data.category)}
+              </span>
+            </div>
+            <h3 class="recent-list__title">{post.data.title}</h3>
+            <p class="recent-list__description">{post.data.description}</p>
+          </div>
+          <span class="recent-list__read">
+            {calculateReadingTime(post.body ?? "")} min
+          </span>
+        </a>
+      </li>
+    ))
+  }
+</ul>
+
+<style>
+  .recent-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .recent-list__row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-areas: "body read";
+    align-items: start;
+    gap: calc(var(--spacing) * 2.75);
+    padding: calc(var(--spacing) * 2.25) 0;
+    border-bottom: 1px solid var(--color-hairline);
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .recent-list__row:hover {
+    background-color: var(--color-bg-subtle);
+  }
+
+  .recent-list__date {
+    display: none;
+  }
+
+  .recent-list__body {
+    grid-area: body;
+    min-width: 0;
+    /* Sets --card-accent from the same [data-category] mapping global.css
+       already declares for PostCard/HeroTile — reused here, not a second
+       copy of the four category-accent rules. */
+  }
+
+  .recent-list__meta {
+    display: flex;
+    align-items: center;
+    gap: calc(var(--spacing) * 1);
+  }
+
+  .recent-list__dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: var(--card-accent, var(--color-accent));
+    flex-shrink: 0;
+  }
+
+  .recent-list__category {
+    font-family: var(--font-display);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--card-accent, var(--color-accent));
+  }
+
+  .recent-list__title {
+    margin: calc(var(--spacing) * 0.75) 0 0;
+    font-family: var(--font-serif);
+    font-weight: 700;
+    letter-spacing: normal;
+    font-size: var(--text-lg);
+    line-height: 1.3;
+    color: var(--color-fg);
+    text-wrap: pretty;
+    overflow-wrap: anywhere;
+  }
+
+  .recent-list__description {
+    margin: calc(var(--spacing) * 0.875) 0 0;
+    font-size: var(--text-sm);
+    line-height: 1.55;
+    color: var(--color-fg-muted);
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .recent-list__read {
+    grid-area: read;
+    flex-shrink: 0;
+    font-family: var(--font-display);
+    font-size: 10.5px;
+    letter-spacing: 0.04em;
+    color: var(--color-fg-muted);
+    white-space: nowrap;
+  }
+
+  /* >=40rem: the date column returns (dropped inline into the meta line
+     below it), and the row becomes the full 104px 1fr auto grid. */
+  @media (min-width: 40rem) {
+    .recent-list__row {
+      grid-template-columns: 104px 1fr auto;
+      grid-template-areas: "date body read";
+      align-items: center;
+      gap: calc(var(--spacing) * 2.75);
+    }
+
+    .recent-list__date {
+      grid-area: date;
+      display: block;
+      font-family: var(--font-display);
+      font-size: var(--text-sm);
+      letter-spacing: 0.04em;
+      color: var(--color-fg-muted);
+    }
+  }
+</style>

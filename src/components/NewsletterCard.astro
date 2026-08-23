@@ -1,0 +1,92 @@
+---
+// Homepage masthead's email capture card. No email provider is wired up
+// yet — this renders the real visual/markup contract (a single email
+// field, no name field, per the redesign brief) so a provider's action
+// URL/hidden fields can be dropped into the <form> below without any
+// other change, but the form has no real destination until that happens.
+interface Props {
+  class?: string;
+}
+
+const { class: className } = Astro.props;
+---
+
+<div class:list={["newsletter-card", className]}>
+  <p class="newsletter-card__label">The Weekly Byte</p>
+  <p class="newsletter-card__copy">
+    One post a week, no digest padding. Unsubscribe in one click.
+  </p>
+  <form class="newsletter-card__form">
+    <label class="sr-only" for="newsletter-email">Email address</label>
+    <input
+      id="newsletter-email"
+      name="email"
+      type="email"
+      required
+      placeholder="you@company.com"
+      class="newsletter-card__input"
+    />
+    <button type="submit" class="newsletter-card__button">Subscribe</button>
+  </form>
+</div>
+
+<style>
+  .newsletter-card {
+    padding: calc(var(--spacing) * 3);
+    border: 1px solid var(--color-hairline);
+    border-radius: 0.75rem;
+    background-color: var(--color-bg-subtle);
+  }
+
+  .newsletter-card__label {
+    margin: 0;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 10.5px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--color-accent);
+  }
+
+  .newsletter-card__copy {
+    margin: calc(var(--spacing) * 1.25) 0 calc(var(--spacing) * 2);
+    font-size: var(--text-sm);
+    line-height: 1.6;
+    color: var(--color-fg-muted);
+  }
+
+  .newsletter-card__form {
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--spacing) * 1.25);
+  }
+
+  .newsletter-card__input {
+    height: 42px;
+    padding-inline: calc(var(--spacing) * 1.5);
+    border: 1px solid var(--color-hairline);
+    border-radius: 0.5rem;
+    background-color: var(--color-bg);
+    color: var(--color-fg);
+    font-family: var(--font-body);
+    font-size: var(--text-sm);
+  }
+
+  .newsletter-card__button {
+    height: 42px;
+    border: none;
+    border-radius: 0.5rem;
+    background-color: var(--color-accent);
+    color: var(--color-accent-fg);
+    font-family: var(--font-display);
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+
+  .newsletter-card__button:hover {
+    background-color: color-mix(in oklab, var(--color-accent) 88%, black);
+  }
+</style>

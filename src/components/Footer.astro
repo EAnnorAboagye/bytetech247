@@ -1,20 +1,22 @@
 ---
-// build-spec.md §10 — six columns on desktop, collapses to a stacked list
-// on mobile (handled here by the Grid primitive's auto-fit reflow, no extra
-// breakpoint logic needed). Identical on every route. Tools column added
-// 2026-08-11 alongside the /tools/ section.
+// build-spec.md §10, restyled per the 2026-08 redesign: an explicit
+// 1.5fr repeat(4, 1fr) five-column grid (brand + Categories + Tools +
+// Company + Resources) instead of the old six-column auto-fit layout —
+// Company absorbed the old standalone Legal column's Editorial Policy and
+// Affiliate Disclosure links, and Resources absorbed Privacy/Terms plus
+// llms.txt, real GEO infrastructure that previously had no visible entry
+// point anywhere on the site.
 import { siFacebook, siInstagram, siTiktok, siX } from "simple-icons";
 import { siteConfig, CATEGORIES, TOOLS } from "../config";
-import Grid from "./layout/Grid.astro";
-import Stack from "./layout/Stack.astro";
 
 const year = new Date().getFullYear();
 const socialLinks = Object.entries(siteConfig.social);
 
 // §10 (locked, v3.2): each platform pairs its real brand mark with a text
-// label, not a bare "@bytetech247" link. Path data comes straight from the
-// simple-icons package (24x24 viewBox) rather than hand-typed bezier data,
-// so every mark is the verified brand icon, not an approximation.
+// label via aria-label, not a bare "@bytetech247" link. Path data comes
+// straight from the simple-icons package (24x24 viewBox) rather than
+// hand-typed bezier data, so every mark is the verified brand icon, not
+// an approximation.
 const SOCIAL_ICONS: Record<string, string> = {
   facebook: `<path d="${siFacebook.path}" fill="currentColor"/>`,
   x: `<path d="${siX.path}" fill="currentColor"/>`,
@@ -31,34 +33,36 @@ const SOCIAL_LABELS: Record<string, string> = {
 
 <footer class="site-footer">
   <div class="site-footer__inner">
-    <Grid minItemWidth="10rem" space="6">
-      <Stack space="2">
-        <p class="site-footer__site-name">{siteConfig.name}</p>
+    <div class="site-footer__grid">
+      <div class="site-footer__brand">
+        <a href="/" class="site-footer__logo">
+          <img src="/logo-mark.svg" alt="" width="26" height="26" />
+          <span class="site-footer__site-name">{siteConfig.name}</span>
+        </a>
         <p class="site-footer__description">{siteConfig.description}</p>
         {
           socialLinks.length > 0 && (
-            <div class="site-footer__social">
-              <p class="site-footer__heading">Social handles</p>
-              <ul class="site-footer__social-list">
-                {socialLinks.map(([platform, href]) => (
-                  <li>
-                    <a href={href} class="site-footer__social-link">
-                      <span
-                        class="site-footer__social-icon"
-                        aria-hidden="true"
-                        set:html={`<svg viewBox="0 0 24 24" width="18" height="18">${SOCIAL_ICONS[platform] ?? ""}</svg>`}
-                      />
-                      {SOCIAL_LABELS[platform] ?? platform}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
+            <ul class="site-footer__social">
+              {socialLinks.map(([platform, href]) => (
+                <li>
+                  <a
+                    href={href}
+                    class="site-footer__social-link"
+                    aria-label={SOCIAL_LABELS[platform] ?? platform}
+                  >
+                    <span
+                      aria-hidden="true"
+                      set:html={`<svg viewBox="0 0 24 24" width="18" height="18">${SOCIAL_ICONS[platform] ?? ""}</svg>`}
+                    />
+                  </a>
+                </li>
+              ))}
+            </ul>
           )
         }
-      </Stack>
+      </div>
 
-      <Stack space="2" as="nav" aria-label="Categories">
+      <nav aria-label="Categories" class="site-footer__col">
         <p class="site-footer__heading">Categories</p>
         <ul class="site-footer__list">
           {
@@ -69,9 +73,9 @@ const SOCIAL_LABELS: Record<string, string> = {
             ))
           }
         </ul>
-      </Stack>
+      </nav>
 
-      <Stack space="2" as="nav" aria-label="Tools">
+      <nav aria-label="Tools" class="site-footer__col">
         <p class="site-footer__heading">Tools</p>
         <ul class="site-footer__list">
           {
@@ -82,58 +86,87 @@ const SOCIAL_LABELS: Record<string, string> = {
             ))
           }
         </ul>
-      </Stack>
+      </nav>
 
-      <Stack space="2" as="nav" aria-label="Company">
+      <nav aria-label="Company" class="site-footer__col">
         <p class="site-footer__heading">Company</p>
         <ul class="site-footer__list">
           <li><a href="/about/">About</a></li>
           <li><a href="/contact/">Contact</a></li>
-        </ul>
-      </Stack>
-
-      <Stack space="2" as="nav" aria-label="Legal">
-        <p class="site-footer__heading">Legal</p>
-        <ul class="site-footer__list">
-          <li><a href="/privacy/">Privacy</a></li>
-          <li><a href="/terms/">Terms &amp; Conditions</a></li>
+          <li><a href="/editorial-policy/">Editorial Policy</a></li>
           <li>
             <a href="/affiliate-disclosure/">Affiliate/Advertising Disclosure</a
             >
           </li>
-          <li><a href="/editorial-policy/">Editorial Policy</a></li>
         </ul>
-      </Stack>
+      </nav>
 
-      <Stack space="2" as="nav" aria-label="Resources">
+      <nav aria-label="Resources" class="site-footer__col">
         <p class="site-footer__heading">Resources</p>
         <ul class="site-footer__list">
           <li><a href="/archive/">All posts</a></li>
           <li><a href="/rss.xml">RSS feed</a></li>
           <li><a href="/sitemap.xml">Sitemap</a></li>
+          <li><a href="/llms.txt">llms.txt</a></li>
+          <li><a href="/privacy/">Privacy</a></li>
+          <li><a href="/terms/">Terms &amp; Conditions</a></li>
         </ul>
-      </Stack>
-    </Grid>
+      </nav>
+    </div>
 
-    <p class="site-footer__copyright">&copy; {year} {siteConfig.name}</p>
+    <div class="site-footer__legal">
+      <span>
+        &copy; {year} {siteConfig.name} · Published from {siteConfig.jurisdiction}
+      </span>
+      <span>{siteConfig.contactEmail}</span>
+    </div>
   </div>
 </footer>
 
 <style>
   .site-footer {
-    border-top: 1px solid var(--color-border);
+    border-top: 1px solid var(--color-hairline);
     background-color: var(--color-bg-subtle);
   }
 
   .site-footer__inner {
     max-width: 72rem;
     margin-inline: auto;
-    padding: calc(var(--spacing) * 6) calc(var(--spacing) * 4);
+    padding: calc(var(--spacing) * 6.5) calc(var(--spacing) * 4)
+      calc(var(--spacing) * 3.75);
+  }
+
+  .site-footer__grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: calc(var(--spacing) * 3.5);
+  }
+
+  @media (min-width: 40rem) {
+    .site-footer__grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (min-width: 64rem) {
+    .site-footer__grid {
+      grid-template-columns: 1.5fr repeat(4, 1fr);
+      gap: calc(var(--spacing) * 5);
+    }
+  }
+
+  .site-footer__logo {
+    display: inline-flex;
+    align-items: center;
+    gap: calc(var(--spacing) * 1.25);
+    color: var(--color-fg);
+    text-decoration: none;
   }
 
   .site-footer__site-name {
+    font-family: var(--font-display);
     font-weight: 700;
-    color: var(--color-fg);
+    font-size: var(--text-base);
   }
 
   .site-footer__description,
@@ -142,11 +175,19 @@ const SOCIAL_LABELS: Record<string, string> = {
   }
 
   .site-footer__heading {
-    font-weight: 600;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 10.5px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin: 0 0 calc(var(--spacing) * 1.75);
     color: var(--color-fg);
   }
 
   .site-footer__description {
+    margin: calc(var(--spacing) * 1.75) 0 0;
+    max-width: 36ch;
+    line-height: 1.65;
     color: var(--color-fg-muted);
   }
 
@@ -174,43 +215,54 @@ const SOCIAL_LABELS: Record<string, string> = {
   }
 
   .site-footer__social {
-    margin-top: calc(var(--spacing) * 2);
-  }
-
-  .site-footer__social-list {
     list-style: none;
-    margin: calc(var(--spacing) * 1) 0 0;
+    margin: calc(var(--spacing) * 2.25) 0 0;
     padding: 0;
     display: flex;
-    flex-direction: column;
-    gap: calc(var(--spacing) * 0.5);
+    gap: calc(var(--spacing) * 1);
   }
 
   .site-footer__social-link {
     display: inline-flex;
     align-items: center;
-    gap: calc(var(--spacing) * 1.5);
-    min-height: 24px;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border: 1px solid var(--color-hairline);
+    border-radius: 8px;
     color: var(--color-fg-muted);
-    text-decoration: none;
-    font-size: var(--text-sm);
   }
 
   .site-footer__social-link:hover {
     color: var(--color-accent);
+    border-color: var(--color-accent);
   }
 
-  .site-footer__social-icon {
-    display: inline-flex;
-    color: currentColor;
-    flex-shrink: 0;
-  }
-
-  .site-footer__copyright {
-    margin-top: calc(var(--spacing) * 6);
-    padding-top: calc(var(--spacing) * 4);
-    border-top: 1px solid var(--color-border);
-    font-size: var(--text-sm);
+  .site-footer__legal {
+    margin-top: calc(var(--spacing) * 5.5);
+    padding-top: calc(var(--spacing) * 2.75);
+    border-top: 1px solid var(--color-hairline);
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: calc(var(--spacing) * 2.5);
+    font-family: var(--font-display);
+    font-size: var(--text-xs);
+    letter-spacing: 0.03em;
     color: var(--color-fg-muted);
+  }
+
+  /* 44px touch targets below the tablet breakpoint — social tiles and
+     footer links are real tap targets on a phone, same reasoning as
+     Header.astro's own mobile sizing. */
+  @media (max-width: 39.9375rem) {
+    .site-footer__social-link {
+      width: 44px;
+      height: 44px;
+    }
+
+    .site-footer__list a {
+      min-height: 44px;
+    }
   }
 </style>

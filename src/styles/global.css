@@ -22,6 +22,15 @@
   --color-bg: oklch(0.985 0.012 250);
   --color-bg-subtle: oklch(0.955 0.012 250);
   --color-border: oklch(0.64 0.012 250);
+  /*
+   * Lighter than --color-border on purpose — at high-density structural
+   * rows (list dividers, section rules, card borders in tight grids) the
+   * full-contrast --color-border reads heavy and the page looks gridded.
+   * --color-border stays unchanged for controls/inputs, where
+   * scripts/check-contrast.mjs validates its contrast; --color-hairline is
+   * for 1px structural dividers only, not interactive elements.
+   */
+  --color-hairline: oklch(0.9 0.012 250);
   --color-fg: oklch(0.19 0.012 250);
   --color-fg-muted: oklch(0.46 0.012 250);
   --color-accent: oklch(0.46 0.11 177);
@@ -88,7 +97,10 @@
    * use it instead of Mono — a monospace face at repeated heading scale
    * through a long article reads wider/heavier than it should; the
    * family's own companion serif is a considered swap, not a random
-   * third font.
+   * third font. Widened deliberately (2026-08 redesign) to also cover
+   * homepage card and list-row headlines (PostCard, RecentList,
+   * HeroTile, category section lead/thumbnail rows) — not just the
+   * article template.
    */
   --font-body:
     "Plex Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
@@ -130,6 +142,7 @@
       --color-bg: oklch(0.15 0.012 250);
       --color-bg-subtle: oklch(0.2 0.012 250);
       --color-border: oklch(0.5 0.012 250);
+      --color-hairline: oklch(0.3 0.012 250);
       --color-fg: oklch(0.96 0.012 250);
       --color-fg-muted: oklch(0.68 0.012 250);
       --color-accent: oklch(0.78 0.12 177);
@@ -149,6 +162,7 @@
     --color-bg: oklch(0.15 0.012 250);
     --color-bg-subtle: oklch(0.2 0.012 250);
     --color-border: oklch(0.5 0.012 250);
+    --color-hairline: oklch(0.3 0.012 250);
     --color-fg: oklch(0.96 0.012 250);
     --color-fg-muted: oklch(0.68 0.012 250);
     --color-accent: oklch(0.78 0.12 177);
@@ -167,6 +181,7 @@
     --color-bg: oklch(0.985 0.012 250);
     --color-bg-subtle: oklch(0.955 0.012 250);
     --color-border: oklch(0.64 0.012 250);
+    --color-hairline: oklch(0.9 0.012 250);
     --color-fg: oklch(0.19 0.012 250);
     --color-fg-muted: oklch(0.46 0.012 250);
     --color-accent: oklch(0.46 0.11 177);
@@ -451,24 +466,33 @@
    * around a smaller ad or undersizes it once real creative is live.
    * "banner" and "tower" don't vary by breakpoint: banner is already
    * slim at every width, and tower's parent is hidden below the tablet
-   * breakpoint (.post-sidebar in [slug].astro) so it never renders on a
+   * breakpoint (.post-ad-sidebar in [slug].astro) so it never renders on a
    * narrow viewport regardless.
    */
   .ad-slot[data-ad-size="banner"] {
     min-height: 100px;
+    aspect-ratio: 728 / 100;
   }
 
+  /*
+   * Raised from 120px (pre-redesign) to 280px: a real 300x250 unit
+   * renders taller than 120px on a 360px-wide phone, so the old value
+   * guaranteed a layout shift once creative actually filled it.
+   */
   .ad-slot[data-ad-size="rectangle"] {
-    min-height: 120px;
+    min-height: 280px;
+    aspect-ratio: 300 / 280;
   }
 
   .ad-slot[data-ad-size="tower"] {
     min-height: 600px;
+    aspect-ratio: 300 / 600;
   }
 
   @media (min-width: 40rem) {
     .ad-slot[data-ad-size="rectangle"] {
       min-height: 250px;
+      aspect-ratio: 300 / 250;
     }
   }
 }
@@ -583,7 +607,8 @@
   @media print {
     .site-header,
     .site-footer,
-    .post-sidebar,
+    .post-toc,
+    .post-ad-sidebar,
     .command-palette,
     .skip-link,
     .reading-progress,

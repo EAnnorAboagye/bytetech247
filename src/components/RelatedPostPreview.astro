@@ -1,0 +1,162 @@
+---
+// Article page's "Keep reading" related-post row (2026-08 redesign) —
+// a preview a reader can judge without clicking, not a thumbnail card:
+// cover, category + meta, serif headline, a real excerpt, and a "Read
+// more" link in the category's own accent.
+import { Picture } from "astro:assets";
+import type { CollectionEntry } from "astro:content";
+import { getCategoryName } from "../config";
+import { calculateReadingTime } from "../lib/reading-time";
+import { getExcerpt } from "../lib/excerpt";
+
+interface Props {
+  post: CollectionEntry<"blog">;
+}
+
+const { post } = Astro.props;
+const href = `/${post.data.category}/${post.id}/`;
+const readingTime = calculateReadingTime(post.body ?? "");
+const excerpt = getExcerpt(post);
+---
+
+<article class="related-preview" data-category={post.data.category}>
+  <a href={href} class="related-preview__cover-link">
+    <Picture
+      src={post.data.coverImage}
+      alt={post.data.coverImageAlt}
+      widths={[360]}
+      formats={["avif", "webp"]}
+      loading="lazy"
+      class="related-preview__cover"
+    />
+  </a>
+  <div class="related-preview__body">
+    <p class="related-preview__meta">
+      <span class="related-preview__category">
+        {getCategoryName(post.data.category)}
+      </span>
+      <span class="related-preview__meta-sep" aria-hidden="true">·</span>
+      <time datetime={post.data.date.toISOString()}>
+        {
+          post.data.date.toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+            timeZone: "UTC",
+          })
+        }
+      </time>
+      <span class="related-preview__meta-sep" aria-hidden="true">·</span>
+      {readingTime} min
+    </p>
+    <a href={href} class="related-preview__title-link">
+      <h3 class="related-preview__title">{post.data.title}</h3>
+    </a>
+    <p class="related-preview__excerpt">{excerpt}</p>
+    <a href={href} class="related-preview__read-more">Read more →</a>
+  </div>
+</article>
+
+<style>
+  .related-preview {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: calc(var(--spacing) * 2.75);
+    padding: calc(var(--spacing) * 3) 0;
+    border-top: 1px solid var(--color-hairline);
+  }
+
+  @media (min-width: 40rem) {
+    .related-preview {
+      grid-template-columns: 140px 1fr;
+    }
+  }
+
+  @media (min-width: 64rem) {
+    .related-preview {
+      grid-template-columns: 180px 1fr;
+    }
+  }
+
+  .related-preview__cover-link {
+    display: block;
+  }
+
+  .related-preview__cover {
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    object-fit: cover;
+    border-radius: 0.5625rem;
+    border: 1px solid var(--color-hairline);
+  }
+
+  .related-preview__body {
+    min-width: 0;
+  }
+
+  .related-preview__meta {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: calc(var(--spacing) * 0.75);
+    font-family: var(--font-display);
+    font-size: 10px;
+    letter-spacing: 0.04em;
+  }
+
+  .related-preview__category {
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--card-accent, var(--color-accent));
+  }
+
+  .related-preview__meta-sep,
+  .related-preview__meta time {
+    color: var(--color-fg-muted);
+  }
+
+  .related-preview__title-link {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .related-preview__title {
+    margin: calc(var(--spacing) * 1.125) 0 0;
+    font-family: var(--font-serif);
+    font-weight: 700;
+    letter-spacing: normal;
+    font-size: 1.1875rem;
+    line-height: 1.25;
+    text-wrap: balance;
+    overflow-wrap: anywhere;
+    color: var(--color-fg);
+  }
+
+  .related-preview__title-link:hover .related-preview__title {
+    color: var(--card-accent, var(--color-accent));
+  }
+
+  .related-preview__excerpt {
+    margin: calc(var(--spacing) * 1.125) 0 0;
+    font-size: var(--text-sm);
+    line-height: 1.6;
+    color: var(--color-fg-muted);
+  }
+
+  .related-preview__read-more {
+    display: inline-block;
+    margin-top: calc(var(--spacing) * 1.375);
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 10.5px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--card-accent, var(--color-accent));
+    border-bottom: 1px solid transparent;
+    padding-bottom: 2px;
+  }
+
+  .related-preview__read-more:hover {
+    border-bottom-color: var(--card-accent, var(--color-accent));
+  }
+</style>

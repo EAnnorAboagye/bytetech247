@@ -11,12 +11,12 @@ import Figure from "../../components/Figure.astro";
 import Callout from "../../components/Callout.astro";
 import CodeTabs from "../../components/CodeTabs.astro";
 import Benchmark from "../../components/Benchmark.astro";
-import LastVerified from "../../components/LastVerified.astro";
 import FaqSection from "../../components/FaqSection.astro";
 import ShareButtons from "../../components/ShareButtons.astro";
 import AuthorBio from "../../components/AuthorBio.astro";
 import AdSlot from "../../components/AdSlot.astro";
-import { Picture, getImage } from "astro:assets";
+import RelatedPostPreview from "../../components/RelatedPostPreview.astro";
+import { Picture, Image, getImage } from "astro:assets";
 import { siteConfig, getCategoryName } from "../../config";
 import { validateCoverImage } from "../../lib/validate-cover-image";
 import { validateNoH1InBody } from "../../lib/validate-no-h1-in-body";
@@ -24,6 +24,7 @@ import { calculateReadingTime } from "../../lib/reading-time";
 import { getRelatedPosts } from "../../lib/related-posts";
 import { getRecentPosts } from "../../lib/recent-posts";
 import { getLastVerifiedDate } from "../../lib/last-verified";
+import authorPhoto from "../../assets/author-aboagye-annor.jpg";
 import { articleJsonLd, breadcrumbJsonLd, faqJsonLd } from "../../lib/json-ld";
 import { slugifyTag } from "../../lib/taxonomy";
 import { pageTitle } from "../../lib/seo";
@@ -145,37 +146,71 @@ const nextInSeries =
   jsonLd={articleJsonLdBlocks}
   showReadingProgress
 >
-  <div class="post-layout">
+  <div class="post-breadcrumb-wrap">
+    <Breadcrumbs items={breadcrumbItems} />
+  </div>
+
+  <div class="post-header-ad-wrap">
     <AdSlot
       adSlot={siteConfig.adSlots.articleHeader}
       size="banner"
       label="Advertisement"
       class="post-header-ad"
     />
+  </div>
+
+  <div class="post-layout">
+    <aside class="post-toc" aria-label="Table of contents">
+      <TOCSidebar headings={headings} markdownUrl={markdownUrl} />
+    </aside>
 
     <article class="post-article">
-      <Breadcrumbs items={breadcrumbItems} />
-
+      <span class="post-category-badge" data-category={post.data.category}>
+        {categoryName}
+      </span>
       <h1>{post.data.title}</h1>
-      <p class="post-meta">
-        {siteConfig.author.name && <>By {siteConfig.author.name} · </>}
-        <time datetime={post.data.date.toISOString()}>
-          {
-            post.data.date.toLocaleDateString("en-US", {
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-              timeZone: "UTC",
-            })
-          }
-        </time>{" "}
-        · {readingTime} min read
-      </p>
-      <LastVerified date={lastVerifiedDate} />
-      <ShareButtons url={pageUrl} title={post.data.title} class="post-share" />
-      <p class="post-markdown-link">
-        <a href={markdownUrl}>View as Markdown</a>
-      </p>
+
+      <div class="post-byline">
+        <Image
+          src={authorPhoto}
+          alt=""
+          width={42}
+          height={42}
+          class="post-byline__avatar"
+        />
+        <div class="post-byline__text">
+          {siteConfig.author.name && (
+            <p class="post-byline__name">{siteConfig.author.name}</p>
+          )}
+          <p class="post-meta">
+            <time datetime={post.data.date.toISOString()}>
+              {
+                post.data.date.toLocaleDateString("en-US", {
+                  year: "numeric",
+                  month: "short",
+                  day: "numeric",
+                  timeZone: "UTC",
+                })
+              }
+            </time>{" "}
+            · {readingTime} min read
+            {lastVerifiedDate && (
+              <>
+                {" "}
+                · Verified{" "}
+                <time datetime={lastVerifiedDate.toISOString()}>
+                  {lastVerifiedDate.toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    timeZone: "UTC",
+                  })}
+                </time>
+              </>
+            )}
+          </p>
+        </div>
+        <ShareButtons url={pageUrl} title={post.data.title} class="post-share" />
+      </div>
 
       <Picture
         src={post.data.coverImage}
@@ -312,13 +347,13 @@ const nextInSeries =
               label="Advertisement"
               class="post-ad"
             />
-            <section aria-label="Related posts" class="related-posts">
-              <h2>Related posts</h2>
-              <Grid minItemWidth="16rem" space="4" class="related-posts__grid">
+            <section aria-label="Keep reading" class="related-posts">
+              <h2>Keep reading</h2>
+              <div class="related-posts__list">
                 {relatedPosts.map((related) => (
-                  <PostCard post={related} />
+                  <RelatedPostPreview post={related} />
                 ))}
-              </Grid>
+              </div>
             </section>
           </>
         )
@@ -346,8 +381,7 @@ const nextInSeries =
       }
     </article>
 
-    <aside class="post-sidebar">
-      <TOCSidebar headings={headings} />
+    <aside class="post-ad-sidebar" aria-label="Sidebar advertisement">
       <AdSlot
         adSlot={siteConfig.adSlots.articleSidebar}
         size="tower"
@@ -371,17 +405,19 @@ const nextInSeries =
     letter-spacing: normal;
   }
 
-  .post-markdown-link {
-    margin: calc(var(--spacing) * 2) 0 0;
-    font-size: var(--text-sm);
+  .post-breadcrumb-wrap {
+    max-width: 72rem;
+    margin-inline: auto;
+    padding: calc(var(--spacing) * 2.75) 0;
   }
 
-  .post-markdown-link a {
-    color: var(--color-fg-muted);
-  }
-
-  .post-markdown-link a:hover {
-    text-decoration: underline;
+  /* Constrained to the reading column's own width (46rem, see the shared
+     max-width group below), not the full .post-layout width — a leaderboard
+     sized to the article column reads as belonging to it, rather than
+     spanning past the TOC/ad rails on either side. */
+  .post-header-ad-wrap {
+    max-width: 46rem;
+    margin: 0 auto calc(var(--spacing) * 3.75);
   }
 
   .post-layout {
@@ -408,32 +444,30 @@ const nextInSeries =
 
   @media (min-width: 64rem) {
     .post-layout {
-      grid-template-columns: minmax(0, 1fr) 16rem;
+      grid-template-columns: 15rem minmax(0, 44rem) 15rem;
+      justify-content: center;
       align-items: start;
+      gap: calc(var(--spacing) * 5.5);
     }
   }
 
   /*
    * Reading-column width — confirmed live: with no cap of its own, the
-   * article column only ever inherited .post-layout's 72rem/16rem-sidebar
-   * math, which works out to roughly 848px wide at a 1440px viewport —
-   * close to 100 characters per line at this template's own body font
-   * size, well past the ~65-75ch a line of prose stays comfortable to
-   * read at before eyes start losing their place jumping back to the
-   * left edge. Only matters at wider viewports; mobile/tablet are
-   * already narrower than this cap, so nothing changes for them.
+   * article column only ever inherited .post-layout's own track math,
+   * which works out well past the ~65-75ch a line of prose stays
+   * comfortable to read at before eyes start losing their place jumping
+   * back to the left edge. Only matters at wider viewports; mobile/tablet
+   * are already narrower than this cap, so nothing changes for them.
    *
    * Applied to everything in the article column *except* the
-   * related/recent-posts card grids, which still want the full column
-   * width to lay out multiple cards per row — a single comfortable
-   * reading measure for the parts a reader actually reads, full width
-   * for the parts a reader scans.
+   * related/recent-posts sections, which still want the full column
+   * width to lay out their own rows/cards — a single comfortable reading
+   * measure for the parts a reader actually reads, full width for the
+   * parts a reader scans.
    */
-  :global(.breadcrumb),
+  .post-category-badge,
   h1,
-  .post-meta,
-  :global(.post-share),
-  .post-markdown-link,
+  .post-byline,
   .post-cover,
   .post-cover-credit,
   :global(.toc-inline),
@@ -447,22 +481,71 @@ const nextInSeries =
     max-width: 46rem;
   }
 
+  .post-category-badge {
+    display: inline-block;
+    padding: 5px 11px;
+    border-radius: 999px;
+    background-color: var(--card-accent, var(--color-accent));
+    color: var(--color-accent-fg);
+    font-size: 11.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .post-byline {
+    display: flex;
+    align-items: center;
+    gap: calc(var(--spacing) * 1.75);
+    margin: calc(var(--spacing) * 3.5) 0;
+    padding: calc(var(--spacing) * 2.5) 0;
+    border-top: 1px solid var(--color-hairline);
+    border-bottom: 1px solid var(--color-hairline);
+  }
+
+  .post-byline__avatar {
+    border-radius: 9999px;
+    object-fit: cover;
+    flex-shrink: 0;
+  }
+
+  .post-byline__text {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .post-byline__name {
+    margin: 0;
+    font-weight: 600;
+    font-size: var(--text-sm);
+    color: var(--color-fg);
+  }
+
+  .post-byline__text .post-meta {
+    margin: calc(var(--spacing) * 0.5) 0 0;
+  }
+
   /* Below 1024px the grid collapses to one column, which used to leave
-     the sidebar TOC stranded at the bottom of the page (after related
-     posts) — the inline <details> variant above replaces it there
-     instead, so only one of the two is ever visible at a given width. */
-  .post-sidebar {
+     the TOC/ad rails stranded at the bottom of the page — the inline
+     <details> TOC variant above replaces the left rail there instead, so
+     only one of the two TOC variants is ever visible at a given width.
+     The right ad rail simply doesn't render below the breakpoint. */
+  .post-toc,
+  .post-ad-sidebar {
     display: none;
   }
 
   @media (min-width: 64rem) {
-    .post-sidebar {
+    .post-toc,
+    .post-ad-sidebar {
       display: block;
+      position: sticky;
+      top: calc(var(--spacing) * 11);
     }
   }
 
   :global(.post-sidebar__ad) {
-    margin-top: calc(var(--spacing) * 6);
+    margin-top: 0;
   }
 
   /* Every AdSlot instance in the article flow (after image, after
@@ -480,18 +563,6 @@ const nextInSeries =
     :global(.post-ad) {
       margin: calc(var(--spacing) * 5) 0;
     }
-  }
-
-  /* The header ad spans the full .post-layout grid width (article column
-     + sidebar column combined), not just the article track it would
-     otherwise land in as the grid's first child — a leaderboard reads
-     as a full-width banner, not a column-width box. grid-column: 1 / -1
-     only actually spans two tracks once the sidebar column exists
-     (>=64rem); below that .post-layout is a single column already, so
-     this is a no-op there, not a conditional rule. */
-  :global(.post-header-ad) {
-    grid-column: 1 / -1;
-    margin: 0 0 calc(var(--spacing) * 2);
   }
 
   /* The Quick Answer / every-other-H2 ads (rehype-in-article-ads.mjs)
@@ -515,11 +586,7 @@ const nextInSeries =
   }
 
   :global(.post-share) {
-    margin-top: calc(var(--spacing) * 1);
-  }
-
-  :global(.post-share .share-buttons__trigger) {
-    padding-left: 0;
+    flex-shrink: 0;
   }
 
   .post-author {
@@ -614,15 +681,25 @@ const nextInSeries =
     text-decoration: none;
   }
 
-  /* Grid.astro (imported above) provides the actual track-sizing — this
-     just adds the section's own top margin, not a second copy of the
-     same auto-fill logic. */
+  /* Grid.astro (imported above) provides the actual track-sizing for
+     Recent posts — this just adds the section's own top margin, not a
+     second copy of the same auto-fill logic. Related posts ("Keep
+     reading") no longer uses Grid at all: each RelatedPostPreview draws
+     its own top hairline as a full-width row, not a grid cell. */
   .related-posts,
   .recent-posts {
     margin-top: calc(var(--spacing) * 8);
   }
 
-  .related-posts__grid,
+  .related-posts h2,
+  .recent-posts h2 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: var(--text-xs);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
   .recent-posts__grid {
     margin-top: calc(var(--spacing) * 4);
   }
@@ -720,6 +797,11 @@ const nextInSeries =
 
   .article-content :global(.quick-answer > :last-child) {
     margin-bottom: 0;
+  }
+
+  .article-content :global(.quick-answer p) {
+    font-size: 16.5px;
+    line-height: 1.65;
   }
 
   .article-content :global(.quick-answer h2) {

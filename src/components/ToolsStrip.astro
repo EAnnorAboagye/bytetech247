@@ -1,0 +1,169 @@
+---
+// Homepage tools strip (2026-08 redesign) — the three /tools/ pages were
+// previously invisible on the homepage (footer, one nav dropdown, and the
+// command palette only). Copy pulled straight from TOOLS in config.ts,
+// never retyped here.
+import { TOOLS, MCP_CHECK_FREE_MODE, type ToolSlug } from "../config";
+
+// Presentational-only badge text, keyed off the same free/paid switch
+// config.ts already exposes (MCP_CHECK_FREE_MODE) — not a second source
+// of truth, just how that one boolean is worded on this card.
+const BADGES: Record<ToolSlug, string> = {
+  "ai-token-counter": "Free · in-browser",
+  "llm-pricing-calculator": "Free · in-browser",
+  "mcp-compatibility-checker": MCP_CHECK_FREE_MODE
+    ? "Free for now"
+    : "Paid diagnostic",
+};
+---
+
+<section class="tools-strip" aria-label="Free tools">
+  <div class="tools-strip__header">
+    <div>
+      <h2 class="tools-strip__heading">Free tools</h2>
+      <p class="tools-strip__lede">
+        Built for the questions these posts keep raising. No signup.
+      </p>
+    </div>
+    <a href="/tools/" class="tools-strip__view-all">All tools →</a>
+  </div>
+  <div class="tools-strip__grid">
+    {
+      TOOLS.map((tool) => (
+        <a href={`/tools/${tool.slug}/`} class="tools-strip__card">
+          <div class="tools-strip__card-top">
+            <span class="tools-strip__badge">{BADGES[tool.slug]}</span>
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 24 24"
+              width="15"
+              height="15"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="tools-strip__arrow"
+            >
+              <path d="M7 17 17 7M17 7H9M17 7v8" />
+            </svg>
+          </div>
+          <h3 class="tools-strip__name">{tool.name}</h3>
+          <p class="tools-strip__description">{tool.description}</p>
+        </a>
+      ))
+    }
+  </div>
+</section>
+
+<style>
+  .tools-strip {
+    padding: calc(var(--spacing) * 4.5) 0;
+  }
+
+  .tools-strip__header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: calc(var(--spacing) * 2.5);
+    margin-bottom: calc(var(--spacing) * 2.75);
+  }
+
+  .tools-strip__heading {
+    margin: 0;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: var(--text-xs);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-fg);
+  }
+
+  .tools-strip__lede {
+    margin: calc(var(--spacing) * 1.125) 0 0;
+    font-size: var(--text-sm);
+    color: var(--color-fg-muted);
+  }
+
+  .tools-strip__view-all {
+    flex-shrink: 0;
+    font-family: var(--font-display);
+    font-size: var(--text-xs);
+    color: var(--color-accent);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .tools-strip__view-all:hover {
+    text-decoration: underline;
+  }
+
+  .tools-strip__grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: calc(var(--spacing) * 2.5);
+  }
+
+  @media (min-width: 40rem) {
+    .tools-strip__grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (min-width: 64rem) {
+    .tools-strip__grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  .tools-strip__card {
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--spacing) * 1.25);
+    padding: calc(var(--spacing) * 2.75);
+    border: 1px solid var(--color-hairline);
+    border-radius: 0.625rem;
+    background-color: var(--color-bg-subtle);
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .tools-strip__card:hover {
+    border-color: var(--color-accent);
+  }
+
+  .tools-strip__card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .tools-strip__badge {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: var(--text-xs);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-accent);
+  }
+
+  .tools-strip__arrow {
+    color: var(--color-fg-muted);
+  }
+
+  .tools-strip__name {
+    margin: 0;
+    font-family: var(--font-body);
+    font-weight: 600;
+    font-size: 1rem;
+    line-height: 1.3;
+    color: var(--color-fg);
+  }
+
+  .tools-strip__description {
+    margin: 0;
+    font-size: var(--text-sm);
+    line-height: 1.55;
+    color: var(--color-fg-muted);
+  }
+</style>

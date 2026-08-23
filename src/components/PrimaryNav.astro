@@ -1,19 +1,18 @@
 ---
-// Rendered twice by Header.astro (mobile disclosure + desktop nav) — both
-// copies stay in the DOM for CSS-only responsive show/hide, but they're no
-// longer identical (see variant check below), so nothing else depends on
-// which one is visible beyond that split.
+// Rendered twice by Header.astro (mobile disclosure + desktop category
+// strip) — both copies stay in the DOM for CSS-only responsive show/hide,
+// but they're no longer identical (see variant check below), so nothing
+// else depends on which one is visible beyond that split.
 //
 // Order (left to right / top to bottom): Home, each category (own
-// tag-dropdown), Tools (own dropdown, added 2026-08-11), then — vertical
+// tag-dropdown), Tools (own dropdown), Archive — then, vertical
 // (mobile/tablet hamburger) only — About, Contact, Privacy (dropdown
-// listing every legal page). The horizontal (desktop) nav deliberately
-// stops at Tools: About/Contact/every legal page are already one click
+// listing every legal page). The horizontal (desktop) strip deliberately
+// stops at Archive: About/Contact/every legal page are already one click
 // away in the footer and already listed in the command palette's
-// static-page jump list (CommandPalette.astro), so the wide-viewport nav
-// doesn't need to duplicate them — that's also what was overflowing it
-// (see build-spec.md §10). Mobile keeps the full list since there's no
-// width constraint forcing a choice.
+// static-page jump list (CommandPalette.astro), so the wide-viewport strip
+// doesn't need to duplicate them. Mobile keeps the full list since there's
+// no width constraint forcing a choice.
 // The category name and "Privacy" label in <summary> are deliberately
 // plain text, not a nested <a> — nesting an interactive link inside the
 // native disclosure trigger is a real accessibility anti-pattern
@@ -37,9 +36,16 @@ import { slugifyTag } from "../lib/taxonomy";
 interface Props {
   topTagsByCategory: Record<CategorySlug, string[]>;
   variant?: "horizontal" | "vertical";
+  currentPath?: string;
 }
 
-const { topTagsByCategory, variant = "vertical" } = Astro.props;
+const { topTagsByCategory, variant = "vertical", currentPath = "" } =
+  Astro.props;
+
+// Exact-match only (no partial/nested-route matching) — the strip marks
+// Home or a category active only when a visitor is actually on that
+// archive page, not on every post filed under it.
+const isActive = (href: string) => currentPath === href;
 
 const legalLinks = [
   { label: "Privacy Policy", href: "/privacy/" },
@@ -54,14 +60,20 @@ const legalLinks = [
 
 <ul class:list={["primary-nav", `primary-nav--${variant}`]}>
   <li>
-    <a href="/" class="primary-nav__link">Home</a>
+    <a
+      href="/"
+      class="primary-nav__link"
+      aria-current={isActive("/") ? "page" : undefined}
+    >
+      Home
+    </a>
   </li>
 
   {
     CATEGORIES.map((category) => (
       <li data-category={category.slug}>
         <details class="primary-nav__dropdown">
-          <summary>
+          <summary aria-current={isActive(`/${category.slug}/`) ? "page" : undefined}>
             {category.name} <span aria-hidden="true">&#9662;</span>
           </summary>
           <div class="primary-nav__panel">
@@ -110,8 +122,26 @@ const legalLinks = [
   </li>
 
   {
+    variant === "horizontal" && (
+      <>
+        <li class="primary-nav__spacer" aria-hidden="true" />
+        <li>
+          <a href="/archive/" class="primary-nav__link">
+            Archive
+          </a>
+        </li>
+      </>
+    )
+  }
+
+  {
     variant === "vertical" && (
       <>
+        <li>
+          <a href="/archive/" class="primary-nav__link">
+            Archive
+          </a>
+        </li>
         <li>
           <a href="/about/" class="primary-nav__link">
             About
@@ -231,26 +261,60 @@ const legalLinks = [
     gap: calc(var(--spacing) * 1);
     margin-top: calc(var(--spacing) * 1);
     padding-top: calc(var(--spacing) * 1.5);
-    border-top: 1px solid var(--color-border);
+    border-top: 1px solid var(--color-hairline);
     font-weight: 600;
     color: var(--color-accent);
   }
 
-  /* Desktop: nav items sit in a horizontal row, each panel drops down
-     below its own trigger instead of pushing content down inline.
-     gap is required, not decorative — confirmed live: without it, every
-     item's own padding is vertical-only, so "Home", "Dev Tools ▾", "Data
-     & Automation ▾" etc. rendered touching each other edge to edge with
-     zero breathing room between them. */
+  /* Horizontal (desktop, >=64rem) — the category strip row under the
+     header's brand row. Each item is its own uppercase mono tab with a
+     2px transparent bottom border that fills with that item's own accent
+     on hover/open (categories) or stays permanently filled when the
+     visitor is actually on that page (Home/Archive's aria-current). The
+     strip scrolls (overflow-x: auto on the wrapping <nav>, set in
+     Header.astro) rather than wraps at narrow desktop widths. */
   .primary-nav--horizontal {
     flex-direction: row;
     align-items: center;
-    flex-wrap: wrap;
-    gap: calc(var(--spacing) * 3);
+    gap: 2px;
+    white-space: nowrap;
   }
 
   .primary-nav--horizontal > li {
     position: relative;
+    flex-shrink: 0;
+  }
+
+  .primary-nav--horizontal > .primary-nav__spacer {
+    flex: 1;
+    min-width: calc(var(--spacing) * 4);
+  }
+
+  .primary-nav--horizontal .primary-nav__link,
+  .primary-nav--horizontal > li > details > summary {
+    padding: 11px 14px 9px;
+    font-family: var(--font-display);
+    font-size: var(--text-xs);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--color-fg-muted);
+    border-bottom: 2px solid transparent;
+  }
+
+  .primary-nav--horizontal .primary-nav__link:hover,
+  .primary-nav--horizontal > li > details > summary:hover {
+    color: var(--card-accent, var(--color-accent));
+    border-bottom-color: var(--card-accent, var(--color-accent));
+  }
+
+  .primary-nav--horizontal details[open] > summary {
+    color: var(--card-accent, var(--color-accent));
+    border-bottom-color: var(--card-accent, var(--color-accent));
+  }
+
+  .primary-nav--horizontal .primary-nav__link[aria-current="page"] {
+    color: var(--color-fg);
+    border-bottom-color: var(--color-accent);
   }
 
   /* Mega-menu panel: a wide card instead of the mobile accordion's plain

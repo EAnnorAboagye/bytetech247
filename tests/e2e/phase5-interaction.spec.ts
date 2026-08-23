@@ -18,7 +18,12 @@ test.describe("Phase 5 — Interaction Layer", () => {
     await input.fill("dev");
     const visibleItems = page.locator(".command-palette__item:visible");
     await expect(visibleItems).toHaveCount(1);
-    await expect(visibleItems.first()).toHaveText("Dev Tools");
+    // Each row also renders a trailing "kind" label (Page/Category/Tool/
+    // Archive) alongside the destination name, so this targets the name
+    // span specifically rather than the row's full concatenated text.
+    await expect(
+      visibleItems.first().locator(".command-palette__item-label"),
+    ).toHaveText("Dev Tools");
 
     await page.keyboard.press("Escape");
     await expect(dialog).toBeHidden();

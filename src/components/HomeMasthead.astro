@@ -1,0 +1,86 @@
+---
+// Homepage masthead (2026-08 redesign) — replaces the old sr-only <h1> +
+// plain intro paragraph with a real visible heading, a trust line, and a
+// newsletter capture card beside it. The <h1> here is the page's actual
+// heading, which is also the `main h1` focus target BaseLayout's
+// astro:page-load script already looks for after every navigation.
+import NewsletterCard from "./NewsletterCard.astro";
+---
+
+<section class="home-masthead">
+  <div class="home-masthead__intro">
+    <p class="home-masthead__trust">
+      <span class="home-masthead__dot" aria-hidden="true"></span>
+      Every command tested before it publishes
+    </p>
+    <h1 class="home-masthead__title">
+      Dev tools, automation, and AI that earn their place in your workflow.
+    </h1>
+    <p class="home-masthead__copy">
+      Hands-on guides and fixes for the tooling developers actually run —
+      written by one person who tests every command and configuration
+      before it publishes, and says so when a tradeoff has no clean
+      answer.
+    </p>
+  </div>
+  <NewsletterCard />
+</section>
+
+<style>
+  .home-masthead {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: calc(var(--spacing) * 5);
+    padding: calc(var(--spacing) * 6) 0 calc(var(--spacing) * 4);
+  }
+
+  @media (min-width: 64rem) {
+    .home-masthead {
+      grid-template-columns: 1.35fr 1fr;
+      align-items: end;
+      gap: calc(var(--spacing) * 7);
+    }
+  }
+
+  .home-masthead__trust {
+    display: inline-flex;
+    align-items: center;
+    gap: calc(var(--spacing) * 1.25);
+    margin: 0;
+    padding: 5px 11px;
+    border: 1px solid var(--color-hairline);
+    border-radius: 999px;
+    font-family: var(--font-display);
+    font-size: 10.5px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-fg-muted);
+  }
+
+  .home-masthead__dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: var(--color-accent);
+    flex-shrink: 0;
+  }
+
+  .home-masthead__title {
+    font-family: var(--font-serif);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.06;
+    font-size: clamp(2.2rem, 1.7rem + 2vw, 3.2rem);
+    margin: calc(var(--spacing) * 2.5) 0 0;
+    text-wrap: balance;
+  }
+
+  .home-masthead__copy {
+    max-width: 52ch;
+    margin: calc(var(--spacing) * 2.25) 0 0;
+    font-size: var(--text-lg);
+    line-height: 1.7;
+    color: var(--color-fg-muted);
+    text-wrap: pretty;
+  }
+</style>

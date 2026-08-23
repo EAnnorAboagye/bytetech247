@@ -1,15 +1,17 @@
 ---
-// build-spec.md §10 — identical on every route. Static (not sticky) by
-// default, per the guardrail: sticky-on-scroll is an explicit Phase 13
-// upgrade, not something to default into.
+// build-spec.md §10, restyled per the 2026-08 redesign: a brand row that
+// carries no navigation (logo + BLOG chip on the left, search + theme
+// actions on the right) plus a second-row category strip underneath it
+// (Home, each category's own dropdown, Tools, Archive) that replaces the
+// old single-row "logo + nav + actions" bar. The strip is real <a href>
+// markup, not JS-revealed — crawlable, and an improvement on the old
+// hover mega-panel some crawlers reach less reliably.
 //
 // Bar order, left to right: logo, mobile menu toggle (mobile/tablet/narrow
-// desktop, below 72rem — hidden above it, where PrimaryNav's horizontal
-// variant renders inline instead), primary nav (≥72rem only), search,
-// dark/light toggle. The 72rem threshold isn't a conventional
-// phone/tablet/desktop split — it's sized to what the horizontal nav
-// actually needs to render without wrapping (see PrimaryNav.astro and
-// build-spec.md §10), which happens to land past a typical tablet width.
+// desktop, below 64rem — hidden above it, where the strip renders instead),
+// search, dark/light toggle. 64rem (not the old 72rem) is the strip's own
+// breakpoint now — sized to what the scrolling strip actually needs to
+// read comfortably, not a conventional phone/tablet/desktop split.
 import { getCollection } from "astro:content";
 import { siteConfig } from "../config";
 import { getTopTagsByCategory } from "../lib/taxonomy";
@@ -17,6 +19,7 @@ import PrimaryNav from "./PrimaryNav.astro";
 
 const posts = await getCollection("blog");
 const topTagsByCategory = getTopTagsByCategory(posts);
+const currentPath = Astro.url.pathname;
 ---
 
 <div class="site-header__sentinel" aria-hidden="true"></div>
@@ -26,46 +29,59 @@ const topTagsByCategory = getTopTagsByCategory(posts);
       <img
         src="/logo-mark.svg"
         alt={siteConfig.name}
-        width="28"
-        height="28"
+        width="30"
+        height="30"
         class="site-header__logo-mark"
       />
-      {
-        /* aria-hidden, not a second copy of the name for sighted users
-           only — the image's own alt above already gives this link its
-           full accessible name ("ByteTech247"). Without this, a screen
-           reader announces it twice ("ByteTech247, ByteTech247") on
-           literally every page, since both the alt text and this text
-           node concatenate into the same <a>'s accessible name. */
-      }
-      <span aria-hidden="true">{siteConfig.name}</span>
+      <span class="site-header__wordmark">
+        {
+          /* aria-hidden, not a second copy of the name for sighted users
+             only — the image's own alt above already gives this link its
+             full accessible name ("ByteTech247"). Without this, a screen
+             reader announces it twice ("ByteTech247, ByteTech247") on
+             literally every page, since both the alt text and this text
+             node concatenate into the same <a>'s accessible name. */
+        }
+        <span aria-hidden="true">{siteConfig.name}</span>
+        {
+          /* The BLOG chip is what distinguishes this masthead from the
+             news site's own NEWS chip at a glance — the two properties
+             otherwise share the same logo system. aria-hidden for the
+             same reason as the wordmark span above: "ByteTech247, Blog"
+             would be a strange, redundant accessible name for a link
+             whose destination is just the homepage. */
+        }
+        <span class="site-header__chip" aria-hidden="true">Blog</span>
+      </span>
     </a>
+
+    <div class="site-header__spacer"></div>
 
     <details class="site-header__mobile-toggle">
       <summary aria-label="Open menu">
         <span aria-hidden="true">&#9776;</span>
       </summary>
       <nav aria-label="Primary" class="site-header__mobile-nav">
-        <PrimaryNav topTagsByCategory={topTagsByCategory} variant="vertical" />
+        <PrimaryNav
+          topTagsByCategory={topTagsByCategory}
+          variant="vertical"
+          currentPath={currentPath}
+        />
       </nav>
     </details>
-
-    <nav aria-label="Primary" class="site-header__desktop-nav">
-      <PrimaryNav topTagsByCategory={topTagsByCategory} variant="horizontal" />
-    </nav>
 
     <div class="site-header__actions">
       <button
         type="button"
-        class="site-header__action"
+        class="site-header__action site-header__search"
         data-command-palette-trigger
         aria-label="Search (Ctrl+K)"
       >
         <svg
           aria-hidden="true"
           viewBox="0 0 24 24"
-          width="18"
-          height="18"
+          width="15"
+          height="15"
           fill="none"
           stroke="currentColor"
           stroke-width="2"
@@ -74,6 +90,8 @@ const topTagsByCategory = getTopTagsByCategory(posts);
           <circle cx="11" cy="11" r="7"></circle>
           <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
         </svg>
+        <span class="site-header__search-label">Search</span>
+        <span class="site-header__search-chip" aria-hidden="true">⌘K</span>
       </button>
       <button
         type="button"
@@ -120,6 +138,14 @@ const topTagsByCategory = getTopTagsByCategory(posts);
       </button>
     </div>
   </div>
+
+  <nav aria-label="Primary" class="site-header__strip">
+    <PrimaryNav
+      topTagsByCategory={topTagsByCategory}
+      variant="horizontal"
+      currentPath={currentPath}
+    />
+  </nav>
 </header>
 
 <style>
@@ -162,8 +188,21 @@ const topTagsByCategory = getTopTagsByCategory(posts);
     align-items: center;
     gap: calc(var(--spacing) * 2);
     max-width: 72rem;
+    height: 56px;
     margin-inline: auto;
-    padding: var(--spacing) calc(var(--spacing) * 4);
+    padding-inline: calc(var(--spacing) * 4);
+  }
+
+  @media (min-width: 40rem) {
+    .site-header__bar {
+      height: 60px;
+    }
+  }
+
+  @media (min-width: 64rem) {
+    .site-header__bar {
+      height: 64px;
+    }
   }
 
   .site-header__logo {
@@ -171,10 +210,9 @@ const topTagsByCategory = getTopTagsByCategory(posts);
     align-items: center;
     gap: calc(var(--spacing) * 1.5);
     min-height: 24px;
-    font-weight: 700;
-    font-size: var(--text-lg);
     color: var(--color-fg);
     text-decoration: none;
+    flex-shrink: 0;
   }
 
   .site-header__logo-mark {
@@ -182,34 +220,42 @@ const topTagsByCategory = getTopTagsByCategory(posts);
     flex-shrink: 0;
   }
 
+  .site-header__wordmark {
+    display: flex;
+    align-items: baseline;
+    gap: calc(var(--spacing) * 1);
+  }
+
+  .site-header__wordmark > span:first-child {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: var(--text-lg);
+    letter-spacing: -0.02em;
+  }
+
+  /* The chip that distinguishes this masthead from the sibling news
+     property's own NEWS chip at a glance. */
+  .site-header__chip {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 9.5px;
+    letter-spacing: 0.16em;
+    color: var(--color-accent);
+    border: 1px solid var(--color-accent);
+    border-radius: 3px;
+    padding: 2px 5px;
+    text-transform: uppercase;
+  }
+
+  .site-header__spacer {
+    flex: 1;
+  }
+
   .site-header__actions {
     display: flex;
+    align-items: center;
     gap: calc(var(--spacing) * 2);
-    margin-left: calc(var(--spacing) * 3);
-  }
-
-  /* Below 72rem only the mobile toggle (not the desktop nav) is visible,
-     so it's the one that needs to absorb the row's free space and push
-     itself + the actions group over to the right edge, next to the logo
-     on the left — same visual grouping as before this rework, just
-     carried by a different element (see the min-width:72rem override
-     below for the desktop side of this). Harmless when hidden: a
-     display:none element takes no part in flex layout, so this rule is a
-     no-op above 72rem regardless of the media query it lives outside of. */
-  .site-header__mobile-toggle {
-    margin-left: auto;
-  }
-
-  /* Desktop: nav sits right after the logo (no gap-eating auto margin on
-     either of them), and the actions group is what gets pushed to the
-     far right instead — previously the logo carried this auto margin,
-     which pushed the *entire* nav+actions group flush against the
-     right edge, crowding "Home"/the category links up against the
-     search icon instead of anchoring them near the logo. */
-  @media (min-width: 72rem) {
-    .site-header__actions {
-      margin-left: auto;
-    }
+    flex-shrink: 0;
   }
 
   .site-header__action {
@@ -228,6 +274,11 @@ const topTagsByCategory = getTopTagsByCategory(posts);
   .site-header__action:hover {
     color: var(--color-accent);
     border-color: var(--color-accent);
+  }
+
+  .site-header__search-label,
+  .site-header__search-chip {
+    display: none;
   }
 
   /* Both icons occupy the same spot and cross-fade/rotate between each
@@ -268,7 +319,7 @@ const topTagsByCategory = getTopTagsByCategory(posts);
   }
 
   .site-header__mobile-toggle {
-    display: none;
+    display: block;
   }
 
   .site-header__mobile-toggle > summary {
@@ -297,22 +348,78 @@ const topTagsByCategory = getTopTagsByCategory(posts);
     padding: calc(var(--spacing) * 4);
   }
 
-  @media (max-width: 72rem) {
-    .site-header__mobile-toggle {
-      display: block;
-    }
+  /* The category strip — the second row, full width under the brand row,
+     separated by a hairline. Real <a> links, overflow-x: auto so it
+     scrolls rather than wraps at a narrow desktop width. Hidden below
+     64rem, where the mobile disclosure carries the same links instead. */
+  .site-header__strip {
+    display: none;
+  }
 
-    .site-header__desktop-nav {
+  @media (min-width: 64rem) {
+    .site-header__mobile-toggle {
       display: none;
     }
 
+    .site-header__strip {
+      display: block;
+      border-top: 1px solid var(--color-hairline);
+      overflow-x: auto;
+    }
+
+    .site-header__strip :global(.primary-nav) {
+      max-width: 72rem;
+      margin-inline: auto;
+      padding-inline: calc(var(--spacing) * 4);
+    }
+
+    /* Labeled search (icon + "Search" + a ⌘K chip) replaces the bare
+       icon button once there's room for it — a labeled control reads as
+       an invitation where a bare icon reads as decoration. Same shell as
+       the theme toggle beside it: hairline border, 8px radius,
+       --color-bg-subtle fill, not the icon-only actions' circular
+       transparent button. */
+    .site-header__search {
+      width: auto;
+      height: 38px;
+      padding-inline: calc(var(--spacing) * 1.5);
+      gap: calc(var(--spacing) * 1.25);
+      border-radius: 8px;
+      background-color: var(--color-bg-subtle);
+    }
+
+    .site-header__search-label {
+      display: inline;
+      font-family: var(--font-display);
+      font-size: var(--text-xs);
+    }
+
+    .site-header__search-chip {
+      display: inline-flex;
+      align-items: center;
+      border: 1px solid var(--color-border);
+      border-radius: 4px;
+      padding: 1px 5px;
+      font-family: var(--font-display);
+      font-size: 10px;
+    }
+
+    .site-header__theme-toggle {
+      width: 38px;
+      height: 38px;
+      border-radius: 8px;
+      background-color: var(--color-bg-subtle);
+    }
+  }
+
+  @media (max-width: 63.9375rem) {
     /* Touch targets: Apple/Google both recommend a 44px minimum hit area.
-       Desktop's 40px action buttons stay as-is (mouse pointer, and the
-       user wants that look preserved) — this only widens the tappable
-       area below 72rem, via padding rather than changing the visual size.
-       That range now includes real touch tablets (iPad-class devices sit
-       well under 1152px), not just phones, so this is a correctness fix
-       for them too, not just unchanged behavior carried to a new number. */
+       Desktop's 40px action buttons stay as-is (mouse pointer) — this
+       only widens the tappable area below the strip's own breakpoint,
+       via padding rather than changing the visual size. That range now
+       includes real touch tablets (iPad-class devices sit well under
+       1024px), not just phones, so this is a correctness fix for them
+       too, not just unchanged behavior carried to a new number. */
     .site-header__action {
       width: 44px;
       height: 44px;
@@ -324,11 +431,9 @@ const topTagsByCategory = getTopTagsByCategory(posts);
        horizontal scrollbar on every page (this header renders on all of
        them). Tightening just the two mobile-only spacing values below
        removes the overflow without touching the 40px desktop sizing
-       (only .site-header__action's WIDTH changes there, not this
-       margin/gap). */
+       (only .site-header__action's WIDTH changes there, not this gap). */
     .site-header__actions {
       gap: calc(var(--spacing) * 1);
-      margin-left: var(--spacing);
     }
 
     .site-header__mobile-toggle > summary {
@@ -414,17 +519,18 @@ const topTagsByCategory = getTopTagsByCategory(posts);
 
   document.addEventListener("astro:page-load", setupHeaderElevation);
 
-  // Hover-to-open for the horizontal (desktop) nav's category dropdowns —
-  // layered on top of <details>'s native click/keyboard toggle, which
-  // stays fully intact, so keyboard users are unaffected and touch
-  // devices (which can't hover) still open panels the normal way, via a
-  // tap. Gated on (hover: hover) and (pointer: fine): the standard way to
-  // detect "this is a real mouse," rather than a screen-width guess — a
-  // touchscreen laptop docked with a mouse still gets hover, a touch-only
-  // tablet at a desktop width never does. Listens on each <li> (which
-  // contains both the summary and the absolutely-positioned panel under
-  // it), not the summary alone, so moving the pointer from trigger to
-  // panel never registers as "left" in between.
+  // Hover-to-open for the horizontal (desktop) strip's category
+  // dropdowns — layered on top of <details>'s native click/keyboard
+  // toggle, which stays fully intact, so keyboard users are unaffected
+  // and touch devices (which can't hover) still open panels the normal
+  // way, via a tap. Gated on (hover: hover) and (pointer: fine): the
+  // standard way to detect "this is a real mouse," rather than a
+  // screen-width guess — a touchscreen laptop docked with a mouse still
+  // gets hover, a touch-only tablet at a desktop width never does.
+  // Listens on each <li> (which contains both the summary and the
+  // absolutely-positioned panel under it), not the summary alone, so
+  // moving the pointer from trigger to panel never registers as "left"
+  // in between.
   const hoverCapable = window.matchMedia("(hover: hover) and (pointer: fine)");
   const hoverNavCloseTimers: WeakMap<
     Element,
