@@ -216,60 +216,40 @@ export const siteConfig = {
   // loading fine.
   adsensePublisherId: "ca-pub-2225877475261768",
 
-  // Manual AdSense ad-unit slot IDs (Ads -> By ad unit -> Display ads in
-  // the AdSense dashboard, not the Auto Ads toggle) — replaces the
-  // zero-control Auto Ads placement with fixed, CLS-safe positions (see
-  // src/components/AdSlot.astro). Left empty until the site is actually
-  // connected/approved in AdSense: AdSlot renders nothing for an empty
-  // string, so this is a safe no-op rather than a broken ad tag.
-  //
-  // Six real ad units already exist in the AdSense dashboard (created
-  // 2026-08-11 — Homepage Header 6454528989, Homepage In Content
-  // 1640471997, Article Header 3453227057, Article Sidebar 4574737038,
-  // Article In Content 3070083670, Article Post Content 6626185302; see
-  // the mapping in the 2026-08-11 commit that first wired these in for
-  // which key gets which unit). They were live in this config for a
-  // short window that same day and measurably wrecked the site's real
-  // performance — Lighthouse CI mobile caught a performance score of
-  // 0.35 (was passing before), LCP 5.6s (budget: 3s), TBT 3.1s, with
-  // Google/Doubleclick ad-serving scripts alone responsible for ~1.25s
-  // of that blocking time — because the site wasn't connected/approved
-  // in AdSense yet, so all 8 real ad requests per page were pure
-  // overhead with no chance of actually filling. Re-enable these same
-  // slot IDs (they don't need to be recreated) once the site shows
-  // connected/approved in the AdSense dashboard, and re-run Lighthouse
-  // before shipping to confirm the cost is acceptable once ads can
-  // actually fill.
+  // Manual AdSense ad-unit slot IDs (Ads -> By ad unit -> Display ads).
+  // Re-enabled 2026-11-17 with the same six units created 2026-08-11.
+  // One unit per shape, reused across positions — AdSense supports that,
+  // and it keeps the ad-unit report comparable. BaseLayout loads the
+  // ads script after first paint and collapses any slot AdSense marks
+  // unfilled, so an unapproved or blocked request cannot leave a blank
+  // reserved box cutting the page (the failure mode that also tanked
+  // LCP the first time these IDs were live).
   adSlots: {
     // Sidebar tower, under the desktop TOC (article pages only).
-    articleSidebar: "",
-    // Homepage placements (index.astro): one after the header/before the
-    // hero, one after the hero, one after the featured/secondary grid,
-    // one after Recent, and one after each of the four category
-    // sections — the exact layout requested 2026-08-11.
-    homepageHeader: "",
-    homepageAfterHero: "",
-    homepageAfterFeatured: "",
-    homepageAfterRecent: "",
-    homepageAfterDevTools: "",
-    homepageAfterDataAutomation: "",
-    homepageAfterAiProductivity: "",
-    homepageAfterGuidesFixes: "",
-    // Article page placements ([category]/[slug].astro), in reading
-    // order — the exact layout requested 2026-08-11.
-    articleHeader: "",
-    articleAfterImage: "",
-    articleAfterPillarCluster: "",
-    articleAfterQuickAnswer: "",
-    articleH2: "",
-    articleBeforeAuthorBio: "",
-    articleAfterTags: "",
-    articleBeforeRecent: "",
-    // /tools/ pages (e.g. ai-token-counter.astro) — same empty-until-
-    // reconnected convention as every key above.
-    toolsAfterIntro: "",
-    toolsAfterWidget: "",
-    toolsBeforeFaq: "",
+    articleSidebar: "4574737038", // Article - Sidebar
+    // Homepage placements (index.astro).
+    homepageHeader: "6454528989", // Homepage - Header
+    homepageAfterHero: "1640471997", // Homepage - In Content
+    homepageAfterFeatured: "1640471997", // Homepage - In Content
+    homepageAfterRecent: "1640471997", // Homepage - In Content
+    homepageAfterDevTools: "1640471997", // Homepage - In Content
+    homepageAfterDataAutomation: "1640471997", // Homepage - In Content
+    homepageAfterAiProductivity: "1640471997", // Homepage - In Content
+    homepageAfterGuidesFixes: "1640471997", // Homepage - In Content
+    // Article page placements ([category]/[slug].astro), in reading order.
+    articleHeader: "3453227057", // Article - Header
+    articleAfterImage: "3070083670", // Article - In Content
+    articleAfterPillarCluster: "3070083670", // Article - In Content
+    articleAfterQuickAnswer: "3070083670", // Article - In Content
+    articleH2: "3070083670", // Article - In Content
+    articleBeforeAuthorBio: "6626185302", // Article - Post Content
+    articleAfterTags: "6626185302", // Article - Post Content
+    articleBeforeRecent: "6626185302", // Article - Post Content
+    // /tools/ pages reuse the in-content and post-content units. There
+    // is no separate tools unit in the AdSense dashboard.
+    toolsAfterIntro: "1640471997",
+    toolsAfterWidget: "3070083670",
+    toolsBeforeFaq: "6626185302",
   } as Record<string, string>,
 } as const;
 

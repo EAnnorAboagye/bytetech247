@@ -245,43 +245,144 @@ const jsonLdBlocks = [
       data-cf-beacon={JSON.stringify({
         token: siteConfig.cloudflareBeaconToken,
       })}></script>
-    <!-- Google AdSense loader — enables Auto Ads once turned on in the
-         AdSense dashboard, no ad-unit markup needed here. A static
-         <script src>, not a JS-driven Trusted Types sink (unlike the
-         gtag.js loader above), so it's unaffected by
-         require-trusted-types-for; it gets its CSP nonce the same way
-         the two tags above do. See adsensePublisherId's comment in
-         src/config.ts for why ad_storage/ad_user_data/ad_personalization
-         stay denied (non-personalized ads only) until this site has a
-         real Consent Management Platform. -->
+    <!-- Google AdSense. The canonical loader URL stays in this comment
+         so an ownership check can see it without the browser executing
+         ads during first paint. The script below injects that loader
+         after load (or the first interaction), reveals each .ad-slot,
+         then hides any slot AdSense leaves unfilled so a blank reserved
+         box cannot cut the page. Consent stays non-personalized — see
+         adsensePublisherId in src/config.ts. -->
+    <!-- https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2225877475261768 -->
     <script
-      async
-      src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${siteConfig.adsensePublisherId}`}
-      crossorigin="anonymous"></script>
-    <!-- Activates every manually-placed ad slot on the page (AdSlot.astro
-         instances, plus the raw <ins class="adsbygoogle"> markup the
-         in-article rehype plugins insert directly into compiled MDX —
-         see rehype-quick-answer.mjs and rehype-in-article-ads.mjs) — one
-         delegated pass here instead of a copy of this same script
-         per-component-instance. is:inline: window.adsbygoogle is an
-         untyped third-party global with no ambient declaration in this
-         project; a normal processed <script> here would fail
-         `astro check`, same reasoning as the gtag setup above. -->
-    <script is:inline>
-      document.addEventListener("astro:page-load", () => {
-        const unfilled = document.querySelectorAll(
+      define:vars={{
+        adsenseSrc: `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${siteConfig.adsensePublisherId}`,
+      }}
+    >
+      let adsenseLoading = false;
+      let adsenseLoaded = false;
+      let adsenseScheduled = false;
+
+      function markUnfilled(ins) {
+        const slot = ins.closest(".ad-slot");
+        if (!slot) return;
+        slot.classList.remove("is-live");
+        slot.classList.add("is-unfilled");
+      }
+
+      function watchSlot(ins) {
+        if (ins.getAttribute("data-ad-status") === "unfilled") {
+          markUnfilled(ins);
+          return;
+        }
+        const observer = new MutationObserver(() => {
+          const status = ins.getAttribute("data-ad-status");
+          if (status === "filled") {
+            observer.disconnect();
+          } else if (status === "unfilled") {
+            markUnfilled(ins);
+            observer.disconnect();
+          }
+        });
+        observer.observe(ins, {
+          attributes: true,
+          attributeFilter: ["data-ad-status"],
+        });
+        window.setTimeout(() => {
+          if (ins.getAttribute("data-ad-status") === "filled") return;
+          if (ins.getAttribute("data-ad-status") === "unfilled") {
+            markUnfilled(ins);
+            return;
+          }
+          // No status attribute. Keep the slot only when a creative
+          // actually landed; otherwise the reserved box is just a cut
+          // through the page.
+          if (!ins.querySelector("iframe") && ins.offsetHeight < 40) {
+            markUnfilled(ins);
+          }
+        }, 8000);
+      }
+
+      function activateSlots() {
+        const pending = document.querySelectorAll(
           "ins.adsbygoogle:not([data-adsbygoogle-status])",
         );
-        for (let i = 0; i < unfilled.length; i++) {
+        for (let i = 0; i < pending.length; i++) {
+          const ins = pending[i];
+          const slot = ins.closest(".ad-slot");
+          if (slot) {
+            slot.classList.add("is-live");
+            slot.getBoundingClientRect();
+          }
           try {
             (window.adsbygoogle = window.adsbygoogle || []).push({});
+            watchSlot(ins);
           } catch {
-            // AdSense script blocked (ad blocker, offline, not yet
-            // approved) — every slot's reserved min-height keeps layout
-            // stable either way.
+            markUnfilled(ins);
           }
         }
-      });
+      }
+
+      function loadAdsense() {
+        if (adsenseLoaded) {
+          activateSlots();
+          return;
+        }
+        if (adsenseLoading) return;
+        adsenseLoading = true;
+        const script = document.createElement("script");
+        script.async = true;
+        script.crossOrigin = "anonymous";
+        script.src = adsenseSrc;
+        script.onload = () => {
+          adsenseLoaded = true;
+          activateSlots();
+        };
+        script.onerror = () => {
+          document.querySelectorAll(".ad-slot").forEach((slot) => {
+            slot.classList.remove("is-live");
+            slot.classList.add("is-unfilled");
+          });
+        };
+        document.head.appendChild(script);
+      }
+
+      function scheduleAdsense() {
+        if (adsenseLoaded) {
+          activateSlots();
+          return;
+        }
+        if (adsenseScheduled) return;
+        adsenseScheduled = true;
+        const start = () => {
+          if ("requestIdleCallback" in window) {
+            window.requestIdleCallback(() => loadAdsense(), { timeout: 2000 });
+          } else {
+            window.setTimeout(loadAdsense, 1200);
+          }
+        };
+        const arm = () => {
+          window.setTimeout(start, 1500);
+        };
+        if (document.readyState === "complete") arm();
+        else window.addEventListener("load", arm, { once: true });
+        const onIntent = () => {
+          window.removeEventListener("pointerdown", onIntent);
+          window.removeEventListener("keydown", onIntent);
+          window.removeEventListener("scroll", onIntent);
+          loadAdsense();
+        };
+        window.addEventListener("pointerdown", onIntent, {
+          once: true,
+          passive: true,
+        });
+        window.addEventListener("keydown", onIntent, { once: true });
+        window.addEventListener("scroll", onIntent, {
+          once: true,
+          passive: true,
+        });
+      }
+
+      document.addEventListener("astro:page-load", scheduleAdsense);
     </script>
     <!-- Backup ownership-verification method alongside the DNS TXT record
          already in place (Cloudflare DNS) — Google Search Console's
@@ -294,9 +395,9 @@ const jsonLdBlocks = [
       name="google-site-verification"
       content="Q7Gw17KC8cG9r4zyeMycGAfPXpAzdGeThLa9evSl-54"
     />
-    <!-- Redundant AdSense ownership signal alongside the ad-serving script
-         itself (adsbygoogle.js, further down this file) and the ads.txt
-         declaration (public/ads.txt) — same defensive-redundancy reasoning
+    <!-- Redundant AdSense ownership signal alongside the deferred
+         adsbygoogle.js loader above and the ads.txt declaration
+         (public/ads.txt) — same defensive-redundancy reasoning
          as the Search Console tag above: three independent ways for
          Google to confirm this property is legitimately connected to this
          AdSense account, rather than depending on any single one. -->
