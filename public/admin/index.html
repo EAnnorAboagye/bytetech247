@@ -7,8 +7,24 @@
     <title>ByteTech247 — Posts</title>
   </head>
   <body>
-    <!-- Loaded from a CDN so the 5MB bundle is not in the repo or the
-         build. The worker stamps a CSP nonce on this tag. -->
+    <!-- Same pass-through policy BaseLayout registers. The site CSP
+         requires Trusted Types, and this page is static, so without
+         this the editor cannot inject its own markup and renders blank. -->
+    <script>
+      if (window.trustedTypes && window.trustedTypes.createPolicy) {
+        window.trustedTypes.createPolicy("default", {
+          createHTML: function (html) {
+            return html;
+          },
+          createScript: function (script) {
+            return script;
+          },
+          createScriptURL: function (url) {
+            return url;
+          },
+        });
+      }
+    </script>
     <script src="https://unpkg.com/decap-cms@3.3.3/dist/decap-cms.js"></script>
   </body>
 </html>
