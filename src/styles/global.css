@@ -431,7 +431,7 @@
    * match the rest of the design system once a real ad renders into it.
    */
   .ad-slot {
-    display: none;
+    display: flex;
     flex-direction: column;
     gap: calc(var(--spacing) * 1);
     padding: calc(var(--spacing) * 2);
@@ -439,14 +439,6 @@
     border-radius: 0.5rem;
     background-color: var(--color-bg-subtle);
     box-shadow: var(--shadow-card);
-  }
-
-  .ad-slot.is-live {
-    display: flex;
-  }
-
-  .ad-slot.is-unfilled {
-    display: none;
   }
 
   .ad-slot__label {

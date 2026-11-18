@@ -248,10 +248,12 @@ const jsonLdBlocks = [
     <!-- Google AdSense. The canonical loader URL stays in this comment
          so an ownership check can see it without the browser executing
          ads during first paint. The script below injects that loader
-         after load (or the first interaction), reveals each .ad-slot,
-         then hides any slot AdSense leaves unfilled so a blank reserved
-         box cannot cut the page. Consent stays non-personalized — see
-         adsensePublisherId in src/config.ts. -->
+         after load (or the first interaction) and requests each slot.
+         Reserved .ad-slot boxes stay visible either way: an unfilled
+         unit must not vanish (that was the blank-slot disappearance)
+         and must not shift the layout when a creative later fills it.
+         Consent stays non-personalized — see adsensePublisherId in
+         src/config.ts. -->
     <!-- https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2225877475261768 -->
     <script
       define:vars={{
@@ -262,62 +264,16 @@ const jsonLdBlocks = [
       let adsenseLoaded = false;
       let adsenseScheduled = false;
 
-      function markUnfilled(ins) {
-        const slot = ins.closest(".ad-slot");
-        if (!slot) return;
-        slot.classList.remove("is-live");
-        slot.classList.add("is-unfilled");
-      }
-
-      function watchSlot(ins) {
-        if (ins.getAttribute("data-ad-status") === "unfilled") {
-          markUnfilled(ins);
-          return;
-        }
-        const observer = new MutationObserver(() => {
-          const status = ins.getAttribute("data-ad-status");
-          if (status === "filled") {
-            observer.disconnect();
-          } else if (status === "unfilled") {
-            markUnfilled(ins);
-            observer.disconnect();
-          }
-        });
-        observer.observe(ins, {
-          attributes: true,
-          attributeFilter: ["data-ad-status"],
-        });
-        window.setTimeout(() => {
-          if (ins.getAttribute("data-ad-status") === "filled") return;
-          if (ins.getAttribute("data-ad-status") === "unfilled") {
-            markUnfilled(ins);
-            return;
-          }
-          // No status attribute. Keep the slot only when a creative
-          // actually landed; otherwise the reserved box is just a cut
-          // through the page.
-          if (!ins.querySelector("iframe") && ins.offsetHeight < 40) {
-            markUnfilled(ins);
-          }
-        }, 8000);
-      }
-
       function activateSlots() {
         const pending = document.querySelectorAll(
           "ins.adsbygoogle:not([data-adsbygoogle-status])",
         );
         for (let i = 0; i < pending.length; i++) {
           const ins = pending[i];
-          const slot = ins.closest(".ad-slot");
-          if (slot) {
-            slot.classList.add("is-live");
-            slot.getBoundingClientRect();
-          }
           try {
             (window.adsbygoogle = window.adsbygoogle || []).push({});
-            watchSlot(ins);
           } catch {
-            markUnfilled(ins);
+            // Slot stays reserved. A failed push must not remove it.
           }
         }
       }
@@ -338,10 +294,8 @@ const jsonLdBlocks = [
           activateSlots();
         };
         script.onerror = () => {
-          document.querySelectorAll(".ad-slot").forEach((slot) => {
-            slot.classList.remove("is-live");
-            slot.classList.add("is-unfilled");
-          });
+          // Leave the reserved boxes in place. Hiding them made every
+          // unfilled unit disappear after refresh.
         };
         document.head.appendChild(script);
       }
