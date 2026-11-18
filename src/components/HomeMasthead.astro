@@ -82,4 +82,29 @@ import NewsletterCard from "./NewsletterCard.astro";
     color: var(--color-fg-muted);
     text-wrap: pretty;
   }
+
+  /* Mobile LCP is this paragraph when the hero sits below the fold.
+     Compact the intro so the preloaded hero image is the largest
+     in-viewport element instead. */
+  @media (max-width: 40rem) {
+    .home-masthead {
+      gap: calc(var(--spacing) * 3);
+      padding: calc(var(--spacing) * 3) 0 calc(var(--spacing) * 2);
+    }
+
+    .home-masthead__title {
+      font-size: clamp(1.7rem, 1.3rem + 2vw, 2.2rem);
+      margin-top: calc(var(--spacing) * 1.5);
+    }
+
+    .home-masthead__copy {
+      font-size: var(--text-base);
+      line-height: 1.55;
+      margin-top: calc(var(--spacing) * 1.5);
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+  }
 </style>

@@ -87,12 +87,6 @@ const formatShortDate = (date: Date) =>
   <Center gutter="0">
     <HomeMasthead />
 
-    <AdSlot
-      adSlot={siteConfig.adSlots.homepageHeader}
-      size="banner"
-      label="Advertisement"
-    />
-
     {
       heroPost && (
         <section aria-label="Featured post" class="hero-row">
@@ -125,6 +119,12 @@ const formatShortDate = (date: Date) =>
         </section>
       )
     }
+
+    <AdSlot
+      adSlot={siteConfig.adSlots.homepageHeader}
+      size="banner"
+      label="Advertisement"
+    />
 
     <ToolsStrip />
 
