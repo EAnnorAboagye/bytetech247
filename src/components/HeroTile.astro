@@ -23,7 +23,8 @@ const href = `/${post.data.category}/${post.id}/`;
       <Picture
         src={post.data.coverImage}
         alt={post.data.coverImageAlt}
-        widths={[1200]}
+        widths={[640, 1200]}
+        sizes="(max-width: 40rem) 100vw, 48rem"
         formats={["avif", "webp"]}
         loading="eager"
         fetchpriority="high"

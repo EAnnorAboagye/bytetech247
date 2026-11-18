@@ -413,6 +413,15 @@ const nextInSeries =
     letter-spacing: normal;
   }
 
+  /* On a phone this heading was ~260px tall and became the LCP, ahead of
+     the preloaded cover. A smaller mobile size lets the cover win. */
+  @media (max-width: 40rem) {
+    h1 {
+      font-size: var(--text-2xl);
+      line-height: 1.15;
+    }
+  }
+
   .post-breadcrumb-wrap {
     max-width: 72rem;
     margin-inline: auto;
