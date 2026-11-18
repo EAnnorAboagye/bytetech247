@@ -116,6 +116,17 @@
    * an 8px grid without any bespoke spacing tokens.
    */
   --spacing: 0.5rem;
+  /*
+   * Fluid page gutter. Mini phones (~320px) get 16px, small phones ~18px,
+   * large phones ~20px, tablets ~24px, desktop and ultra cap at 32px.
+   * Replaces the old fixed spacing*4 (32px) that ate a fifth of a 320px
+   * screen and, with a non-shrinking header, pushed the page wider than
+   * the viewport.
+   */
+  --gutter: clamp(1rem, 0.25rem + 3.5vw, 2rem);
+  /* Reading and layout caps. Ultra-wide stays at 72rem; the page never
+     stretches edge to edge on a 4K monitor. */
+  --page-max: 72rem;
 
   /* Motion — mapped into Tailwind's `--ease-*` namespace too, so both
      `ease-out-expo` utilities and raw `var(--ease-out-expo)` work. */
@@ -261,11 +272,18 @@
 }
 
 @layer base {
+  html {
+    /* Last line of defence: a single overflowing child must not widen
+       the document. clip (not hidden) so sticky header still works. */
+    overflow-x: clip;
+  }
+
   body {
     background-color: var(--color-bg);
     color: var(--color-fg);
     font-size: var(--text-base);
     font-family: var(--font-body);
+    overflow-x: clip;
   }
 
   /*
@@ -279,9 +297,10 @@
    * than their inner wrapper it stays non-binding there.
    */
   main {
-    max-width: 72rem;
+    max-width: var(--page-max);
     margin-inline: auto;
-    padding-inline: calc(var(--spacing) * 4);
+    padding-inline: var(--gutter);
+    min-width: 0;
   }
 
   h1,
@@ -439,6 +458,12 @@
     border-radius: 0.5rem;
     background-color: var(--color-bg-subtle);
     box-shadow: var(--shadow-card);
+    /* Never wider than the column. aspect-ratio + min-height was
+       resolving to a 728px-wide banner on phones. */
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
   }
 
   .ad-slot__label {
@@ -470,8 +495,16 @@
    * narrow viewport regardless.
    */
   .ad-slot[data-ad-size="banner"] {
-    min-height: 100px;
-    aspect-ratio: 728 / 100;
+    /* Fluid reserved height. aspect-ratio is only safe once the column
+       is wide enough that 728:100 does not fight min-height. */
+    min-height: clamp(4.5rem, 14vw, 6.25rem);
+  }
+
+  @media (min-width: 48rem) {
+    .ad-slot[data-ad-size="banner"] {
+      aspect-ratio: 728 / 100;
+      min-height: 90px;
+    }
   }
 
   /*
@@ -480,8 +513,7 @@
    * guaranteed a layout shift once creative actually filled it.
    */
   .ad-slot[data-ad-size="rectangle"] {
-    min-height: 280px;
-    aspect-ratio: 300 / 280;
+    min-height: clamp(12.5rem, 62vw, 17.5rem);
   }
 
   .ad-slot[data-ad-size="tower"] {
@@ -491,8 +523,14 @@
 
   @media (min-width: 40rem) {
     .ad-slot[data-ad-size="rectangle"] {
-      min-height: 250px;
+      min-height: clamp(14rem, 40vw, 16rem);
       aspect-ratio: 300 / 250;
+    }
+  }
+
+  @media (min-width: 64rem) {
+    .ad-slot[data-ad-size="rectangle"] {
+      min-height: 250px;
     }
   }
 }

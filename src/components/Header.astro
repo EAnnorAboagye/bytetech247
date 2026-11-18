@@ -187,10 +187,11 @@ const currentPath = Astro.url.pathname;
     display: flex;
     align-items: center;
     gap: calc(var(--spacing) * 2);
-    max-width: 72rem;
+    max-width: var(--page-max, 72rem);
     height: 56px;
     margin-inline: auto;
-    padding-inline: calc(var(--spacing) * 4);
+    padding-inline: var(--gutter, 1rem);
+    min-width: 0;
   }
 
   @media (min-width: 40rem) {
@@ -210,9 +211,10 @@ const currentPath = Astro.url.pathname;
     align-items: center;
     gap: calc(var(--spacing) * 1.5);
     min-height: 24px;
+    min-width: 0;
     color: var(--color-fg);
     text-decoration: none;
-    flex-shrink: 0;
+    flex-shrink: 1;
   }
 
   .site-header__logo-mark {
@@ -229,8 +231,19 @@ const currentPath = Astro.url.pathname;
   .site-header__wordmark > span:first-child {
     font-family: var(--font-display);
     font-weight: 700;
-    font-size: var(--text-lg);
+    font-size: clamp(0.95rem, 0.7rem + 1.2vw, var(--text-lg));
     letter-spacing: -0.02em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Chip competes with the wordmark on mini phones. Hide it until there
+     is room; the wordmark already says the brand. */
+  @media (max-width: 23.5rem) {
+    .site-header__chip {
+      display: none;
+    }
   }
 
   /* The chip that distinguishes this masthead from the sibling news
@@ -379,7 +392,7 @@ const currentPath = Astro.url.pathname;
     .site-header__strip :global(.primary-nav) {
       max-width: 72rem;
       margin-inline: auto;
-      padding-inline: calc(var(--spacing) * 4);
+      padding-inline: var(--gutter, 1rem);
     }
 
     /* Labeled search (icon + "Search" + a ⌘K chip) replaces the bare
@@ -442,6 +455,11 @@ const currentPath = Astro.url.pathname;
        removes the overflow without touching the 40px desktop sizing
        (only .site-header__action's WIDTH changes there, not this gap). */
     .site-header__actions {
+      gap: calc(var(--spacing) * 0.5);
+      flex-shrink: 0;
+    }
+
+    .site-header__bar {
       gap: calc(var(--spacing) * 1);
     }
 
