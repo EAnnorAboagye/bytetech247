@@ -495,9 +495,11 @@
    * narrow viewport regardless.
    */
   .ad-slot[data-ad-size="banner"] {
-    /* Fluid reserved height. aspect-ratio is only safe once the column
-       is wide enough that 728:100 does not fight min-height. */
-    min-height: clamp(4.5rem, 14vw, 6.25rem);
+    /* Definite height, not min-height. An auto ad taller than the
+       reservation was growing this box and pushing .post-layout down
+       (CLS 0.34 on articles). Locked so the creative cannot expand it. */
+    height: clamp(5.75rem, 16vw, 7.5rem);
+    overflow: hidden;
   }
 
   @media (min-width: 48rem) {
@@ -513,7 +515,8 @@
    * guaranteed a layout shift once creative actually filled it.
    */
   .ad-slot[data-ad-size="rectangle"] {
-    min-height: clamp(12.5rem, 62vw, 17.5rem);
+    height: clamp(13.5rem, 64vw, 18.5rem);
+    overflow: hidden;
   }
 
   .ad-slot[data-ad-size="tower"] {
