@@ -1,6 +1,14 @@
-# Decap CMS. Publishing commits to main, which triggers the existing
-# Cloudflare deploy. First login needs a GitHub OAuth app — see the
-# comment at the top of worker/index.ts near the /api/auth routes.
+# Decap CMS. Publishing commits to main, which triggers the Cloudflare
+# deploy. Login needs a GitHub OAuth app — see the /api/auth routes in
+# worker/index.ts.
+#
+# Field rules follow Google Search Central (helpful, people-first
+# content, updated 2026-10-05) and this site's write-article checklist:
+# one purpose per page, a concise title, a real description, headings
+# that are questions, one H1 only (the title), and FAQ only for real
+# follow-ups. Crawl and index are automatic: the build adds the URL to
+# the sitemap and emits BlogPosting JSON-LD. Do not add ad code here.
+
 backend:
   name: github
   repo: EAnnorAboagye/bytetech247
@@ -14,6 +22,10 @@ public_folder: src/content/blog
 site_url: https://bytetech247.com
 display_url: https://bytetech247.com
 logo_url: /favicon.svg
+
+# Preview pane is on. It shows the Markdown, not the live page chrome.
+editor:
+  preview: true
 
 slug:
   encoding: ascii
@@ -51,17 +63,20 @@ collections:
       - label: Title
         name: title
         widget: string
-        hint: "60 characters or fewer. This is the search result title."
+        pattern: [".{1,60}", "60 characters or fewer"]
+        hint: "The page's only H1, and the search title. State the page's purpose in plain words. No clickbait. 60 characters or fewer — Google truncates longer titles."
       - label: Description
         name: description
         widget: text
-        hint: "160 characters or fewer. The search snippet."
+        pattern: [".{1,160}", "160 characters or fewer"]
+        hint: "The search snippet, not a summary for someone already on the page. Include the phrase a searcher would type. 160 characters or fewer."
       - label: Date
         name: date
         widget: datetime
         date_format: YYYY-MM-DD
         time_format: false
         picker_utc: true
+        hint: "Shown as datePublished. Do not change it later just to look fresh — Google flags date changes that are not real updates."
       - label: Category
         name: category
         widget: select
@@ -73,16 +88,17 @@ collections:
       - label: Tags
         name: tags
         widget: list
-        hint: "Reuse an existing tag when one fits. A tag used once is noise."
         default: []
+        hint: "Reuse a tag that already groups posts. A tag used once is noise and does not help crawl or ranking."
       - label: Cover image
         name: coverImage
         widget: image
-        hint: "Required. Drop the image here; it is saved next to the post."
         choose_url: false
+        hint: "Required. A real screenshot or diagram of the thing the post is about. This is the article image in BlogPosting schema and the page's LCP candidate — keep it relevant, not decorative."
       - label: Cover image alt
         name: coverImageAlt
         widget: string
+        hint: "Describe what the image shows, in words a reader who cannot see it would need. Do not repeat the title."
       - label: Cover credit
         name: coverImageCredit
         widget: object
@@ -95,30 +111,52 @@ collections:
         name: series
         widget: string
         required: false
-        hint: "Leave empty unless this post is part of a series."
+        hint: "Only if this post is part of a cluster. Must be set together with Series order."
       - label: Series order
         name: seriesOrder
         widget: number
         value_type: int
         required: false
         min: 1
-        hint: "Required together with Series. 1 is the pillar."
+        hint: "1 is the pillar. Required together with Series."
       - label: Related slugs
         name: relatedSlugs
         widget: list
         required: false
         default: []
-        hint: "Optional. Slugs of posts to show first in related."
+        hint: "Slugs of posts a reader should open next. This is the internal link, which is how Google finds related pages."
       - label: FAQ
         name: faq
         widget: list
         required: false
         default: []
-        hint: "Only real follow-up questions. These become FAQ schema."
+        hint: "Only questions a reader still has after the body. These become visible FAQ and FAQPage schema. Invented questions are stuffing — leave empty."
         fields:
           - { label: Question, name: question, widget: string }
           - { label: Answer, name: answer, widget: text }
       - label: Body
         name: body
         widget: markdown
-        hint: "Markdown. Existing posts use MDX; plain markdown is fine for new ones."
+        hint: "Markdown, not HTML. No # heading — the title is the only H1, and a # in the body fails the build. Each ## is one real sub-question, in the order a reader asks. Open with the problem, then a Quick Answer, then the steps. Back every claim with a command, a number, or something you tested. Say who tested it. Do not write to a word count."
+        default: |
+          State the problem in two or three sentences, in the words a reader would use. Say who this is for.
+
+          ## Quick Answer
+
+          The shortest true answer, with the actual command or setting. A reader who stops here should still leave with the fix.
+
+          ## What is actually going wrong
+
+          The cause, not a restatement of the title. One point, backed by a command output or a number.
+
+          ## How to fix it
+
+          Steps you have run. One step per block. Name the file and the version.
+
+          ```bash
+          # the command you actually ran
+          ```
+
+          ## What to check if it still fails
+
+          The one or two things that usually get missed.

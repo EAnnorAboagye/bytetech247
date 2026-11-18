@@ -11,3 +11,6 @@ build-spec.md
 # text file (e.g. Windows with core.symlinks=false), Prettier would
 # rewrite it and corrupt the symlink target string.
 CLAUDE.md
+
+# Vendored Decap CMS bundle — not our code.
+public/admin/decap-cms.js

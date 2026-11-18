@@ -5,7 +5,7 @@ import eslintPluginAstro from "eslint-plugin-astro";
 import globals from "globals";
 
 export default tseslint.config(
-  { ignores: ["dist/", ".astro/", "node_modules/"] },
+  { ignores: ["dist/", ".astro/", "node_modules/", "public/admin/decap-cms.js"] },
   eslint.configs.recommended,
   ...tseslint.configs.recommended,
   ...eslintPluginAstro.configs.recommended,
