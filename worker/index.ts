@@ -32,6 +32,11 @@ export interface Env {
   LEMON_SQUEEZY_WEBHOOK_SECRET: string;
   LEMON_SQUEEZY_STORE_ID: string;
   LEMON_SQUEEZY_VARIANT_ID: string;
+  // Decap CMS GitHub login. Client id is public; secret is
+  // `wrangler secret put GITHUB_OAUTH_CLIENT_SECRET`. Empty until set,
+  // in which case /admin shows a setup message instead of a broken login.
+  GITHUB_OAUTH_CLIENT_ID?: string;
+  GITHUB_OAUTH_CLIENT_SECRET?: string;
 }
 
 // A real per-request-unique CSP nonce would need every HTML response
@@ -227,6 +232,13 @@ export function prefersMarkdown(request: Request): boolean {
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
+
+    if (url.pathname === "/api/auth" && request.method === "GET") {
+      return handleCmsAuth(request, env);
+    }
+    if (url.pathname === "/api/auth/callback" && request.method === "GET") {
+      return handleCmsAuthCallback(request, env);
+    }
 
     if (url.pathname === "/api/counter" && request.method === "POST") {
       return handleCounter(request, env);
@@ -851,4 +863,82 @@ async function handleMcpCheckRecheck(
     }),
     { status: 200, headers: { "Content-Type": "application/json" } },
   );
+}
+
+const CMS_OAUTH_SCOPE = "repo";
+
+function cmsSetupPage(message: string): Response {
+  const html = `<!doctype html><meta charset="utf-8"><title>CMS setup</title>
+<body style="font:16px/1.5 system-ui;max-width:40rem;margin:4rem auto;padding:0 1rem">
+<h1>CMS login is not configured yet</h1>
+<p>${message}</p>
+</body>`;
+  return new Response(html, {
+    status: 503,
+    headers: { "Content-Type": "text/html; charset=utf-8" },
+  });
+}
+
+function handleCmsAuth(request: Request, env: Env): Response {
+  if (!env.GITHUB_OAUTH_CLIENT_ID || !env.GITHUB_OAUTH_CLIENT_SECRET) {
+    return cmsSetupPage(
+      "Create a GitHub OAuth app with callback https://bytetech247.com/api/auth/callback, then set GITHUB_OAUTH_CLIENT_ID and GITHUB_OAUTH_CLIENT_SECRET as Worker secrets.",
+    );
+  }
+  const url = new URL(request.url);
+  const target = new URL("https://github.com/login/oauth/authorize");
+  target.searchParams.set("client_id", env.GITHUB_OAUTH_CLIENT_ID);
+  target.searchParams.set("scope", CMS_OAUTH_SCOPE);
+  target.searchParams.set("redirect_uri", `${url.origin}/api/auth/callback`);
+  return Response.redirect(target.toString(), 302);
+}
+
+async function handleCmsAuthCallback(
+  request: Request,
+  env: Env,
+): Promise<Response> {
+  if (!env.GITHUB_OAUTH_CLIENT_ID || !env.GITHUB_OAUTH_CLIENT_SECRET) {
+    return cmsSetupPage("GitHub OAuth secrets are not set.");
+  }
+  const code = new URL(request.url).searchParams.get("code");
+  if (!code) return new Response("Missing code", { status: 400 });
+
+  const tokenRes = await fetch("https://github.com/login/oauth/access_token", {
+    method: "POST",
+    headers: { Accept: "application/json", "Content-Type": "application/json" },
+    body: JSON.stringify({
+      client_id: env.GITHUB_OAUTH_CLIENT_ID,
+      client_secret: env.GITHUB_OAUTH_CLIENT_SECRET,
+      code,
+    }),
+  });
+  const token = (await tokenRes.json()) as {
+    access_token?: string;
+    error?: string;
+  };
+  if (!token.access_token) {
+    return new Response(token.error ?? "GitHub token exchange failed", {
+      status: 401,
+    });
+  }
+
+  const payload = JSON.stringify({
+    token: token.access_token,
+    provider: "github",
+  });
+  const html = `<!doctype html><meta charset="utf-8"><title>Authorizing</title>
+<script>
+(function () {
+  var msg = "authorization:github:success:" + ${JSON.stringify(payload)};
+  function receive(e) {
+    window.opener.postMessage(msg, e.origin);
+    window.removeEventListener("message", receive, false);
+  }
+  window.addEventListener("message", receive, false);
+  window.opener.postMessage("authorizing:github", "*");
+})();
+</script>`;
+  return new Response(html, {
+    headers: { "Content-Type": "text/html; charset=utf-8" },
+  });
 }

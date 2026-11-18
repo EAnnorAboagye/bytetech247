@@ -1,0 +1,124 @@
+# Decap CMS. Publishing commits to main, which triggers the existing
+# Cloudflare deploy. First login needs a GitHub OAuth app — see the
+# comment at the top of worker/index.ts near the /api/auth routes.
+backend:
+  name: github
+  repo: EAnnorAboagye/bytetech247
+  branch: main
+  base_url: https://bytetech247.com
+  auth_endpoint: api/auth
+
+media_folder: src/content/blog
+public_folder: src/content/blog
+
+site_url: https://bytetech247.com
+display_url: https://bytetech247.com
+logo_url: /favicon.svg
+
+slug:
+  encoding: ascii
+  clean_accents: true
+  sanitize_replacement: "-"
+
+collections:
+  - name: blog
+    label: Posts
+    label_singular: Post
+    folder: src/content/blog
+    path: "{{slug}}/index"
+    media_folder: ""
+    public_folder: ""
+    create: true
+    extension: mdx
+    format: frontmatter
+    identifier_field: title
+    summary: "{{title}} — {{category}} — {{date}}"
+    sortable_fields: [date, title, commit_date]
+    view_filters:
+      - label: Dev Tools
+        field: category
+        pattern: dev-tools
+      - label: Data & Automation
+        field: category
+        pattern: data-automation
+      - label: AI Productivity
+        field: category
+        pattern: ai-productivity
+      - label: Guides & Fixes
+        field: category
+        pattern: guides-fixes
+    fields:
+      - label: Title
+        name: title
+        widget: string
+        hint: "60 characters or fewer. This is the search result title."
+      - label: Description
+        name: description
+        widget: text
+        hint: "160 characters or fewer. The search snippet."
+      - label: Date
+        name: date
+        widget: datetime
+        date_format: YYYY-MM-DD
+        time_format: false
+        picker_utc: true
+      - label: Category
+        name: category
+        widget: select
+        options:
+          - { label: Dev Tools, value: dev-tools }
+          - { label: Data & Automation, value: data-automation }
+          - { label: AI Productivity, value: ai-productivity }
+          - { label: Guides & Fixes, value: guides-fixes }
+      - label: Tags
+        name: tags
+        widget: list
+        hint: "Reuse an existing tag when one fits. A tag used once is noise."
+        default: []
+      - label: Cover image
+        name: coverImage
+        widget: image
+        hint: "Required. Drop the image here; it is saved next to the post."
+        choose_url: false
+      - label: Cover image alt
+        name: coverImageAlt
+        widget: string
+      - label: Cover credit
+        name: coverImageCredit
+        widget: object
+        required: false
+        hint: "Only for a sourced photo. Leave empty for your own screenshot."
+        fields:
+          - { label: Photographer, name: name, widget: string, required: false }
+          - { label: Credit URL, name: url, widget: string, required: false }
+      - label: Series
+        name: series
+        widget: string
+        required: false
+        hint: "Leave empty unless this post is part of a series."
+      - label: Series order
+        name: seriesOrder
+        widget: number
+        value_type: int
+        required: false
+        min: 1
+        hint: "Required together with Series. 1 is the pillar."
+      - label: Related slugs
+        name: relatedSlugs
+        widget: list
+        required: false
+        default: []
+        hint: "Optional. Slugs of posts to show first in related."
+      - label: FAQ
+        name: faq
+        widget: list
+        required: false
+        default: []
+        hint: "Only real follow-up questions. These become FAQ schema."
+        fields:
+          - { label: Question, name: question, widget: string }
+          - { label: Answer, name: answer, widget: text }
+      - label: Body
+        name: body
+        widget: markdown
+        hint: "Markdown. Existing posts use MDX; plain markdown is fine for new ones."
