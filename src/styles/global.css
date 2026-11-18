@@ -467,6 +467,8 @@
   }
 
   .ad-slot__label {
+    position: relative;
+    z-index: 1;
     margin: 0;
     font-family: var(--font-display);
     font-size: var(--text-xs);
@@ -478,63 +480,60 @@
 
   .ad-slot ins {
     flex: 1;
+    min-height: 0;
   }
 
   /*
-   * Reserved height per size bucket, not a per-instance inline value —
-   * see AdSlot.astro's own comment for why that structural change is
-   * what actually makes a breakpoint override possible. Mobile gets a
-   * shorter "rectangle" reservation than tablet/desktop: Google's
-   * auto/full-width-responsive format renders a shorter unit in a
-   * narrower container, so reserving the same 250px on a 360px-wide
-   * phone as on a 1200px-wide desktop either wastes vertical space
-   * around a smaller ad or undersizes it once real creative is live.
-   * "banner" and "tower" don't vary by breakpoint: banner is already
-   * slim at every width, and tower's parent is hidden below the tablet
-   * breakpoint (.post-ad-sidebar in [slug].astro) so it never renders on a
-   * narrow viewport regardless.
+   * The creative is taken out of flow. AdSense rewrites the <ins> style
+   * to a pixel height (or hides an unfilled unit), and either one was
+   * pushing .post-layout down — article CLS stayed around 0.31 after a
+   * min-height lock because the unit could still change the box. The
+   * slot's own height is the only height that participates in layout.
+   */
+  .ad-slot[data-ad-size="banner"],
+  .ad-slot[data-ad-size="rectangle"] {
+    position: relative;
+  }
+
+  .ad-slot[data-ad-size="banner"] ins,
+  .ad-slot[data-ad-size="rectangle"] ins {
+    position: absolute !important;
+    inset: 0;
+    width: 100% !important;
+    height: 100% !important;
+    max-height: 100% !important;
+    margin: 0;
+  }
+
+  /*
+   * One height per size, at every viewport. A breakpoint that raised
+   * min-height or set aspect-ratio let the unit grow after paint.
    */
   .ad-slot[data-ad-size="banner"] {
-    /* Definite height, not min-height. An auto ad taller than the
-       reservation was growing this box and pushing .post-layout down
-       (CLS 0.34 on articles). Locked so the creative cannot expand it. */
+    /* Same value for height and max-height so an inline style from the
+       ad script cannot grow the box. aspect-ratio is intentionally not
+       set: paired with a full-width slot it resolves to a 728px-wide
+       banner on a phone. */
     height: clamp(5.75rem, 16vw, 7.5rem);
+    max-height: clamp(5.75rem, 16vw, 7.5rem);
     overflow: hidden;
   }
 
-  @media (min-width: 48rem) {
-    .ad-slot[data-ad-size="banner"] {
-      aspect-ratio: 728 / 100;
-      min-height: 90px;
-    }
-  }
-
   /*
-   * Raised from 120px (pre-redesign) to 280px: a real 300x250 unit
-   * renders taller than 120px on a 360px-wide phone, so the old value
-   * guaranteed a layout shift once creative actually filled it.
+   * Tall enough for a real 300x250 unit on a phone. A shorter box
+   * guaranteed a layout shift once the creative filled it.
    */
   .ad-slot[data-ad-size="rectangle"] {
     height: clamp(13.5rem, 64vw, 18.5rem);
+    max-height: clamp(13.5rem, 64vw, 18.5rem);
     overflow: hidden;
   }
 
   .ad-slot[data-ad-size="tower"] {
     min-height: 600px;
+    max-height: 600px;
     aspect-ratio: 300 / 600;
-  }
-
-  @media (min-width: 40rem) {
-    .ad-slot[data-ad-size="rectangle"] {
-      min-height: clamp(14rem, 40vw, 16rem);
-      aspect-ratio: 300 / 250;
-    }
-  }
-
-  @media (min-width: 64rem) {
-    .ad-slot[data-ad-size="rectangle"] {
-      min-height: 250px;
-    }
+    overflow: hidden;
   }
 }
 
