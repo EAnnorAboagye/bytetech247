@@ -177,7 +177,7 @@ const ARTICLE_PATH = /^\/([a-z-]+)\/([a-z0-9-]+)\/?$/;
 // un-fixing the exact duplicate-content problem the redirect exists for,
 // for any slug that happens to end in a version number.
 const STATIC_ASSET_EXTENSION =
-  /\.(xml|txt|md|png|jpe?g|webp|avif|svg|ico|css|js|json|woff2?|ttf)$/i;
+  /\.(xml|txt|md|png|jpe?g|webp|avif|svg|ico|css|js|json|ya?ml|woff2?|ttf)$/i;
 
 // Every HTML page that has a real, already-published markdown counterpart
 // — the homepage's is the sitewide llms.txt index (src/pages/llms.txt.ts),
