@@ -245,26 +245,21 @@ const jsonLdBlocks = [
       data-cf-beacon={JSON.stringify({
         token: siteConfig.cloudflareBeaconToken,
       })}></script>
-    <!-- Google AdSense. The canonical loader URL stays in this comment
-         so an ownership check can see it without the browser executing
-         ads during first paint. The script below injects that loader
-         after load (or the first interaction) and requests each slot.
-         Reserved .ad-slot boxes stay visible either way: an unfilled
-         unit must not vanish (that was the blank-slot disappearance)
-         and must not shift the layout when a creative later fills it.
-         Consent stays non-personalized — see adsensePublisherId in
-         src/config.ts. -->
-    <!-- https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2225877475261768 -->
+    <!-- Google AdSense. The loader MUST be a real static tag in <head>,
+         not a comment and not a script created after load. AdSense site
+         verification and the Mediapartners-Google crawler inspect raw
+         HTML; a dynamically injected tag is invisible to them (same
+         failure mode that previously made gtag look missing). async +
+         crossorigin is the snippet Google itself generates. The second
+         script only requests each manual unit; reserved .ad-slot boxes
+         stay visible when a unit is unfilled. Consent stays
+         non-personalized — see adsensePublisherId in src/config.ts. -->
     <script
-      define:vars={{
-        adsenseSrc: `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${siteConfig.adsensePublisherId}`,
-      }}
-    >
-      let adsenseLoading = false;
-      let adsenseLoaded = false;
-      let adsenseScheduled = false;
-
-      function activateSlots() {
+      async
+      src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${siteConfig.adsensePublisherId}`}
+      crossorigin="anonymous"></script>
+    <script is:inline>
+      function activateAdsenseSlots() {
         const pending = document.querySelectorAll(
           "ins.adsbygoogle:not([data-adsbygoogle-status])",
         );
@@ -272,70 +267,14 @@ const jsonLdBlocks = [
           try {
             (window.adsbygoogle = window.adsbygoogle || []).push({});
           } catch {
-            // Slot stays reserved. A failed push must not remove it.
+            // Keep the reserved box. A failed push must not remove it.
           }
         }
       }
-
-      function loadAdsense() {
-        if (adsenseLoaded) {
-          activateSlots();
-          return;
-        }
-        if (adsenseLoading) return;
-        adsenseLoading = true;
-        const script = document.createElement("script");
-        script.async = true;
-        script.crossOrigin = "anonymous";
-        script.src = adsenseSrc;
-        script.onload = () => {
-          adsenseLoaded = true;
-          activateSlots();
-        };
-        script.onerror = () => {
-          // Leave the reserved boxes in place. Hiding them made every
-          // unfilled unit disappear after refresh.
-        };
-        document.head.appendChild(script);
-      }
-
-      function scheduleAdsense() {
-        if (adsenseLoaded) {
-          activateSlots();
-          return;
-        }
-        if (adsenseScheduled) return;
-        adsenseScheduled = true;
-        const start = () => {
-          if ("requestIdleCallback" in window) {
-            window.requestIdleCallback(() => loadAdsense(), { timeout: 2000 });
-          } else {
-            window.setTimeout(loadAdsense, 1200);
-          }
-        };
-        const arm = () => {
-          window.setTimeout(start, 1500);
-        };
-        if (document.readyState === "complete") arm();
-        else window.addEventListener("load", arm, { once: true });
-        const onIntent = () => {
-          window.removeEventListener("pointerdown", onIntent);
-          window.removeEventListener("keydown", onIntent);
-          window.removeEventListener("scroll", onIntent);
-          loadAdsense();
-        };
-        window.addEventListener("pointerdown", onIntent, {
-          once: true,
-          passive: true,
-        });
-        window.addEventListener("keydown", onIntent, { once: true });
-        window.addEventListener("scroll", onIntent, {
-          once: true,
-          passive: true,
-        });
-      }
-
-      document.addEventListener("astro:page-load", scheduleAdsense);
+      if (document.readyState === "complete") activateAdsenseSlots();
+      else
+        window.addEventListener("load", activateAdsenseSlots, { once: true });
+      document.addEventListener("astro:page-load", activateAdsenseSlots);
     </script>
     <!-- Backup ownership-verification method alongside the DNS TXT record
          already in place (Cloudflare DNS) — Google Search Console's
