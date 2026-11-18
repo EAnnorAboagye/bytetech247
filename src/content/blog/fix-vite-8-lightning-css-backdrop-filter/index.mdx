@@ -3,7 +3,7 @@ title: "Fix Vite 8 Lightning CSS Dropping backdrop-filter"
 description: "Fix Vite 8's Lightning CSS minifier silently dropping unprefixed backdrop-filter in production builds. One cssMinify config line restores it."
 date: 2026-08-05
 category: guides-fixes
-tags: ["vite", "css", "lightningcss", "bug-fix"]
+tags: ["vite", "bug-fix"]
 series: "Astro 7's Vite 8 Upgrade: Rolldown, Oxc, and Lightning CSS Breaking Changes"
 seriesOrder: 1
 coverImage: "./cover.png"
@@ -86,3 +86,12 @@ This is a one-line, whole-project fix. It trades Lightning CSS's minification fo
 Reported against Vite 8.0.16. This site's own `vite@8.1.5` (resolved via `astro@7.1.3`'s `"vite": "^8.0.13"` dependency) was not independently re-tested against this specific minifier bug, since the site doesn't use `backdrop-filter` anywhere in its own stylesheets. Treat the fix above as effective for any Vite 8.0.x-8.1.x project using the default minifier until Lightning CSS ships a real patch.
 
 If you're not sure which minifier is active, check for an explicit `cssMinify` key in your Vite config first. Its absence means you're on whatever Vite's current default is, which is exactly what changed here. Cross-reference this with [Fix Vite 8 Browser/Module Field Resolution Change](/guides-fixes/fix-vite-8-browser-module-field-resolution/), a different silent default-behavior change in the same Vite 8 build step. Browse more posts like this in the [Guides & Fixes](/guides-fixes) archive.
+
+## Related Vite 8 fixes
+
+Same upgrade, different failure modes:
+
+- [Fix Vite 8 Oxc Not Lowering Native Decorators](/guides-fixes/fix-vite-8-oxc-native-decorators/)
+- [Fix Vite 8 resolve.alias customResolver Removal](/guides-fixes/fix-vite-8-resolve-alias-customresolver-removal/)
+- [Fix @tailwindcss/vite Rolldown Resolver Crash](/guides-fixes/fix-tailwindcss-vite-rolldown-resolver-crash/)
+- [Fix ERESOLVE Vite 8 Peer Dependency Errors in Astro 7](/guides-fixes/fix-eresolve-vite-8-peer-dependency-astro-7/)
