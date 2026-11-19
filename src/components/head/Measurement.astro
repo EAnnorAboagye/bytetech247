@@ -1,0 +1,51 @@
+---
+import { siteConfig } from "../../config";
+---
+
+<!--
+  Measurement owns analytics. The tag must be a real <script src> in the
+  raw HTML. A tag created with document.createElement is invisible to a
+  crawler that does not run JavaScript, which is the failure that made
+  Google report no tracking code.
+
+  defer, not async. async runs as soon as the file arrives and has landed
+  before paint. defer waits until the document has parsed.
+
+  Consent is explicit and stays denied for ads. This site has no consent
+  platform. Granting ad_storage, ad_user_data, or ad_personalization would
+  make gtag request remarketing endpoints and would violate Google's EU
+  consent policy for EEA, UK, and Swiss visitors. Only analytics_storage
+  is granted.
+
+  send_page_view is false. ClientRouter swaps pages without a reload, so
+  the automatic page_view fires only for the landing page. The
+  astro:page-load listener is the single page-view source, including the
+  first load.
+-->
+<script define:vars={{ analyticsId: siteConfig.analyticsId }}>
+  window.dataLayer = window.dataLayer || [];
+  window.gtag = function gtag(...args) {
+    window.dataLayer.push(args);
+  };
+  window.gtag("consent", "default", {
+    ad_storage: "denied",
+    analytics_storage: "granted",
+    ad_user_data: "denied",
+    ad_personalization: "denied",
+  });
+  window.gtag("js", new Date());
+  window.gtag("config", analyticsId, { send_page_view: false });
+
+  document.addEventListener("astro:page-load", () => {
+    window.gtag("event", "page_view", {
+      page_location: window.location.href,
+      page_path: window.location.pathname,
+      page_title: document.title,
+    });
+  });
+</script>
+<script
+  defer
+  fetchpriority="low"
+  src={`https://www.googletagmanager.com/gtag/js?id=${siteConfig.analyticsId}`}
+></script>

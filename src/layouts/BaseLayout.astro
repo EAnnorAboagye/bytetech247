@@ -6,6 +6,9 @@ import { siteWideJsonLd, absoluteUrl } from "../lib/json-ld";
 import Header from "../components/Header.astro";
 import Footer from "../components/Footer.astro";
 import CommandPalette from "../components/CommandPalette.astro";
+import Measurement from "../components/head/Measurement.astro";
+import Beacon from "../components/head/Beacon.astro";
+import Monetization from "../components/head/Monetization.astro";
 
 interface Props {
   title?: string;
@@ -104,178 +107,12 @@ const jsonLdBlocks = [
         });
       }
     </script>
-    <!-- Google tag (gtag.js) — loads unconditionally for every visitor, no
-         consent gate (a deliberate decision made 2026-08-04, replacing the
-         earlier consent-gated CookieConsent.astro component; see
-         privacy.astro's analytics section, which must stay consistent
-         with this). Only analytics_storage is granted, not the three
-         ad_* signals — confirmed live via a 2026-08-06 PageSpeed Insights
-         audit (Best Practices 92/100): granting ad_storage/ad_user_data/
-         ad_personalization makes gtag.js attempt Google Ads remarketing
-         and audience-building requests (stats.g.doubleclick.net,
-         google.com/ads/ga-audiences) plus a dynamically-injected inline
-         script for the same feature — none of which were in this site's
-         CSP allowlist at the time, correctly, since this site didn't run
-         ads yet and privacy.astro only disclosed Analytics, never
-         remarketing/advertising. That mismatch was firing blocked-by-CSP
-         console errors on every pageview, which is what was actually
-         costing the Best Practices points.
-
-         Still denied now that AdSense is integrated (2026-08-06): denying
-         ad_storage/ad_user_data/ad_personalization means AdSense serves
-         non-personalized ads only, which Google explicitly supports
-         without any consent UI. Granting them would require a
-         Google-certified Consent Management Platform for EEA/UK/Swiss
-         visitors under Google's EU User Consent Policy — this site has no
-         CMP (the 2026-08-04 decision above removed the old
-         CookieConsent.astro gate entirely), so granting ad consent by
-         default would violate that policy the moment a real EEA/UK
-         visitor loads the page. Revisit only alongside adding a real CMP.
-
-         gtag.js is now a static `<script defer fetchpriority="low" src>`
-         tag (2026-08-20), not window.load-deferred JS-created injection —
-         reverting the 2026-08-06 fix below because that fix is *why* an
-         automated GA-verification check against the live index page
-         reported no tracking code found: a tool that fetches raw HTML
-         without executing JS (or without waiting past window.load) never
-         sees a <script src="...gtag/js..."> element at all when it's only
-         ever created via document.createElement() inside a "load"
-         listener — there's no static tag in the response body for it to
-         find, ever, regardless of how long it waits.
-
-         This isn't simply re-trying the exact thing the 2026-08-06 fix
-         moved away from: that regression was `async` + `fetchpriority=
-         "low"`, which only deprioritizes *fetch start*, not *execution*.
-         `async` still runs the instant the (small, ~28KB) file finishes
-         downloading, which race-availability plus a background fetch can
-         still land well before paint. `defer` is a different scheduling
-         primitive: execution is withheld until after the document has
-         finished parsing (right before DOMContentLoaded), which is a hard
-         ordering guarantee the browser enforces, not a priority hint it
-         may or may not honor — the actual documented failure mode of the
-         `async` attempt. Validated via this repo's own Lighthouse CI gate
-         (.lighthouserc.json, LCP <= 3000ms) against a real PR before
-         merging, not assumed safe by reasoning alone — see that PR for
-         the before/after numbers. If a future regression shows up here
-         again, the fallback is the same as before (window.load), not a
-         third scheduling attribute to try blind. -->
-    <script define:vars={{ analyticsId: siteConfig.analyticsId }}>
-      // A bare top-level `function gtag(){}` here stays scoped to this
-      // script's own wrapper (Astro implicitly treats a `define:vars`
-      // script as `is:inline`, which wraps it) — confirmed live: dataLayer
-      // populated correctly for calls made right here, but `window.gtag`
-      // itself came back undefined, meaning nothing else on the page could
-      // ever call gtag() again. Assigning to `window.gtag` explicitly
-      // avoids that trap.
-      window.dataLayer = window.dataLayer || [];
-      window.gtag = function gtag(...args) {
-        window.dataLayer.push(args);
-      };
-      // Explicit Consent Mode v2 default — confirmed live: with no consent
-      // signal sent at all, real gtag.js (once loaded) initialized fine
-      // (google_tag_manager populated, dataLayer had gtm.load etc.) but
-      // never made a single network request to any Analytics endpoint —
-      // not even a denied/cookieless ping, verified via the Performance
-      // Resource Timing API and by monkey-patching fetch/sendBeacon/XHR
-      // before manually firing a gtag('event', ...) call. Google's current
-      // default for gtag.js is to treat an *unset* consent state as
-      // restricted rather than unrestricted, so "no consent gate" (this
-      // site's actual policy — see privacy.astro) has to be stated
-      // explicitly, not left implicit, to actually take effect. Must come
-      // before the "js"/"config" calls below per Google's documented
-      // ordering.
-      window.gtag("consent", "default", {
-        ad_storage: "denied",
-        analytics_storage: "granted",
-        ad_user_data: "denied",
-        ad_personalization: "denied",
-      });
-      window.gtag("js", new Date());
-      // send_page_view: false — this site uses <ClientRouter /> below, so
-      // every internal link click is a soft, client-side navigation (fetch
-      // + DOM swap), never a real browser page load. GA4 has no way to see
-      // those on its own: gtag.js's automatic page_view only fires once,
-      // right here, for whichever page the visitor actually landed on.
-      // Confirmed live: Realtime showed a visitor for the entry page only,
-      // every subsequent article click during that same visit went
-      // unrecorded — a well-documented gap in Google's own SPA guidance
-      // (developers.google.com/analytics/devguides/collection/ga4/views),
-      // not something Enhanced Measurement's history-listener can be
-      // assumed to cover, since that's a per-property dashboard toggle
-      // this code can't see or depend on. The astro:page-load listener
-      // below fires this same page_view manually instead — once for this
-      // initial load (it fires on the true first load too, not just
-      // transitions) and again on every ClientRouter navigation, so it's
-      // the single source of pageview truth rather than two overlapping
-      // ones.
-      window.gtag("config", analyticsId, { send_page_view: false });
-
-      document.addEventListener("astro:page-load", () => {
-        window.gtag("event", "page_view", {
-          page_location: window.location.href,
-          page_path: window.location.pathname,
-          page_title: document.title,
-        });
-      });
-    </script>
-    <!-- gtag.js itself — a static tag, not a JS-driven Trusted Types sink
-         (unlike the JS-created version this replaced), so it's unaffected
-         by require-trusted-types-for the same way the AdSense tag below
-         already is. `defer`, not `async`: see the long comment above this
-         block for why that's the load-bearing difference from the
-         attribute combination that previously regressed LCP.
-         `fetchpriority="low"` is additionally applied on top of `defer` —
-         doesn't change the *ordering* guarantee defer already provides,
-         but still deprioritizes the download itself against whatever the
-         LCP candidate needs. -->
-    <script
-      defer
-      fetchpriority="low"
-      src={`https://www.googletagmanager.com/gtag/js?id=${siteConfig.analyticsId}`}
-    ></script>
-    <!-- Cloudflare Web Analytics, self-hosted (Manual Setup) — see the
-         cloudflareBeaconToken comment in src/config.ts for why this isn't
-         left to the zone's Automatic Setup. A same-origin-authored
-         <script src> tag, same as gtag.js below and the AdSense tag that
-         follows: gets its CSP nonce from the Worker's HTMLRewriter pass
-         (worker/index.ts), not a host allowlist entry. -->
-    <script
-      type="module"
-      src="https://static.cloudflareinsights.com/beacon.min.js"
-      data-cf-beacon={JSON.stringify({
-        token: siteConfig.cloudflareBeaconToken,
-      })}></script>
-    <!-- Google AdSense. The loader MUST be a real static tag in <head>,
-         not a comment and not a script created after load. AdSense site
-         verification and the Mediapartners-Google crawler inspect raw
-         HTML; a dynamically injected tag is invisible to them (same
-         failure mode that previously made gtag look missing). async +
-         crossorigin is the snippet Google itself generates. The second
-         script only requests each manual unit; reserved .ad-slot boxes
-         stay visible when a unit is unfilled. Consent stays
-         non-personalized — see adsensePublisherId in src/config.ts. -->
-    <script
-      async
-      src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${siteConfig.adsensePublisherId}`}
-      crossorigin="anonymous"></script>
-    <script is:inline>
-      function activateAdsenseSlots() {
-        const pending = document.querySelectorAll(
-          "ins.adsbygoogle:not([data-adsbygoogle-status])",
-        );
-        for (let i = 0; i < pending.length; i++) {
-          try {
-            (window.adsbygoogle = window.adsbygoogle || []).push({});
-          } catch {
-            // Keep the reserved box. A failed push must not remove it.
-          }
-        }
-      }
-      if (document.readyState === "complete") activateAdsenseSlots();
-      else
-        window.addEventListener("load", activateAdsenseSlots, { once: true });
-      document.addEventListener("astro:page-load", activateAdsenseSlots);
-    </script>
+    <!-- Third-party tags. Each component owns one system. Shell does not
+         configure them. Order is load-bearing: measurement consent before
+         the deferred gtag file, then the beacon, then the AdSense loader. -->
+    <Measurement />
+    <Beacon />
+    <Monetization />
     <!-- Backup ownership-verification method alongside the DNS TXT record
          already in place (Cloudflare DNS) — Google Search Console's
          "additional verification methods" page for
@@ -286,16 +123,6 @@ const jsonLdBlocks = [
     <meta
       name="google-site-verification"
       content="Q7Gw17KC8cG9r4zyeMycGAfPXpAzdGeThLa9evSl-54"
-    />
-    <!-- Redundant AdSense ownership signal alongside the deferred
-         adsbygoogle.js loader above and the ads.txt declaration
-         (public/ads.txt) — same defensive-redundancy reasoning
-         as the Search Console tag above: three independent ways for
-         Google to confirm this property is legitimately connected to this
-         AdSense account, rather than depending on any single one. -->
-    <meta
-      name="google-adsense-account"
-      content={siteConfig.adsensePublisherId}
     />
     <script is:inline>
       // Dark mode, applied before first paint to avoid a flash of the

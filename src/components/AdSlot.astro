@@ -33,8 +33,8 @@ type AdSize = "banner" | "rectangle" | "tower";
 
 // .ad-slot/.ad-slot__label styling and the adsbygoogle activation script
 // both live globally now (global.css's `components` layer, and
-// BaseLayout.astro respectively) instead of in this component's own
-// scoped <style>/<script> — the in-article rehype plugins
+// src/components/head/Monetization.astro respectively) instead of in this
+// component's own scoped <style>/<script> — the in-article rehype plugins
 // (rehype-quick-answer.mjs, rehype-in-article-ads.mjs) emit this same
 // markup shape directly into the compiled MDX tree, outside Astro's
 // component-scoping system, and need to match this component's styling

@@ -5,7 +5,8 @@
 // renders, so there's no way to place a real <AdSlot> component there
 // from [category]/[slug].astro directly — this emits the exact same
 // markup shape as AdSlot.astro (styled by the shared .ad-slot rules in
-// global.css, activated by the shared script in BaseLayout.astro) as raw
+// global.css, activated by the shared script in
+// src/components/head/Monetization.astro) as raw
 // hast nodes instead. Must run after rehypeQuickAnswer in the pipeline:
 // it locates the <aside class="quick-answer"> that plugin produces, and
 // relies on the Quick Answer heading no longer being a *direct* child of

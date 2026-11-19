@@ -1,0 +1,16 @@
+---
+import { siteConfig } from "../../config";
+---
+
+<!--
+  Cloudflare Web Analytics, loaded by us as a static script so the
+  Worker's CSP nonce can cover it. The zone's automatic injection is
+  not used: that copy is added after the build and has broken the
+  content security policy when Cloudflare changed the injected script.
+-->
+<script
+  type="module"
+  src="https://static.cloudflareinsights.com/beacon.min.js"
+  data-cf-beacon={JSON.stringify({
+    token: siteConfig.cloudflareBeaconToken,
+  })}></script>

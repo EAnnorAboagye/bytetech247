@@ -173,8 +173,9 @@ export const siteConfig = {
 
   // GA4 property "ByteTech247" (analytics.google.com) — not a secret;
   // a Measurement ID is inherently public, visible in every page's own
-  // source once loaded. Loaded unconditionally in BaseLayout.astro's
-  // <head> for every visitor (no consent gate, as of 2026-08-04) — see
+  // source once loaded. Loaded unconditionally by
+  // src/components/head/Measurement.astro for every visitor (no consent
+  // gate, as of 2026-08-04) — see
   // privacy.astro's "What this site collects today" section, which this
   // ID must stay consistent with. Updated 2026-08-20 to G-JRES2NJPH5
   // (previous ID: G-QCK9SYFM29) — a new tag Google issued for this
@@ -199,10 +200,10 @@ export const siteConfig = {
 
   // Google AdSense publisher ID — not a secret, same reasoning as
   // analyticsId above (visible in the page source of every AdSense site).
-  // Loaded in BaseLayout.astro's <head>; see worker/index.ts's cspFor()
-  // for the nonce + 'strict-dynamic' CSP this requires. BaseLayout.astro's
-  // gtag Consent Mode default keeps ad_storage/ad_user_data/
-  // ad_personalization denied, so this serves non-personalized ads only
+  // Loaded by src/components/head/Monetization.astro; see worker/index.ts's
+  // cspFor() for the nonce + 'strict-dynamic' CSP this requires.
+  // Measurement.astro's gtag Consent Mode default keeps
+  // ad_storage/ad_user_data/ad_personalization denied, so this serves non-personalized ads only
   // until a real Consent Management Platform exists for EEA/UK/Swiss
   // visitors.
   //
@@ -219,11 +220,11 @@ export const siteConfig = {
   // Manual AdSense ad-unit slot IDs (Ads -> By ad unit -> Display ads).
   // Re-enabled 2026-11-17 with the same six units created 2026-08-11.
   // One unit per shape, reused across positions — AdSense supports that,
-  // and it keeps the ad-unit report comparable. BaseLayout loads the
-  // ads script after first paint and collapses any slot AdSense marks
-  // unfilled, so an unapproved or blocked request cannot leave a blank
-  // reserved box cutting the page (the failure mode that also tanked
-  // LCP the first time these IDs were live).
+  // and it keeps the ad-unit report comparable. Monetization.astro loads
+  // the ads script in the head and requests each manual unit. An unfilled
+  // unit stays inside its reserved box, so it cannot change the page
+  // height (the failure that tanked CLS the first time these IDs were
+  // live).
   adSlots: {
     // Sidebar tower, under the desktop TOC (article pages only).
     articleSidebar: "4574737038", // Article - Sidebar

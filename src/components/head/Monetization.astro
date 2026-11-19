@@ -1,0 +1,34 @@
+---
+import { siteConfig } from "../../config";
+---
+
+<!--
+  Monetization owns the AdSense loader. The loader must be a real static
+  tag in <head>. AdSense verification reads raw HTML. A tag created after
+  load is invisible to that crawler.
+
+  The second script only requests each manual unit. A failed push leaves
+  the reserved box in place. Ad consent stays denied in Measurement.
+-->
+<script
+  async
+  src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${siteConfig.adsensePublisherId}`}
+  crossorigin="anonymous"></script>
+<script is:inline>
+  function activateAdsenseSlots() {
+    const pending = document.querySelectorAll(
+      "ins.adsbygoogle:not([data-adsbygoogle-status])",
+    );
+    for (let i = 0; i < pending.length; i++) {
+      try {
+        (window.adsbygoogle = window.adsbygoogle || []).push({});
+      } catch {
+        // Keep the reserved box. A failed push must not remove it.
+      }
+    }
+  }
+  if (document.readyState === "complete") activateAdsenseSlots();
+  else window.addEventListener("load", activateAdsenseSlots, { once: true });
+  document.addEventListener("astro:page-load", activateAdsenseSlots);
+</script>
+<meta name="google-adsense-account" content={siteConfig.adsensePublisherId} />
